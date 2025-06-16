@@ -1,32 +1,43 @@
 # Projet AudioNexus - Gestionnaire d'Audiothèques
 
 ## 🎯 Objectif
-Développer une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée, avec des fonctionnalités avancées de traitement et de gestion des livres audio.
+Développer une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée, avec des fonctionnalités avancées de traitement et de gestion des livres audio. AudioNexus permet de se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
 
 ## 🚀 Fonctionnalités
 
 ### 1. Authentification et Sécurité
 
-#### Court terme
+#### Court terme (En cours)
+- [x] Structure de base du frontend avec React et TypeScript
+- [x] Configuration de Chakra UI pour l'interface utilisateur
 - [ ] Page de connexion sécurisée
-  - Authentification par identifiant/mot de passe
-  - Chiffrement et salage des mots de passe (bcrypt/Argon2)
-  - Réinitialisation de mot de passe par email
-  - Gestion des sessions
+  - [ ] Authentification par identifiant/mot de passe
+  - [x] Chiffrement et salage des mots de passe (bcrypt/Argon2)
+  - [ ] Réinitialisation de mot de passe par email
+  - [ ] Gestion des sessions
 
 #### Moyen terme
 - [ ] Authentification à deux facteurs (2FA)
 - [ ] Gestion des rôles et permissions
 - [ ] Limitation des tentatives de connexion
 - [ ] Journalisation des accès
+- [ ] Synchronisation des utilisateurs avec Audiobookshelf
 
 #### Long terme
 - [ ] Intégration avec des fournisseurs d'identité (OAuth, LDAP)
 - [ ] Gestion des clés API
 
-### 2. Tableau de Bord Administrateur
+### 2. Intégration Audiobookshelf
 
-#### Court terme
+#### Court terme (En cours)
+- [x] Configuration de la connexion à l'API Audiobookshelf
+- [ ] Authentification et gestion des tokens
+- [ ] Récupération des bibliothèques et métadonnées
+- [ ] Gestion des utilisateurs et des permissions
+
+### 3. Tableau de Bord Administrateur
+
+#### Court terme (À venir)
 - [ ] Vue d'ensemble des fichiers en traitement
 - [ ] État des instances Audiobookshelf connectées
 - [ ] Liste des nouveaux fichiers non traités
@@ -166,7 +177,15 @@ Développer une plateforme complète pour gérer et administrer plusieurs instan
 - API complète
 - Documentation utilisateur
 
+## ✅ Réalisations récentes
+
+- [x] Renommage du projet en AudioNexus
+- [x] Mise en place de l'environnement de développement frontend
+- [x] Configuration initiale de Chakra UI
+- [x] Structure de base du projet avec séparation frontend/backend
+- [x] Documentation mise à jour
+
 ## 📝 Notes Additionnelles
 
 ### Nom de Projet Officiel
-AudioNexus
+Le projet a été officiellement renommé en **AudioNexus** pour mieux refléter sa nature de plateforme de gestion centralisée d'instances Audiobookshelf.

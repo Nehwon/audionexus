@@ -4,9 +4,10 @@
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
 ## 📊 Version actuelle
-- **Version** : 0.3.0-alpha (en développement actif)
+- **Version** : 0.3.1-alpha (en développement actif)
 - **Dernière mise à jour** : 17/06/2025
 - **Statut** : Développement actif - Phase d'implémentation initiale
+- **Branche** : `AudioNexus` (basée sur `feature/audiobookshelf-integration`)
 
 ## 🏗️ Architecture Technique
 
@@ -16,20 +17,26 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 - ✅ Authentification JWT avec refresh tokens
 - 🔄 En cours : Gestion des fichiers multimédias
 - 🔄 En cours : Intégration avec Audiobookshelf
-  - Connexion aux instances distantes
-  - Synchronisation des utilisateurs
-  - Mappage des rôles
-  - Gestion des conflits
-  - Journalisation des opérations
+  - ✅ Configuration de la connexion API
+  - 🔄 Authentification et gestion des tokens
+  - 🔄 Récupération des bibliothèques et métadonnées
+  - 🔄 Gestion des utilisateurs et des permissions
+  - 🔄 Synchronisation des utilisateurs
+  - 🔄 Mappage des rôles
+  - 🔄 Journalisation des opérations
 
 ### Frontend (React/TypeScript)
-- ✅ Interface utilisateur React avec **Chakra UI**
-  - Thèmes personnalisables
-  - Composants accessibles
-  - Support du mode sombre/clair
-  - Design System unifié
-  - Navigation fluide
-  - Expérience utilisateur optimisée
+- ✅ Structure de base du projet avec Vite + React + TypeScript
+- ✅ Interface utilisateur avec **Chakra UI**
+  - ✅ Configuration du thème personnalisable
+  - ✅ Composants accessibles
+  - ✅ Support du mode sombre/clair
+  - ✅ Design System unifié
+  - ✅ Navigation fluide
+  - ✅ Expérience utilisateur optimisée
+- 🔄 En cours : Pages principales
+  - 🔄 Page de connexion
+  - 🔄 Tableau de bord administrateur
 - 🔄 En cours : Gestion d'état avec Redux Toolkit
 - 🔄 En cours : Appels API avec React Query
 - ✅ Intégration de React Hook Form pour les formulaires
@@ -150,38 +157,5 @@ pip install -r docs/requirements.txt
 cd docs && make html
 
 # Ouvrir la documentation
-office _build/html/index.html
+xdg-open _build/html/index.html
 ```
-
-## 🚀 Prochaines Étapes
-
-1. **Phase Actuelle (v0.3.0)**
-   - Finaliser l'interface administrateur
-   - Implémenter la connexion à Audiobookshelf
-   - Mettre en place le système de fichiers
-
-2. **Phase Suivante (v0.5.0)**
-   - Ajouter l'authentification à deux facteurs
-   - Développer le traitement par lots
-   - Implémenter l'analyse antivirus
-
-3. **Futur (v1.0.0+)**
-   - Support multi-instances
-   - Génération d'audiobooks
-   - Fonctionnalités avancées de traitement audio
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Voici comment contribuer :
-
-1. Forker le dépôt
-2. Créer une branche pour votre fonctionnalité
-3. Soumettre une Pull Request
-
-## 📞 Contact
-
-Pour toute question ou suggestion, veuillez ouvrir une [issue](https://gitea.lamachere.fr/fabrice/docker/issues).
-
----
-
-**Dernière mise à jour** : 16/06/2025  
