@@ -1,4 +1,4 @@
-# État du Projet AudioNexus - 17/06/2025
+# État du Projet AudioNexus - 18/06/2025
 
 ## 📌 Vue d'ensemble
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
@@ -6,9 +6,9 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 ## 📊 Version actuelle
 - **Version** : 0.3.2-alpha (en développement actif)
 - **Dernière mise à jour** : 18/06/2025
-- **Statut** : Développement actif - Phase d'implémentation frontend
+- **Statut** : Développement actif - Phase d'implémentation
 - **Branche** : `AudioNexus` (basée sur `feature/audiobookshelf-integration`)
-- **Environnement** : Configuration Docker fonctionnelle pour le développement local
+- **Environnement** : Développement local avec Docker
 
 ## 🏗️ Architecture Technique
 
@@ -16,15 +16,10 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 - ✅ API RESTful avec FastAPI
 - ✅ Base de données PostgreSQL avec SQLAlchemy ORM
 - ✅ Authentification JWT avec refresh tokens
-- 🔄 En cours : Gestion des fichiers multimédias
-- 🔄 En cours : Intégration avec Audiobookshelf
-  - ✅ Configuration de la connexion API
-  - 🔄 Authentification et gestion des tokens
-  - 🔄 Récupération des bibliothèques et métadonnées
-  - 🔄 Gestion des utilisateurs et des permissions
-  - 🔄 Synchronisation des utilisateurs
-  - 🔄 Mappage des rôles
-  - 🔄 Journalisation des opérations
+- 🔄 En cours : Configuration Docker
+  - ✅ Services conteneurisés
+  - 🔄 Dépendances entre services
+  - 🔄 Configuration des volumes
 
 ### Frontend (React/TypeScript)
 - ✅ Structure de base du projet avec Vite + React + TypeScript
@@ -34,7 +29,6 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
   - ✅ Support du mode sombre/clair
   - ✅ Design System unifié
   - ✅ Navigation fluide avec React Router
-  - ✅ Expérience utilisateur optimisée
 - ✅ Pages principales
   - ✅ Page de connexion sécurisée
   - ✅ Tableau de bord administrateur
@@ -43,10 +37,73 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
   - ✅ Page 404 personnalisée
 - ✅ Gestion d'état avec Context API et React Query
 - ✅ Appels API avec Axios et intercepteurs
-- ✅ Gestion des formulaires avec React Hook Form
 - ✅ Protection des routes avec authentification
 - ✅ Gestion des tokens JWT avec rafraîchissement automatique
-- 🔄 En cours : Internationalisation avec i18next (en attente)
+
+### Infrastructure
+- ✅ Configuration Docker avec services conteneurisés
+  - ✅ Backend FastAPI
+  - ✅ Base de données PostgreSQL
+  - ✅ Cache Redis
+  - ✅ Serveur Nginx
+- 🔄 En cours : Configuration des dépendances entre services
+- 🔄 En cours : Configuration des volumes persistants
+
+## 📅 Prochaines étapes
+
+### Court terme (Sprint actuel)
+- [x] Mise en place de l'authentification frontend
+- [x] Configuration de l'environnement de développement Docker
+- [ ] Finaliser la configuration des services
+  - [ ] Résoudre les problèmes de dépendances entre services
+  - [ ] Configurer correctement les volumes
+  - [ ] Tester le démarrage de tous les services
+
+### Prochain sprint
+- [ ] Tests d'intégration
+- [ ] Mise en place des pipelines CI/CD
+- [ ] Documentation technique complète
+
+## 📝 Notes techniques
+- **Version Python** : 3.11+
+- **Version Node.js** : 18+
+- **Base de données** : PostgreSQL 15
+- **Cache** : Redis 7
+- **Frontend** : React 18, TypeScript 5, Chakra UI
+- **Backend** : FastAPI, SQLAlchemy 2.0, Pydantic v2
+
+## 🔧 Problèmes connus
+1. **Configuration Docker**
+   - Erreur de dépendance entre les services
+   - Problème de volume pour Redis
+   - Configuration Nginx à finaliser
+
+2. **Documentation**
+   - Mise à jour en cours de la documentation technique
+   - Guide d'installation à compléter
+
+## 📂 Structure du projet
+```
+audionexus/
+├── backend/            # Code source du backend
+│   ├── app/            # Application FastAPI
+│   ├── tests/          # Tests unitaires et d'intégration
+│   └── alembic/        # Migrations de base de données
+├── frontend/           # Application React/TypeScript
+│   ├── public/         # Fichiers statiques
+│   └── src/            # Code source du frontend
+├── docker/             # Configuration Docker
+│   ├── nginx/          # Configuration Nginx
+│   └── db/             # Scripts d'initialisation de la base de données
+├── docs/               # Documentation technique
+└── scripts/            # Scripts utilitaires
+```
+
+## 🔗 Liens utiles
+- [Documentation technique](docs/)
+- [Guide d'installation](DEVELOPMENT.md)
+- [Journal des changements](CHANGELOG.md)
+- [Journal de développement](../developpement.md)
 
 ### Infrastructure
 - ✅ Conteneurisation avec Docker

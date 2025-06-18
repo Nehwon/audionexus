@@ -1,22 +1,31 @@
 services:
-  app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: audionexus-manager
+    container_name: audionexus-backend
     restart: unless-stopped
     env_file: .env
     volumes:
-      - ./app:/app
+      - .:/app
       - ./data/audionexus:/data/audionexus
       - ./data/config:/app/config
       - ./data/database:/data/database
+    working_dir: /app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - audionexus-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db:
     image: postgres:15-alpine
@@ -30,6 +39,11 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - audionexus-network
 
@@ -37,6 +51,14 @@ services:
     image: redis:7-alpine
     container_name: audionexus-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - audionexus-network
 
@@ -70,3 +92,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local

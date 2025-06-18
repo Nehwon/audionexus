@@ -11,43 +11,153 @@
 
 AudioNexus est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
 
-### 🌟 Points Forts
+## 🚀 Démarrage rapide
 
-- **Interface unifiée** pour gérer vos collections audio
-- **Authentification sécurisée** avec JWT et rafraîchissement de token
-- **Tableau de bord** réactif avec Chakra UI
-- **Gestion des utilisateurs** avec rôles et permissions
-- **Traitement automatisé** des fichiers audio
-- **Sécurité renforcée** avec authentification à deux facteurs (en cours)
-- **Workflow** de traitement personnalisable
-- **Déploiement** conteneurisé avec Docker
+### Prérequis
 
-## 🚀 Fonctionnalités
+- Docker et Docker Compose
+- Node.js 18+ (pour le développement frontend)
+- Python 3.11+ (pour le développement backend)
+
+### Avec Docker (recommandé)
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/votre-utilisateur/audionexus.git
+cd audionexus
+
+# Copier le fichier d'environnement d'exemple
+cp .env.example .env
+
+# Démarrer les services
+docker compose up -d
+```
+
+### Développement local
+
+#### Backend
+
+```bash
+# Se placer dans le dossier du backend
+cd backend
+
+# Créer un environnement virtuel
+python -m venv venv
+source venv/bin/activate  # Sur Windows: .\venv\Scripts\activate
+
+# Installer les dépendances
+pip install -e .
+
+# Lancer le serveur de développement
+uvicorn app.main:app --reload
+```
+
+#### Frontend
+
+```bash
+# Se placer dans le dossier du frontend
+cd frontend
+
+# Installer les dépendances
+npm install
+
+# Lancer le serveur de développement
+npm run dev
+```
+
+## 🌟 Fonctionnalités
 
 ### 🔐 Authentification & Sécurité
-- ✅ Structure de base du frontend avec React et TypeScript
-- ✅ Configuration de Chakra UI pour l'interface utilisateur
-- ✅ Page de connexion sécurisée
-  - ✅ Authentification par identifiant/mot de passe
-  - ✅ Chiffrement et salage des mots de passe (bcrypt/Argon2)
-  - ✅ Gestion des tokens JWT avec rafraîchissement automatique
-  - ✅ Protection des routes avec authentification
-  - 🔄 En cours : Réinitialisation de mot de passe par email
-  - 🔄 En cours : 2FA (Authentification à deux facteurs)
+- ✅ Authentification JWT avec rafraîchissement de token
+- ✅ Protection des routes avec authentification
+- ✅ Gestion des sessions utilisateur
+- 🔄 En cours : 2FA (Authentification à deux facteurs)
+- 🔄 En cours : Réinitialisation de mot de passe
 
-### 👥 Gestion des Utilisateurs
-- ✅ Authentification unifiée
-- 🔄 Synchronisation des comptes avec Audiobookshelf
-- 🔄 Mappage des rôles et permissions
-- 🔄 Journalisation des activités
+### 👤 Gestion des Utilisateurs
+- ✅ Création et gestion des comptes
+- ✅ Rôles et permissions
+- 🔄 En cours : Profils utilisateurs
 
 ### 📊 Tableau de Bord
-- ✅ Vue d'ensemble des instances
-- 🔄 En cours : Métriques en temps réel
-- 🔄 En cours : Gestion des tâches en cours
-- 🔄 En cours : Alertes et notifications
+- ✅ Vue d'ensemble
+- ✅ Statistiques d'utilisation
+- 🔄 En cours : Widgets personnalisables
 
-### 📁 Gestion des Fichiers
+### 📚 Gestion des Bibliothèques
+- 🔄 En cours : Connexion aux instances Audiobookshelf
+- 🔄 En cours : Synchronisation des métadonnées
+- 🔄 En cours : Gestion des collections
+
+## 🏗️ Architecture Technique
+
+### Backend (Python/FastAPI)
+- API RESTful avec FastAPI
+- Base de données PostgreSQL avec SQLAlchemy ORM
+- Authentification JWT
+- Cache Redis
+- Tâches asynchrones avec Celery
+
+### Frontend (React/TypeScript)
+- Interface utilisateur avec Chakra UI
+- Gestion d'état avec React Query
+- Navigation avec React Router
+- Appels API avec Axios
+- Validation de formulaire avec React Hook Form
+
+## 🛠️ Configuration
+
+### Variables d'environnement
+
+Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+
+```env
+# Backend
+DATABASE_URL=postgresql://user:password@db:5432/audionexus
+REDIS_URL=redis://redis:6379/0
+SECRET_KEY=votre_secret_key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Frontend
+VITE_API_URL=http://localhost:8000/api
+```
+
+## 📦 Déploiement
+
+### Production avec Docker
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+## 📄 Documentation
+
+- [Guide d'installation](DEVELOPMENT.md)
+- [État du projet](ETAT_DU_PROJET.md)
+- [Journal des changements](CHANGELOG.md)
+- [Documentation technique](docs/)
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+
+1. Forkez le projet
+2. Créez votre branche de fonctionnalité (`git checkout -b feature/AmazingFeature`)
+3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
+
+## 📜 Licence
+
+Distribué sous licence MIT. Voir `LICENSE` pour plus d'informations.
+
+## 📞 Contact
+
+Votre nom - [@votretwitter](https://twitter.com/votretwitter) - email@exemple.com
+
+Lien du projet : [https://github.com/votre-utilisateur/audionexus](https://github.com/votre-utilisateur/audionexus)
 - ✅ Téléchargement sécurisé
 - ✅ Extraction des métadonnées
 - ✅ Validation des formats
