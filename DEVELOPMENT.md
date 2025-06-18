@@ -2,15 +2,19 @@
 
 Ce document fournit des instructions pour configurer un environnement de développement pour AudioNexus, la plateforme de gestion centralisée d'instances Audiobookshelf.
 
-## Prérequis
+## 📋 Prérequis
 
-- Python 3.8 ou supérieur
-- Node.js 18+ et npm/yarn
-- PostgreSQL 13+
-- Git
-- Docker et Docker Compose (optionnel, pour le développement avec conteneurs)
+- **Système d'exploitation** : Linux, macOS ou WSL2 (Windows)
+- **Docker** : 20.10+
+- **Docker Compose** : 2.0+
+- **Node.js** : 18+ (pour le développement frontend)
+- **Python** : 3.11+ (pour le développement backend)
+- **Git** : 2.25+
+- **npm** : 9.0+ ou **Yarn** : 1.22+
 
-## Configuration de l'environnement
+> 💡 Pour Windows, il est fortement recommandé d'utiliser WSL2 pour une meilleure expérience de développement.
+
+## 🚀 Configuration de l'environnement
 
 ### 1. Cloner le dépôt
 
@@ -19,34 +23,125 @@ git clone https://gitea.lamachere.fr/fabrice/docker.git
 cd docker/tools/audionexus
 ```
 
-### 2. Configuration du backend
+### 2. Configuration avec Docker (Recommandé)
 
-#### Option 1 : Installation en mode développement (recommandé)
+#### Prérequis
+- Assurez-vous que Docker et Docker Compose sont installés et en cours d'exécution
+- Vérifiez que les ports 8000 (backend), 80/443 (Nginx) et 5432 (PostgreSQL) sont disponibles
 
-1. Créer un environnement virtuel :
+#### Étapes d'installation
+
+1. **Créer le fichier .env**
+   ```bash
+   cp .env.example .env
+   ```
+   > ⚠️ Modifiez les valeurs par défaut selon vos besoins, notamment les informations de base de données et les clés secrètes.
+
+2. **Démarrer les services**
+   ```bash
+   docker compose up -d
+   ```
+   Cette commande va :
+   - Construire les images nécessaires
+   - Démarrer les conteneurs en arrière-plan
+   - Configurer la base de données
+   - Démarrer le serveur de développement
+
+3. **Vérifier les logs**
+   ```bash
+   docker compose logs -f
+   ```
+
+### 3. Configuration du développement frontend
+
+1. **Installer les dépendances**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Démarrer le serveur de développement**
+   ```bash
+   npm run dev
+   ```
+   Le frontend sera disponible sur http://localhost:3000
+
+### 4. Configuration du développement backend
+
+#### Option 1 : Avec Docker (Recommandé)
+
+1. **Accéder au conteneur**
+   ```bash
+   docker compose exec app bash
+   ```
+
+2. **Installer les dépendances**
+   ```bash
+   pip install -e ".[dev]"
+   ```
+
+3. **Exécuter les migrations**
+   ```bash
+   alembic upgrade head
+   ```
+
+4. **Démarrer le serveur de développement**
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+#### Option 2 : En local
+
+1. **Créer un environnement virtuel**
    ```bash
    python -m venv venv
    source venv/bin/activate  # Sur Windows : venv\Scripts\activate
    ```
 
-2. Installer les dépendances en mode développement :
+2. **Installer les dépendances**
    ```bash
-   pip install -e ".[dev]"  # Inclut les dépendances de développement
+   pip install -e ".[dev]"
    ```
 
-#### Option 2 : Installation standard
+3. **Configurer la base de données**
+   - Créer une base de données PostgreSQL nommée `audionexus`
+   - Configurer les variables d'environnement dans `.env`
+   - Exécuter les migrations : `alembic upgrade head`
 
-```bash
-pip install -e .
+4. **Démarrer le serveur**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+### 5. Variables d'environnement
+
+Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+
+```env
+# Application
+APP_ENV=development
+APP_SECRET=change_this_in_production
+APP_DEBUG=true
+
+# Base de données
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=audionexus
+DB_HOST=db
+DB_PORT=5432
+
+# JWT
+SECRET_KEY=dev-secret-key-change-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# CORS (pour le développement)
+FRONTEND_URL=http://localhost:3000
+
+# Premier administrateur (sera créé au premier démarrage)
+FIRST_SUPERUSER_EMAIL=admin@example.com
+FIRST_SUPERUSER_PASSWORD=ChangeThisPassword
 ```
-
-### 3. Configuration de la base de données
-
-1. Créer une base de données PostgreSQL nommée `audionexus`
-2. Configurer les variables d'environnement dans un fichier `.env` :
-   ```env
-   # Base de données
-   DATABASE_URL=postgresql://user:password@localhost:5432/audionexus
    
    # Configuration de l'application
    APP_ENV=development

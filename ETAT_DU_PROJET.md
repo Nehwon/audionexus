@@ -4,10 +4,11 @@
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
 ## 📊 Version actuelle
-- **Version** : 0.3.1-alpha (en développement actif)
-- **Dernière mise à jour** : 17/06/2025
-- **Statut** : Développement actif - Phase d'implémentation initiale
+- **Version** : 0.3.2-alpha (en développement actif)
+- **Dernière mise à jour** : 18/06/2025
+- **Statut** : Développement actif - Phase d'implémentation frontend
 - **Branche** : `AudioNexus` (basée sur `feature/audiobookshelf-integration`)
+- **Environnement** : Configuration Docker fonctionnelle pour le développement local
 
 ## 🏗️ Architecture Technique
 
@@ -32,21 +33,33 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
   - ✅ Composants accessibles
   - ✅ Support du mode sombre/clair
   - ✅ Design System unifié
-  - ✅ Navigation fluide
+  - ✅ Navigation fluide avec React Router
   - ✅ Expérience utilisateur optimisée
-- 🔄 En cours : Pages principales
-  - 🔄 Page de connexion
-  - 🔄 Tableau de bord administrateur
-- 🔄 En cours : Gestion d'état avec Redux Toolkit
-- 🔄 En cours : Appels API avec React Query
-- ✅ Intégration de React Hook Form pour les formulaires
-- 🔄 En cours : Internationalisation avec i18next
+- ✅ Pages principales
+  - ✅ Page de connexion sécurisée
+  - ✅ Tableau de bord administrateur
+  - ✅ Gestion des utilisateurs
+  - ✅ Page des paramètres
+  - ✅ Page 404 personnalisée
+- ✅ Gestion d'état avec Context API et React Query
+- ✅ Appels API avec Axios et intercepteurs
+- ✅ Gestion des formulaires avec React Hook Form
+- ✅ Protection des routes avec authentification
+- ✅ Gestion des tokens JWT avec rafraîchissement automatique
+- 🔄 En cours : Internationalisation avec i18next (en attente)
 
 ### Infrastructure
 - ✅ Conteneurisation avec Docker
 - ✅ Configuration via variables d'environnement
+- ✅ Configuration Nginx pour le développement local
+- ✅ Services conteneurisés :
+  - ✅ Backend FastAPI
+  - ✅ Base de données PostgreSQL
+  - ✅ Cache Redis
+  - ✅ Serveur Nginx
 - 🔄 En cours : Configuration CI/CD
 - 🔄 En cours : Tests automatisés
+- 🔄 En cours : Configuration SSL pour la production
 
 ## Fonctionnalités Implémentées
 

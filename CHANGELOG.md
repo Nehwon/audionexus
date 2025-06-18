@@ -5,6 +5,27 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-06-18
+
+### Ajouté
+- Implémentation complète du système d'authentification frontend
+- Configuration des routes protégées avec React Router
+- Création des pages principales (Dashboard, Utilisateurs, Paramètres, 404)
+- Mise en place du contexte d'authentification (AuthProvider)
+- Configuration de l'API avec intercepteurs Axios
+- Intégration de React Query pour la gestion des données
+- Configuration de Chakra UI avec thème personnalisé
+- Gestion des tokens JWT (stockage et rafraîchissement automatique)
+- Configuration Docker pour le développement local
+- Documentation mise à jour pour le démarrage du projet
+
+### Modifié
+- Simplification de la configuration Nginx pour le développement local
+- Correction des erreurs de typage TypeScript
+- Amélioration de la structure des dossiers frontend
+- Mise à jour des dépendances frontend
+- Optimisation des imports et résolution des avertissements de linting
+
 ## [0.3.1] - 2025-06-17
 
 ### Modifié

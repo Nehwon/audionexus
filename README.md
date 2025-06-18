@@ -1,8 +1,11 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
-[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.2--alpha-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](docs/)
+[![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009485.svg)](backend/)
 
 ## 📋 Description
 
@@ -11,19 +14,26 @@ AudioNexus est une plateforme complète pour gérer et administrer des collectio
 ### 🌟 Points Forts
 
 - **Interface unifiée** pour gérer vos collections audio
+- **Authentification sécurisée** avec JWT et rafraîchissement de token
+- **Tableau de bord** réactif avec Chakra UI
+- **Gestion des utilisateurs** avec rôles et permissions
 - **Traitement automatisé** des fichiers audio
-- **Sécurité renforcée** avec authentification à deux facteurs
-- **Tableau de bord** complet avec métriques en temps réel
+- **Sécurité renforcée** avec authentification à deux facteurs (en cours)
 - **Workflow** de traitement personnalisable
+- **Déploiement** conteneurisé avec Docker
 
 ## 🚀 Fonctionnalités
 
 ### 🔐 Authentification & Sécurité
-- ✅ Authentification sécurisée
-- ✅ Chiffrement des mots de passe (bcrypt/Argon2)
-- 🔄 En cours : 2FA (Authentification à deux facteurs)
-- 🔄 En cours : Gestion des rôles et permissions
-- 🔄 En cours : Synchronisation des utilisateurs avec Audiobookshelf
+- ✅ Structure de base du frontend avec React et TypeScript
+- ✅ Configuration de Chakra UI pour l'interface utilisateur
+- ✅ Page de connexion sécurisée
+  - ✅ Authentification par identifiant/mot de passe
+  - ✅ Chiffrement et salage des mots de passe (bcrypt/Argon2)
+  - ✅ Gestion des tokens JWT avec rafraîchissement automatique
+  - ✅ Protection des routes avec authentification
+  - 🔄 En cours : Réinitialisation de mot de passe par email
+  - 🔄 En cours : 2FA (Authentification à deux facteurs)
 
 ### 👥 Gestion des Utilisateurs
 - ✅ Authentification unifiée

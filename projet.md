@@ -10,11 +10,13 @@ Développer une plateforme complète pour gérer et administrer plusieurs instan
 #### Court terme (En cours)
 - [x] Structure de base du frontend avec React et TypeScript
 - [x] Configuration de Chakra UI pour l'interface utilisateur
-- [ ] Page de connexion sécurisée
-  - [ ] Authentification par identifiant/mot de passe
+- [x] Page de connexion sécurisée
+  - [x] Authentification par identifiant/mot de passe
   - [x] Chiffrement et salage des mots de passe (bcrypt/Argon2)
+  - [x] Gestion des tokens JWT avec rafraîchissement automatique
+  - [x] Protection des routes avec authentification
   - [ ] Réinitialisation de mot de passe par email
-  - [ ] Gestion des sessions
+  - [x] Gestion des sessions avec stockage sécurisé
 
 #### Moyen terme
 - [ ] Authentification à deux facteurs (2FA)
