@@ -34,7 +34,6 @@ ENV/
 *.sqlite3
 
 # Environment variables
-.env
 
 # Logs
 *.log
