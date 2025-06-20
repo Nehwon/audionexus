@@ -44,3 +44,7 @@ ENV/
 # Project specific
 /media/
 /staticfiles/
+
+# Test coverage
+.coverage
+coverage.xml
