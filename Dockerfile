@@ -47,5 +47,9 @@ ENV APP_ENV=production
 # Port d'écoute de l'application
 EXPOSE 8000
 
+# Configuration du PYTHONPATH pour inclure le répertoire racine
+ENV PYTHONPATH=/app
+
 # Commande de démarrage
+WORKDIR /app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

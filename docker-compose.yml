@@ -74,7 +74,7 @@ services:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
     depends_on:
-      - app
+      - backend
     networks:
       - audionexus-network
 
@@ -94,4 +94,4 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
+    name: audionexus_redis_data

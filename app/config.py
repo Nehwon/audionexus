@@ -3,7 +3,8 @@ Configuration de l'application à partir des variables d'environnement.
 """
 import os
 from typing import List, Optional
-from pydantic import BaseSettings, AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, validator
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Configuration de base
