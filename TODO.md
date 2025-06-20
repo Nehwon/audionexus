@@ -76,5 +76,13 @@
 - [ ] Intégration de la synthèse vocale.
 - [ ] Mise en place d'un cluster AudioNexus pour la haute disponibilité.
 
-## Current Goal
-Reprendre la correction de la configuration Docker.
+## Prochaines Étapes
+1. Résoudre l'erreur `no such table: users` dans les tests d'authentification.
+2. Implémenter des tests supplémentaires pour couvrir les cas d'erreur.
+3. Configurer le suivi de la couverture de code.
+4. Reprendre la correction de la configuration Docker.
+
+## Dernières Modifications
+- 2025-06-20 : Correction des tests d'authentification et configuration de la base de données de test.
+- 2025-06-20 : Mise à jour de la documentation et du plan de développement.
+- 2025-06-20 : Correction des problèmes d'initialisation de la base de données.
