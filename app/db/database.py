@@ -46,5 +46,5 @@ def init_db():
     """
     Initialise la base de données en créant toutes les tables.
     """
-    from app.models.base import Base
+    from .models.base import Base
     Base.metadata.create_all(bind=engine)

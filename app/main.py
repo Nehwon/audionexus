@@ -12,8 +12,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import init_db, get_db
-from app.api import api_router
+from app.db.database import init_db, get_db
+from app.core.api import api_router
 
 # Configuration du cycle de vie de l'application
 @asynccontextmanager
