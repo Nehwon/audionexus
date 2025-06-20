@@ -7,9 +7,7 @@ from fastapi import APIRouter
 api_router = APIRouter()
 
 # Import des routeurs des différents modules
-# from . import users, books, libraries, etc.
+from . import auth
 
 # Inclusion des routeurs
-# api_router.include_router(users.router, prefix="/users", tags=["users"])
-# api_router.include_router(books.router, prefix="/books", tags=["books"])
-# api_router.include_router(libraries.router, prefix="/libraries", tags=["libraries"])
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])

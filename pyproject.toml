@@ -49,6 +49,16 @@ dependencies = [
     "mutagen>=1.46.0",
     "pydub>=0.25.1",
     
+    # Testing
+    "pytest>=7.3.1",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "httpx>=0.24.0",
+    "pytest-httpx>=0.23.3",
+    "factory-boy>=3.2.1",
+    "faker>=18.13.0",
+    "responses>=0.23.1",
+    
     # Utilities
     "aiofiles>=23.1.0",
     "python-slugify>=7.0.0",

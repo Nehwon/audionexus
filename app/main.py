@@ -21,14 +21,18 @@ async def lifespan(app: FastAPI):
     # Démarrage de l'application
     print("Démarrage de l'application...")
     
-    # Initialisation de la base de données
-    init_db()
-    print("Base de données initialisée")
+    # Initialisation de la base de données (sauf en environnement de test)
+    if not os.getenv("TESTING"):
+        init_db()
+        print("Base de données initialisée")
+    else:
+        print("Mode test - Initialisation de la base de données ignorée")
     
     yield
     
     # Nettoyage à l'arrêt
-    print("Arrêt de l'application...")
+    if not os.getenv("TESTING"):
+        print("Arrêt de l'application...")
 
 # Création de l'application FastAPI
 app = FastAPI(
