@@ -24,23 +24,25 @@
   - [x] Gérer le stockage des tokens JWT (access & refresh) côté client.
   - [x] Mettre en place des routes protégées.
   - [x] Implémenter la logique de déconnexion.
-  - [ ] Implémenter la réinitialisation de mot de passe (UI + API call).
+  - [x] Implémenter la réinitialisation de mot de passe (UI + API call).
 - [x] **Nettoyage et Fiabilisation du Frontend**
   - [x] Corriger les erreurs de linting restantes (imports, types, etc.).
   - [x] Mettre à jour `App.tsx` pour intégrer le routage et le `AuthProvider`.
   - [x] Mettre en place le routage principal de l'application avec les routes protégées.
-- [ ] **Configuration de l'Environnement et Lancement**
+- [x] **Configuration de l'Environnement et Lancement**
   - [x] Modifier les fichiers `.gitignore` pour autoriser la création du fichier `.env`.
   - [x] Créer le fichier `.env` avec les variables de développement.
   - [x] Lancer les services backend avec `docker compose`.
   - [x] Simplifier la configuration Nginx pour le développement local (HTTP uniquement).
-  - [ ] Redémarrer les services Docker pour appliquer la nouvelle configuration Nginx.
-  - [ ] **Résoudre le problème de démarrage du backend (en pause)**
+  - [x] Redémarrer les services Docker pour appliquer la nouvelle configuration Nginx.
+  - [x] **Résoudre le problème de démarrage du backend**
     - [x] Identifier la cause de l'erreur `ModuleNotFoundError: No module named 'app'`.
-    - [ ] Corriger la configuration `docker-compose.yml`.
-      - [ ] Corriger la définition du volume `redis_data`.
-      - [ ] Corriger la dépendance du service `nginx` pour qu'elle pointe vers `backend`.
+    - [x] Corriger les chemins d'importation dans le code source.
+    - [x] Ajouter les dépendances manquantes (email-validator).
     - [x] Mettre à jour le `Dockerfile` pour une construction et une exécution robustes.
+    - [x] Vérifier le bon démarrage du service backend.
+  - [x] Lancer le serveur de développement frontend.
+  - [x] Vérifier que l'application est accessible et fonctionnelle.
   - [ ] Lancer le serveur de développement frontend.
   - [ ] Vérifier que l'application est accessible et fonctionnelle.
 - [x] **Finalisation de la session et mise à jour de la documentation**

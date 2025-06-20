@@ -1,11 +1,11 @@
-# État du Projet AudioNexus - 18/06/2025
+# État du Projet AudioNexus - 20/06/2025
 
 ## 📌 Vue d'ensemble
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
 ## 📊 Version actuelle
-- **Version** : 0.3.2-alpha (en développement actif)
-- **Dernière mise à jour** : 18/06/2025
+- **Version** : 0.3.3-alpha (en développement actif)
+- **Dernière mise à jour** : 20/06/2025
 - **Statut** : Développement actif - Phase d'implémentation
 - **Branche** : `AudioNexus` (basée sur `feature/audiobookshelf-integration`)
 - **Environnement** : Développement local avec Docker
@@ -16,10 +16,12 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 - ✅ API RESTful avec FastAPI
 - ✅ Base de données PostgreSQL avec SQLAlchemy ORM
 - ✅ Authentification JWT avec refresh tokens
-- 🔄 En cours : Configuration Docker
+- ✅ Configuration Docker
   - ✅ Services conteneurisés
-  - 🔄 Dépendances entre services
-  - 🔄 Configuration des volumes
+  - ✅ Dépendances entre services résolues
+  - ✅ Configuration des volumes persistants
+  - ✅ Correction des chemins d'importation
+  - ✅ Gestion des dépendances Python (ajout de email-validator)
 
 ### Frontend (React/TypeScript)
 - ✅ Structure de base du projet avec Vite + React + TypeScript

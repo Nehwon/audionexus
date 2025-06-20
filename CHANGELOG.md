@@ -5,6 +5,20 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-06-20
+
+### Corrigé
+- Correction des chemins d'importation suite à la restructuration du projet
+- Ajout de la dépendance manquante `email-validator` pour la validation des emails avec Pydantic
+- Déplacement de l'initialisation de la base de données dans le cycle de vie de l'application
+- Suppression des fichiers obsolètes et nettoyage du projet
+- Mise à jour de la documentation de développement
+
+### Modifié
+- Amélioration de la structure des imports pour une meilleure maintenabilité
+- Mise à jour du fichier `pyproject.toml` avec les dépendances requises
+- Documentation des changements dans le fichier CHANGELOG.md
+
 ## [0.3.2] - 2025-06-18
 
 ### Ajouté
