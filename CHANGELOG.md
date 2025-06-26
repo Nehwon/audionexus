@@ -5,6 +5,20 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2025-06-26
+
+### Modifié
+- Passage de la licence de MIT à AGPL-3.0-or-later
+- Mise à jour des informations d'auteur avec les coordonnées complètes
+- Refonte du README pour une meilleure organisation
+- Mise à jour des métadonnées dans pyproject.toml et package.json
+- Création du fichier de licence AGPL-3.0-or-later
+- Mise à jour de la version à 0.3.4
+
+### Corrigé
+- Correction des liens dans la documentation
+- Uniformisation des informations de copyright
+
 ## [0.3.3] - 2025-06-20
 
 ### Corrigé

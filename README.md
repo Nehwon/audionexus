@@ -1,7 +1,7 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
 [![Version](https://img.shields.io/badge/version-0.3.2--alpha-blue.svg)](CHANGELOG.md)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](docs/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
@@ -9,7 +9,13 @@
 
 ## 📋 Description
 
-AudioNexus est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
+**AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
+
+## 📝 Auteur
+
+- **Fabrice Lamachère** (fabrice@lamachere.fr) - Développeur principal
+- Alias : Nehwon
+- Licence : [AGPL-3.0+](LICENSE)
 
 ## 🚀 Démarrage rapide
 

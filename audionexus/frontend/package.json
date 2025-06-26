@@ -1,8 +1,16 @@
 {
-  "name": "frontend",
+  "name": "audionexus-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.3.2",
   "type": "module",
+  "description": "Interface utilisateur pour AudioNexus - Plateforme de gestion centralisée d'instances Audiobookshelf",
+  "author": "Fabrice Lamachère <fabrice@lamachere.fr> (Nehwon)",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://gitea.lamachere.fr/fabrice/AudioNexus.git"
+  },
+  "homepage": "https://gitea.lamachere.fr/fabrice/AudioNexus#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

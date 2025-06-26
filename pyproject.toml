@@ -4,18 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "audionexus"
-version = "0.3.1"
+version = "0.3.2"
 description = "Plateforme de gestion centralisée d'instances Audiobookshelf avec interface web unifiée"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-or-later"}
 authors = [
-    {name = "Fabrice"}
+    {name = "Fabrice Lamachère", email = "fabrice@lamachere.fr"}
+]
+maintainers = [
+    {name = "Fabrice Lamachère", email = "fabrice@lamachere.fr"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
