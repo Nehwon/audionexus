@@ -1,6 +1,8 @@
 """
 Package pour les opérations CRUD (Create, Read, Update, Delete).
 """
+
+# Utilisateurs
 from .crud_user import (
     get_user,
     get_user_by_email,
@@ -12,7 +14,16 @@ from .crud_user import (
     is_superuser
 )
 
+# Livres audio
+from .audiobook import (
+    audiobook,
+    audiobook_progress,
+    CRUDAudiobook,
+    CRUDAudiobookProgress
+)
+
 __all__ = [
+    # Utilisateurs
     'get_user',
     'get_user_by_email',
     'get_user_by_username',
@@ -20,5 +31,11 @@ __all__ = [
     'authenticate_user',
     'get_users',
     'is_active',
-    'is_superuser'
+    'is_superuser',
+    
+    # Livres audio
+    'audiobook',
+    'audiobook_progress',
+    'CRUDAudiobook',
+    'CRUDAudiobookProgress'
 ]

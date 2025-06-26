@@ -7,26 +7,31 @@ from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, 
     ForeignKey, Float, JSON, Table, UniqueConstraint
 )
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
 from pydantic import BaseModel, EmailStr, Field
 
-# Déclaration de la base pour les modèles SQLAlchemy
-Base = declarative_base()
+# Import de l'instance Base partagée
+from app.db.database import Base  # noqa: F401
+
+# Note: Tous les modèles doivent importer Base depuis ce module
+# pour s'assurer qu'ils sont enregistrés avec la même instance de Base
 
 # Table d'association pour la relation many-to-many entre utilisateurs et rôles
 user_roles = Table(
     'user_roles',
     Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('role_id', Integer, ForeignKey('roles.id'))
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True),
+    extend_existing=True
 )
 
 # Table d'association pour la relation many-to-many entre livres et étiquettes
 book_tags = Table(
     'book_tags',
     Base.metadata,
-    Column('book_id', Integer, ForeignKey('books.id')),
-    Column('tag_id', Integer, ForeignKey('tags.id'))
+    Column('book_id', Integer, ForeignKey('books.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True),
+    extend_existing=True
 )
 
 class User(Base):

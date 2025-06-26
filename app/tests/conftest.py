@@ -14,6 +14,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import text
 from typing import AsyncGenerator, Dict, Generator
 
 from app.main import app
@@ -41,18 +42,53 @@ TestingSessionLocal = sessionmaker(
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Crée une nouvelle base de données en mémoire pour chaque test."""
+    print("\n=== Début de la fixture db_session ===")
+    
+    # Afficher les tables avant création
+    print("\n=== AVANT CRÉATION DES TABLES ===")
+    async with engine.connect() as conn:
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        tables = [row[0] for row in result]
+        print(f"Tables avant création: {tables}")
+    
     # Création des tables
+    print("\n=== CRÉATION DES TABLES ===")
+    print(f"Métadonnées des tables: {Base.metadata.tables.keys()}")
+    
     async with engine.begin() as conn:
+        print("Appel à Base.metadata.create_all()...")
         await conn.run_sync(Base.metadata.create_all)
     
+    # Afficher les tables après création
+    print("\n=== APRÈS CRÉATION DES TABLES ===")
+    async with engine.connect() as conn:
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        tables = [row[0] for row in result]
+        print(f"Tables après création: {tables}")
+        
+        # Afficher les détails de chaque table
+        for table_name in tables:
+            print(f"\nStructure de la table {table_name}:")
+            try:
+                result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
+                columns = [row[1] for row in result]
+                print(f"  Colonnes: {columns}")
+            except Exception as e:
+                print(f"  Erreur lors de la récupération des colonnes: {e}")
+    
     # Création d'une nouvelle session
+    print("Création d'une nouvelle session...")
     async with TestingSessionLocal() as session:
         yield session
+        print("Rollback de la session...")
         await session.rollback()
     
     # Nettoyage
+    print("Nettoyage des tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    
+    print("=== Fin de la fixture db_session ===\n")
 
 # Fixture pour le client de test asynchrone
 @pytest_asyncio.fixture(scope="function")

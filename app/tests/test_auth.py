@@ -184,7 +184,7 @@ async def test_login_invalid_password(async_client: TestClient, db_session: Asyn
 
 def test_test_token(client: TestClient, normal_user_token_headers: dict) -> None:
     # Appel à l'endpoint de test de token avec des en-têtes d'authentification valides
-    response = client.get(
+    response = client.post(
         f"{settings.API_V1_STR}/auth/login/test-token",
         headers=normal_user_token_headers
     )

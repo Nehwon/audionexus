@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Optional
-from sqlalchemy import Boolean, Column, Integer, String, DateTime
-from sqlalchemy.orm import relationship
+from typing import List, Optional
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, Enum
+from sqlalchemy.orm import relationship, Mapped
 
 from app.core.database import Base
+from app.models.file_processing import ProcessingStatus
 
 class User(Base):
     """Modèle utilisateur pour la base de données."""
@@ -19,7 +20,16 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relations
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        "RefreshToken", 
+        back_populates="user", 
+        cascade="all, delete-orphan"
+    )
+    processing_files: Mapped[List["FileProcessing"]] = relationship(
+        "FileProcessing", 
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User {self.email}>"

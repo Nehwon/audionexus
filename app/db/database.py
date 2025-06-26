@@ -2,10 +2,17 @@
 Configuration et gestion de la base de données SQLAlchemy.
 """
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
 from app.config import settings
+
+# Déclaration de la base pour les modèles SQLAlchemy
+# Cette instance unique de Base sera utilisée dans tout le projet
+Base = declarative_base()
+
+# Import des modèles pour s'assurer qu'ils sont enregistrés avec la Base
+# L'import doit être fait après la déclaration de Base
+from app.db.models.base import *  # noqa: F401, F403
 
 # Création du moteur SQLAlchemy
 SQLALCHEMY_DATABASE_URL = settings.DATABASE_URI or \
@@ -26,9 +33,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Session pour les requêtes asynchrones
 ScopedSession = scoped_session(SessionLocal)
 
-# Base pour les modèles
-Base = declarative_base()
-
 def get_db():
     """
     Fournit une session de base de données pour les dépendances FastAPI.
@@ -46,5 +50,5 @@ def init_db():
     """
     Initialise la base de données en créant toutes les tables.
     """
-    from .models.base import Base
+    # Utilisation de l'instance unique de Base importée au début du fichier
     Base.metadata.create_all(bind=engine)
