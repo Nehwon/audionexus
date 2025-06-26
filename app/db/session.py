@@ -7,30 +7,74 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 from app.config import settings
 
+# Vérification du type de base de données
+is_sqlite = settings.DATABASE_URI and 'sqlite' in settings.DATABASE_URI
+is_mysql = settings.DATABASE_URI and 'mysql' in settings.DATABASE_URI
+
+# Configuration du moteur SQLAlchemy
+engine_kwargs = {
+    'pool_pre_ping': True,
+    'pool_recycle': 3600,
+    'echo': settings.DEBUG,  # Afficher les requêtes SQL en mode debug
+}
+
+if is_mysql:
+    # Configuration spécifique à MySQL
+    engine_kwargs.update({
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'pool_recycle': 3600,
+        'connect_args': {
+            'connect_timeout': 10,
+            'charset': 'utf8mb4',
+        }
+    })
+elif not is_sqlite:
+    # Ancienne configuration PostgreSQL (conservée pour référence)
+    engine_kwargs.update({
+        'pool_size': 10,
+        'max_overflow': 20,
+    })
+else:
+    # Configuration spécifique à SQLite
+    engine_kwargs.update({
+        'poolclass': None,  # Désactive le pool de connexions
+        'connect_args': {'check_same_thread': False},
+    })
+
 # Création du moteur SQLAlchemy
-engine = create_engine(
-    settings.DATABASE_URI,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=3600,
+engine = create_engine(settings.DATABASE_URI, **engine_kwargs)
+
+"""
+Module de compatibilité pour la gestion des sessions de base de données.
+
+Ce module est maintenu pour la rétrocompatibilité.
+Pour les nouvelles implémentations, utilisez directement `app.db.session_manager`.
+"""
+import warnings
+from typing import Generator
+
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .session_manager import (
+    get_db as _get_db,
+    get_async_db as _get_async_db,
+    get_db_session as _get_db_session,
+    get_async_db_session as _get_async_db_session,
+    AsyncSessionLocal
 )
 
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Avertissement de dépréciation
+warnings.warn(
+    "Le module 'app.db.session' est déprécié. Utilisez 'app.db.session_manager' à la place.",
+    DeprecationWarning,
+    stacklevel=2
+)
 
-# Session pour les requêtes asynchrones
-ScopedSession = scoped_session(SessionLocal)
-
-def get_db():
-    """
-    Fournit une session de base de données pour les dépendances FastAPI.
-    
-    Yields:
-        Session: Une session de base de données
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Alias pour la rétrocompatibilité
+get_db = _get_db
+get_async_db = _get_async_db
+get_db_session = _get_db_session
+get_async_db_session = _get_async_db_session

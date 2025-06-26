@@ -35,7 +35,8 @@ dependencies = [
     # Database
     "sqlalchemy>=2.0.0",
     "alembic>=1.11.0",
-    "psycopg2-binary>=2.9.5",
+    "pymysql>=1.1.0",  # Connexion MySQL pour SQLAlchemy
+    # "psycopg2-binary>=2.9.5",  # Ancienne dépendance PostgreSQL (conservée pour référence)
     
     # Authentication & Security
     "python-jose[cryptography]>=3.3.0",

@@ -8,7 +8,7 @@ from sqlalchemy import (
     ForeignKey, Float, JSON, Table, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # Import de l'instance Base partagée
 from app.db.database import Base  # noqa: F401
@@ -146,44 +146,53 @@ class Tag(Base):
 
 # Modèles Pydantic pour la validation des données
 class UserBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     username: str
     email: EmailStr
     full_name: Optional[str] = None
 
 
 class UserCreate(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     password: str
 
 
 class UserInDB(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     is_active: bool
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-
 
 class Token(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     username: Optional[str] = None
 
 
 class BookBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     title: str
     subtitle: Optional[str] = None
-    authors: List[str] = []
-    narrators: List[str] = []
+    authors: List[str] = Field(default_factory=list)
+    narrators: List[str] = Field(default_factory=list)
     description: Optional[str] = None
     publisher: Optional[str] = None
     publish_year: Optional[int] = None
-    genres: List[str] = []
+    genres: List[str] = Field(default_factory=list)
     isbn: Optional[str] = None
     language: str = "fr"
     explicit: bool = False
@@ -191,11 +200,15 @@ class BookBase(BaseModel):
 
 
 class BookCreate(BookBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     library_id: int
     path: str
 
 
 class BookInDB(BookBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     duration: int
     size: int
@@ -204,11 +217,10 @@ class BookInDB(BookBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-
 
 class LibraryBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     name: str
     description: Optional[str] = None
     path: str
@@ -216,14 +228,13 @@ class LibraryBase(BaseModel):
 
 
 class LibraryCreate(LibraryBase):
-    pass
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LibraryInDB(LibraryBase):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     owner_id: int
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        orm_mode = True

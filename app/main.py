@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.db.database import init_db, get_db
+from app.db import init_database, get_db, get_async_db
 from app.core.api import api_router
 
 # Configuration du cycle de vie de l'application
@@ -23,10 +23,10 @@ async def lifespan(app: FastAPI):
     
     # Initialisation de la base de données (sauf en environnement de test)
     if not os.getenv("TESTING"):
-        init_db()
+        init_database()
         print("Base de données initialisée")
     else:
-        print("Mode test - Initialisation de la base de données ignorée")
+        print("Mode test - Initialisation de la base de données différée")
     
     yield
     
@@ -80,8 +80,8 @@ app.mount(
     name="static"
 )
 
-# Schéma d'authentification
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
+# Import du schéma d'authentification depuis core.deps
+from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
 app.include_router(api_router, prefix=settings.API_V1_STR)

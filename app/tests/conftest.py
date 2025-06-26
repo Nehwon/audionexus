@@ -5,124 +5,163 @@ import os
 import asyncio
 import pytest
 import pytest_asyncio
+from typing import AsyncGenerator, Dict, Generator, Any
 
-# Définir la variable d'environnement TESTING avant d'importer l'application
-os.environ["TESTING"] = "1"
+# Désactiver les logs SQLAlchemy pendant les tests
+import logging
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
+# Charger la configuration de test avant tout autre import
+from .test_config import test_settings, apply_test_settings
+
+# Appliquer la configuration de test avant tout import d'application
+apply_test_settings()
+
+# Maintenant que la configuration est appliquée, nous pouvons importer les modules de l'application
 from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy import text
-from typing import AsyncGenerator, Dict, Generator
 
 from app.main import app
-from app.db.database import Base, get_db
-from app.config import settings
-from app.core.security import create_access_token
+from app.db.database import Base, init_db, SessionLocal as DBSessionLocal
+from app.core.security import create_access_token, get_password_hash
 from app.db.models.base import User
+from app.db import get_db as get_db_dep, get_async_db, async_engine, AsyncSessionLocal
+from app.core.deps import oauth2_scheme
 
 # Configuration de la base de données de test
-TEST_SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_SQLALCHEMY_DATABASE_URL = test_settings.DATABASE_URI
 
-# Moteur de base de données de test
-engine = create_async_engine(
-    TEST_SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-
-# Session de test
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
-)
-
-# Fixture pour la session de base de données
-@pytest_asyncio.fixture(scope="function")
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Crée une nouvelle base de données en mémoire pour chaque test."""
-    print("\n=== Début de la fixture db_session ===")
+# Création d'un moteur SQLite en mémoire pour les tests
+@pytest_asyncio.fixture(scope="session")
+async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
+    """Crée un moteur SQLite en mémoire pour les tests."""
+    from sqlalchemy.ext.asyncio import create_async_engine
     
-    # Afficher les tables avant création
-    print("\n=== AVANT CRÉATION DES TABLES ===")
-    async with engine.connect() as conn:
-        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
-        tables = [row[0] for row in result]
-        print(f"Tables avant création: {tables}")
+    engine = create_async_engine(
+        TEST_SQLALCHEMY_DATABASE_URL,
+        echo=False,
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False} if "sqlite" in TEST_SQLALCHEMY_DATABASE_URL else {}
+    )
     
     # Création des tables
-    print("\n=== CRÉATION DES TABLES ===")
-    print(f"Métadonnées des tables: {Base.metadata.tables.keys()}")
-    
-    async with engine.begin() as conn:
-        print("Appel à Base.metadata.create_all()...")
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Afficher les tables après création
-    print("\n=== APRÈS CRÉATION DES TABLES ===")
-    async with engine.connect() as conn:
-        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
-        tables = [row[0] for row in result]
-        print(f"Tables après création: {tables}")
-        
-        # Afficher les détails de chaque table
-        for table_name in tables:
-            print(f"\nStructure de la table {table_name}:")
-            try:
-                result = await conn.execute(text(f"PRAGMA table_info({table_name})"))
-                columns = [row[1] for row in result]
-                print(f"  Colonnes: {columns}")
-            except Exception as e:
-                print(f"  Erreur lors de la récupération des colonnes: {e}")
-    
-    # Création d'une nouvelle session
-    print("Création d'une nouvelle session...")
-    async with TestingSessionLocal() as session:
-        yield session
-        print("Rollback de la session...")
-        await session.rollback()
-    
-    # Nettoyage
-    print("Nettoyage des tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     
-    print("=== Fin de la fixture db_session ===\n")
+    yield engine
+    
+    # Nettoyage
+    await engine.dispose()
+
+# Nettoyage de la base de données avant chaque test
+async def cleanup_database(async_engine: AsyncEngine):
+    """Nettoie toutes les tables de la base de données avant chaque test."""
+    async with async_engine.begin() as conn:
+        # Désactiver temporairement les contraintes de clé étrangère pour SQLite
+        if 'sqlite' in str(async_engine.url):
+            await conn.execute(text('PRAGMA foreign_keys = OFF'))
+        
+        # Supprimer toutes les données des tables
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+        
+        # Réactiver les contraintes de clé étrangère pour SQLite
+        if 'sqlite' in str(async_engine.url):
+            await conn.execute(text('PRAGMA foreign_keys = ON'))
+
+# Configuration de la session de test asynchrone
+@pytest_asyncio.fixture(scope="function")
+async def db_session(async_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
+    """
+    Crée une nouvelle session de base de données pour chaque test.
+    
+    - Nettoie la base de données avant chaque test
+    - Utilise une transaction qui est annulée à la fin du test
+    - Ne laisse pas de données résiduelles dans la base de données
+    - Gère correctement les erreurs et le nettoyage
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession
+    
+    # Nettoyer la base de données avant chaque test
+    await cleanup_database(async_engine)
+    
+    # Créer une nouvelle session avec un rollback automatique en cas d'erreur
+    connection = await async_engine.connect()
+    transaction = await connection.begin()
+    
+    # Créer une session liée à cette transaction
+    session = AsyncSession(
+        bind=connection,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False
+    )
+    
+    # S'assurer que la session utilise notre transaction
+    session.sync_session.begin_nested()
+    
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+        await transaction.rollback()
+        await connection.close()
+
+# Surcharge de la dépendance get_db pour les tests
+@pytest_asyncio.fixture(autouse=True)
+async def override_dependencies(db_session: AsyncSession):
+    """Surcharge les dépendances de l'application pour les tests."""
+    
+    async def override_get_db():
+        """Remplace la dépendance get_db pour utiliser la session de test."""
+        try:
+            yield db_session
+        finally:
+            await db_session.close()
+    
+    # Surcharger les dépendances
+    app.dependency_overrides[get_db_dep] = override_get_db
+    app.dependency_overrides[get_async_db] = override_get_db
+    
+    yield
+    
+    # Nettoyer les surcharges
+    app.dependency_overrides.clear()
+
 
 # Fixture pour le client de test asynchrone
 @pytest_asyncio.fixture(scope="function")
-async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Crée un client de test asynchrone FastAPI avec une base de données propre."""
-    # Surcharge de la dépendance get_db
-    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
+    """
+    Crée un client de test asynchrone FastAPI avec une base de données propre.
+    
+    - Utilise ASGITransport pour une intégration complète avec FastAPI
+    - Nettoie les dépendances après utilisation
+    """
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
         try:
-            yield db_session
+            yield client
         finally:
-            pass
-    
-    app.dependency_overrides[get_db] = override_get_db
-    
-    # Création du client de test asynchrone
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        yield client
-    
-    # Nettoyage
-    app.dependency_overrides.clear()
+            # Nettoyage des dépendances
+            app.dependency_overrides.clear()
 
 # Fixture pour le client de test synchrone (compatibilité)
 @pytest.fixture(scope="function")
-def client(db_session: AsyncSession) -> Generator[TestClient, None, None]:
+def client() -> Generator[TestClient, None, None]:
     """Crée un client de test FastAPI synchrone avec une base de données propre."""
-    # Surcharge de la dépendance get_db
-    async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-        try:
-            yield db_session
-        finally:
-            pass
-    
-    app.dependency_overrides[get_db] = override_get_db
-    
     # Création du client de test synchrone
     with TestClient(app) as test_client:
         yield test_client

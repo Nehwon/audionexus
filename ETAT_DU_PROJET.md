@@ -1,27 +1,27 @@
-# État du Projet AudioNexus - 20/06/2025
+# État du Projet AudioNexus - 27/06/2025
 
 ## 📌 Vue d'ensemble
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
 ## 📊 Version actuelle
-- **Version** : 0.3.3-alpha (en développement actif)
-- **Dernière mise à jour** : 20/06/2025
-- **Statut** : Développement actif - Phase d'implémentation
-- **Branche** : `AudioNexus` (basée sur `feature/audiobookshelf-integration`)
-- **Environnement** : Développement local avec Docker
+- **Version** : 0.3.5-alpha (en développement actif)
+- **Dernière mise à jour** : 27/06/2025
+- **Statut** : Développement actif - Migration vers MySQL
+- **Branche** : `feature/mysql-migration`
+- **Environnement** : Développement local avec Docker (MySQL)
 
 ## 🏗️ Architecture Technique
 
 ### Backend (Python/FastAPI)
 - ✅ API RESTful avec FastAPI
-- ✅ Base de données PostgreSQL avec SQLAlchemy ORM
+- ✅ Migration de PostgreSQL vers MySQL avec SQLAlchemy ORM
 - ✅ Authentification JWT avec refresh tokens
 - ✅ Configuration Docker
-  - ✅ Services conteneurisés
+  - ✅ Services conteneurisés avec MySQL
   - ✅ Dépendances entre services résolues
-  - ✅ Configuration des volumes persistants
+  - ✅ Configuration des volumes persistants pour MySQL
   - ✅ Correction des chemins d'importation
-  - ✅ Gestion des dépendances Python (ajout de email-validator)
+  - ✅ Mise à jour des dépendances Python (pymysql, asyncpg)
 
 ### Frontend (React/TypeScript)
 - ✅ Structure de base du projet avec Vite + React + TypeScript
@@ -46,12 +46,8 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 - ✅ Configuration Docker avec services conteneurisés
   - ✅ Backend FastAPI
   - ✅ Base de données PostgreSQL
-  - ✅ Cache Redis
-  - ✅ Serveur Nginx
-- 🔄 En cours : Configuration des dépendances entre services
-- 🔄 En cours : Configuration des volumes persistants
 
-## 📅 Prochaines étapes
+## Prochaines étapes
 
 ### Court terme (Sprint actuel)
 - [x] Mise en place de l'authentification frontend
@@ -60,31 +56,40 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
   - [ ] Résoudre les problèmes de dépendances entre services
   - [ ] Configurer correctement les volumes
   - [ ] Tester le démarrage de tous les services
+- [ ] Finaliser la migration vers MySQL
+- [ ] Corriger les tests d'authentification
+- [ ] Mettre à jour la documentation technique
+- [ ] Tester la configuration de production avec MySQL
+- [ ] Préparer le déploiement de préproduction
 
 ### Prochain sprint
 - [ ] Tests d'intégration
 - [ ] Mise en place des pipelines CI/CD
 - [ ] Documentation technique complète
 
-## 📝 Notes techniques
+## Notes techniques
 - **Version Python** : 3.11+
 - **Version Node.js** : 18+
-- **Base de données** : PostgreSQL 15
+- **Base de données** : MySQL 8
 - **Cache** : Redis 7
 - **Frontend** : React 18, TypeScript 5, Chakra UI
 - **Backend** : FastAPI, SQLAlchemy 2.0, Pydantic v2
 
-## 🔧 Problèmes connus
+## Problèmes connus
 1. **Configuration Docker**
    - Erreur de dépendance entre les services
    - Problème de volume pour Redis
    - Configuration Nginx à finaliser
+- Résolution des erreurs 500 dans les tests d'authentification
+- Correction des problèmes de configuration OAuth2
+- Gestion des sessions de base de données dans les tests
+- Problèmes de dépendances circulaires dans les modèles
 
 2. **Documentation**
    - Mise à jour en cours de la documentation technique
    - Guide d'installation à compléter
 
-## 📂 Structure du projet
+## Structure du projet
 ```
 audionexus/
 ├── backend/            # Code source du backend

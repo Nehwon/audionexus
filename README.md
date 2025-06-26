@@ -24,6 +24,8 @@
 - Docker et Docker Compose
 - Node.js 18+ (pour le développement frontend)
 - Python 3.11+ (pour le développement backend)
+- MySQL 8.0+ (ou conteneur Docker) pour la production
+- SQLite (pour les tests)
 
 ### Avec Docker (recommandé)
 
@@ -35,8 +37,13 @@ cd audionexus
 # Copier le fichier d'environnement d'exemple
 cp .env.example .env
 
+# Modifier le fichier .env si nécessaire (voir la section Configuration)
+
 # Démarrer les services
 docker compose up -d
+
+# Initialiser la base de données (exécuter après le premier démarrage)
+docker compose exec backend python -m app.db.init_db
 ```
 
 ### Développement local
@@ -512,10 +519,8 @@ open htmlcov/index.html  # Ouvrir le rapport
 # Vérifier le style de code
 flake8 app/
 
-
 # Formater le code
 black app/
-
 
 # Vérifier les types
 mypy app/
@@ -568,45 +573,24 @@ Pour toute question ou suggestion, veuillez ouvrir une [issue](https://github.co
 <div align="center">
   <sub>Créé avec ❤️ par [Votre Nom]</sub>
 </div>
-   ```
 
-3. Lancer l'application :
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+## Sauvegarde et restauration
 
-### Production avec Docker
+### Sauvegarde de la base de données
 
-1. Construire et démarrer les conteneurs :
-   ```bash
-   docker-compose up -d --build
-   ```
+#### MySQL
 
-2. Vérifier les logs :
-   ```bash
-   docker-compose logs -f
-   ```
-
-3. Accéder à l'application :
-   - Interface web : http://localhost:8000
-   - Documentation API : http://localhost:8000/docs
-
-## Gestion des données
-
-### Sauvegardes
-
-Pour sauvegarder la base de données :
 ```bash
-docker-compose exec -T db pg_dump -U postgres audiobooks > backup_$(date +%Y%m%d).sql
+docker-compose exec -T db mysqldump -u${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > backup_$(date +%Y%m%d).sql
 ```
 
-### Restauration
+#### SQLite (tests uniquement)
 
-Pour restaurer une sauvegarde :
 ```bash
-cat backup_20230615.sql | docker-compose exec -T db psql -U postgres audiobooks
+cp instance/test.db backup_$(date +%Y%m%d).db
 ```
 
+### Restauration de la base de données
 ## Développement
 
 ### Technologies Utilisées

@@ -5,6 +5,20 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2025-06-27
+
+### Modifié
+- Migration de PostgreSQL vers MySQL pour la base de données de production
+- Mise à jour de la configuration Docker pour supporter MySQL
+- Correction des problèmes de configuration OAuth2
+- Amélioration de la gestion des sessions de base de données
+
+### Corrigé
+- Correction des erreurs 500 dans les tests d'authentification
+- Résolution des problèmes de dépendances circulaires
+- Correction de la configuration des tests avec SQLite in-memory
+- Mise à jour des dépendances pour la compatibilité avec Python 3.11
+
 ## [0.3.4] - 2025-06-26
 
 ### Modifié

@@ -1,0 +1,116 @@
+# Plan de reprise - AudioNexus
+
+## Notes
+- AudioNexus est une plateforme de gestion centralisée pour bibliothèques de livres audio, intégrant Audiobookshelf.
+- Version actuelle : 0.3.2-alpha, développement actif.
+- Le backend (FastAPI) et le frontend (React/TS) sont en place avec authentification fonctionnelle.
+- Les prochaines étapes immédiates concernent la résolution des problèmes de base de données de test et l'intégration Audiobookshelf.
+- Intégrer les fichiers et dossiers pertinents du dépôt modèle (template.git) pour harmoniser la structure et les pratiques du projet.
+- Fichiers identifiés à intégrer depuis le modèle : COMPORTEMENT.md, CONTRIBUTING.md, docs/README.md, GUIDE_UTILISATION.md, INITIALISATION.md, PROCESSUS.md, PROTOCOLE_DEBUT.md, PROTOCOLE_FIN.md, VALIDATION.md
+- En fin de session, retirer toute référence au projet, notamment arrêter et supprimer les containers de test.
+- Le reverse proxy Nginx est configuré pour le développement local (voir nginx/conf.d/audionexus.conf)
+- La configuration Nginx a été adaptée pour supporter les téléversements volumineux (client_max_body_size, timeouts, buffers)
+- Le fichier .env a été mis à jour pour la configuration Postgres, JWT, Redis, Audiobookshelf, etc.
+- Correction de la variable ACCESS_TOKEN_EXPIRE_MINUTES dans le .env (valeur numérique attendue par Pydantic)
+- Un client Python pour l'API Audiobookshelf existe déjà (voir app/core/api/audiobookshelf.py)
+- Un service de synchronisation avec Audiobookshelf a été créé (voir app/services/audiobookshelf_sync.py)
+- La base de données doit être initialisée ou migrée pour inclure les nouvelles tables (utiliser init_db() ou ajouter Alembic)
+- Les modèles de base (User, Book, Library, etc.) sont définis dans app/db/models/base.py et importés via app/db/models/__init__.py ; la table "users" existe bien dans le modèle. Il faut s'assurer que l'initialisation de la base de données lors des tests inclut bien tous les modèles nécessaires.
+- La fixture de tests (conftest.py) initialise la base SQLite en mémoire avec Base.metadata.create_all, ce qui inclut la table "users". Les modèles sont correctement importés. Si l'erreur persiste, il faudra vérifier le scope des fixtures, l'ordre d'import ou d'autres conflits d'initialisation.
+- Problème identifié : il existe deux instances différentes de Base (declarative_base) dans le projet, ce qui peut empêcher l'enregistrement correct des modèles lors de l'initialisation de la base de test. Il faut s'assurer que l'import de Base et des modèles est unique et partagé entre l'application et les tests (voir database.py et models/base.py).
+- Découverte : models/base.py et database.py déclarent chacun leur propre Base (declarative_base), ce qui explique la non-création de la table "users" dans les tests. Il faut unifier l'utilisation de Base dans tout le projet (import commun).
+- Correction en cours : models/base.py importe désormais Base depuis database.py, et les imports dans les modèles ont été vérifiés/corrigés pour garantir l'utilisation de la même instance de Base. Il reste à supprimer la double déclaration dans database.py.
+- Diagnostic en cours : les tests de création de tables montrent que la table "users" n'est pas créée en base de test à cause de cette duplication de Base. Les logs de debug confirment que la métadonnée Base.metadata ne contient pas les modèles attendus lors de l'initialisation de la base de test.
+- Problème résolu : les schémas AudiobookProgressCreate et AudiobookProgressUpdate ont été créés dans app/schemas/audiobook.py, ce qui débloque l'import dans app/crud/audiobook.py et la synchronisation Audiobookshelf.
+- La création des tables de tests fonctionne désormais (la table "users" est bien créée). Il reste à corriger la gestion des sessions sync/async et des dépendances dans les tests pour supprimer les erreurs 500.
+- Un client Python pour l'API Audiobookshelf existe déjà (voir app/core/api/audiobookshelf.py)
+- Un service de synchronisation avec Audiobookshelf a été créé (voir app/services/audiobookshelf_sync.py)
+- La base de données doit être initialisée ou migrée pour inclure les nouvelles tables (utiliser init_db() ou ajouter Alembic)
+- Les modèles de base (User, Book, Library, etc.) sont définis dans app/db/models/base.py et importés via app/db/models/__init__.py ; la table "users" existe bien dans le modèle. Il faut s'assurer que l'initialisation de la base de données lors des tests inclut bien tous les modèles nécessaires.
+- La fixture de tests (conftest.py) initialise la base SQLite en mémoire avec Base.metadata.create_all, ce qui inclut la table "users". Les modèles sont correctement importés. Si l'erreur persiste, il faudra vérifier le scope des fixtures, l'ordre d'import ou d'autres conflits d'initialisation.
+- Problème identifié : il existe deux instances différentes de Base (declarative_base) dans le projet, ce qui peut empêcher l'enregistrement correct des modèles lors de l'initialisation de la base de test. Il faut s'assurer que l'import de Base et des modèles est unique et partagé entre l'application et les tests (voir database.py et models/base.py).
+- Découverte : models/base.py et database.py déclarent chacun leur propre Base (declarative_base), ce qui explique la non-création de la table "users" dans les tests. Il faut unifier l'utilisation de Base dans tout le projet (import commun).
+- Correction en cours : models/base.py importe désormais Base depuis database.py, et les imports dans les modèles ont été vérifiés/corrigés pour garantir l'utilisation de la même instance de Base. Il reste à supprimer la double déclaration dans database.py.
+- Diagnostic en cours : les tests de création de tables montrent que la table "users" n'est pas créée en base de test à cause de cette duplication de Base. Les logs de debug confirment que la métadonnée Base.metadata ne contient pas les modèles attendus lors de l'initialisation de la base de test.
+- Problème résolu : les schémas AudiobookProgressCreate et AudiobookProgressUpdate ont été créés dans app/schemas/audiobook.py, ce qui débloque l'import dans app/crud/audiobook.py et la synchronisation Audiobookshelf.
+- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
+- La configuration FastAPI doit être auditée pour garantir la gestion correcte des uploads volumineux
+- L'audit de la configuration FastAPI côté uploads volumineux a été effectué : la route de téléversement existe, le backend accepte les UploadFile, la configuration Nginx est adaptée. Rester vigilant sur les limites de mémoire/process côté backend.
+- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
+- Plusieurs systèmes de dépendances (get_db, get_current_user) coexistent dans le projet (ex : app/core/dependencies.py et app/api/deps.py), ce qui peut causer des erreurs HTTP 500 lors des tests si les surcharges ou le wiring ne sont pas cohérents entre l'application et les tests. Il faut unifier ou clarifier l'usage de ces dépendances dans les tests et l'application.
+- Correction à faire : unifier et clarifier l'utilisation des dépendances (get_db, get_current_user, etc.) entre l'application et les tests pour éviter les incohérences et les erreurs 500 lors des tests d'authentification.
+- Une version unifiée des dépendances (get_db, get_current_user, etc.) a été créée dans app/core/deps.py ; les imports du projet doivent pointer vers ce fichier pour garantir la cohérence entre application et tests.
+- Mise à jour de la configuration des tests et des dépendances dans conftest.py pour utiliser les dépendances unifiées (get_db, oauth2_scheme, etc.) et corriger les erreurs 500 dans les tests d'authentification.
+- Problème de configuration identifié : malgré l'utilisation de SQLite en mémoire dans les fixtures de test, la configuration globale de l'application (app/config.py et app/db/database.py) continue d'utiliser la configuration PostgreSQL par défaut. Il faut s'assurer que la configuration de la base de données pour les tests surcharge correctement celle de production (via variable d'environnement ou injection explicite dans les tests) pour éviter toute tentative de connexion à PostgreSQL lors des tests.
+- Correction à faire : modifier la configuration globale pour que lors de l'exécution des tests, l'application et toutes les dépendances utilisent systématiquement SQLite in-memory.
+- Problème identifié : après correction de la configuration de la base de données pour les tests, une nouvelle erreur apparaît : "greenlet_spawn has not been called; can't call await_only() here". Cela indique un problème de gestion des sessions asynchrones avec SQLAlchemy async dans les tests. Il faut s'assurer que toutes les dépendances et la création de session utilisent bien le moteur asynchrone dans le contexte des tests.
+- Découverte : Certaines dépendances et routes utilisent encore des sessions synchrones (SessionLocal) ou des moteurs synchrones dans l'application et/ou les tests, alors que les tests et la base de test attendent AsyncSession et un moteur asynchrone. Cela crée des conflits et l'erreur greenlet_spawn. Il faut unifier l'utilisation de AsyncSession et du moteur async dans tous les contextes de test.
+- Ajouter : Vérifier que toutes les dépendances FastAPI (get_db, get_current_user, etc.) et toutes les fixtures de tests utilisent bien AsyncSession et le moteur async, sans mélange avec les sessions synchrones.
+- La configuration FastAPI doit être auditée pour garantir la gestion correcte des uploads volumineux
+- L'audit de la configuration FastAPI côté uploads volumineux a été effectué : la route de téléversement existe, le backend accepte les UploadFile, la configuration Nginx est adaptée. Rester vigilant sur les limites de mémoire/process côté backend.
+- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
+
+## Informations complèmentaires
+- [x] Il faut passer la license à AGPL3+
+- [x] Je me nomme Fabrice Lamachère (fabrice@lamachere.fr) alias Nehwon
+- [ ] Refactoriser le README pour qu'il soit plus logique et organiser
+- [ ] Vérifier d'avoir bien mis une variable d'environnement pour retirer le certbot. J'utilise un reverse proxy qui fait le nécessaire.
+- [ ] Vérifier la variable d'environnement liée à Certbot/reverse proxy.
+- [ ] Configurer le certbot pour qu'il fonctionne correctement avec le reverse proxy.
+- [ ] Vérifier que le certbot ne génère pas de problèmes avec les containers de test.
+
+## Task List
+- [x] Mise en place du backend FastAPI (structure, modèles utilisateurs, authentification)
+- [x] Authentification complète côté frontend (connexion, stockage JWT, routes protégées)
+- [x] Nettoyage du frontend et intégration du routage
+- [x] Préparation des fichiers d'environnement et configuration Nginx simplifiée
+- [x] Correction des problèmes de démarrage backend (imports, dépendances, Dockerfile)
+- [x] Lancer le serveur de développement frontend
+- [x] Vérifier l'accessibilité et le fonctionnement de l'application
+- [x] Interface administrateur minimale : vue fichiers en traitement
+- [x] Créer/copier le fichier .env pour la configuration
+- [x] Redémarrer les services Docker après modification de la configuration
+- [x] Corriger la variable ACCESS_TOKEN_EXPIRE_MINUTES dans le .env (valeur numérique)
+- [x] Corriger la configuration Nginx : remplacer l'upstream "app" par "backend"
+- [ ] Intégration Audiobookshelf (configuration, authentification, synchronisation)
+  - [x] Créer un service ou une dépendance FastAPI pour AudiobookshelfClient
+    - [x] Créer un routeur FastAPI pour Audiobookshelf (endpoints de base)
+    - [x] Inclure le routeur dans l'API principale
+    - [x] Ajouter endpoints avancés (recherche, collections, progression, upload, admin)
+  - [x] Créer un service de synchronisation avec Audiobookshelf
+  - [x] Créer un script CLI de synchronisation Audiobookshelf
+  - [ ] Implémenter la logique de synchronisation effective entre la base locale et Audiobookshelf
+    - [x] Vérifier/créer les modèles et schémas nécessaires pour la synchronisation Audiobookshelf
+    - [x] Créer les modèles SQLAlchemy pour la synchronisation Audiobookshelf
+    - [x] Créer les fonctions CRUD pour Audiobook et AudiobookProgress
+    - [x] Initialiser ou migrer la base de données pour ajouter les tables Audiobook et AudiobookProgress
+  - [x] Créer ou compléter le schéma AudiobookProgressCreate dans app/schemas/audiobook.py pour lever l'erreur d'import dans app/crud/audiobook.py
+- [ ] Gestion des fichiers de base (zone de dépôt, upload/extraction)
+  - [x] Auditer la configuration FastAPI pour les téléversements volumineux (UploadFile, endpoints, limites)
+- [x] Résoudre l'erreur "no such table: users" dans les tests d'authentification
+  - [x] Vérifier/initier la base de données de test avant l'exécution des tests d'authentification pour s'assurer que la table "users" existe bien
+  - [x] Si l'erreur persiste, auditer le scope des fixtures et l'ordre d'import des modèles dans les tests
+  - [x] Corriger l'import de Base et des modèles dans database.py pour garantir que tous les modèles sont enregistrés sur la même instance de Base (supprimer les multiples declarative_base)
+    - [x] Unifier l'import de Base dans models/base.py et les modèles associés
+    - [x] Supprimer la double déclaration de Base dans database.py (garder une seule instance partagée)
+- [x] Unifier et clarifier les dépendances (get_db, get_current_user, etc.) entre l'application et les tests pour éviter les erreurs 500
+- [ ] Corriger la configuration de la base de données pour que les tests utilisent systématiquement SQLite in-memory et non PostgreSQL
+- [ ] Corriger la gestion des sessions asynchrones dans les tests pour résoudre l’erreur "greenlet_spawn has not been called"
+  - [ ] Auditer et corriger l'utilisation de AsyncSession dans toutes les dépendances FastAPI et les fixtures de tests
+  - [ ] Unifier l'utilisation du moteur async et de AsyncSession dans toute la stack de test (dépendances, fixtures, configuration, endpoints)
+- [ ] Ajouter des tests supplémentaires et configurer la couverture de code
+- [ ] Reprendre la correction de la configuration Docker
+- [x] Ajouter/mettre à jour les fichiers et dossiers pertinents depuis template.git
+  - [x] COMPORTEMENT.md
+  - [x] CONTRIBUTING.md
+  - [x] docs/README.md
+  - [x] GUIDE_UTILISATION.md
+  - [x] INITIALISATION.md
+  - [x] PROCESSUS.md
+  - [x] PROTOCOLE_DEBUT.md
+  - [x] PROTOCOLE_FIN.md
+  - [x] VALIDATION.md
+- [ ] En fin de session, arrêter et supprimer tous les containers de test et retirer toute référence au projet
+
+## Current Goal
+Corriger la gestion des sessions asynchrones dans les tests d'authentification

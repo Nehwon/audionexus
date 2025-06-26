@@ -1,22 +1,26 @@
 """
 Routes d'authentification pour l'API.
 """
+from __future__ import annotations
 from datetime import timedelta
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import crud, models
 from app.api import deps
 from app.core import security
 from app.config import settings
-from app.db.models.base import Token, User, UserCreate, UserInDB
+
+# Import différé pour éviter les imports circulaires
+if TYPE_CHECKING:
+    from app.db.models.base import User, UserCreate, UserInDB, Token
+    from app import crud, models
 
 router = APIRouter()
 
-@router.post("/login/access-token", response_model=Token)
+@router.post("/login/access-token", response_model="Token")
 async def login_access_token(
     db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
@@ -40,18 +44,21 @@ async def login_access_token(
         "token_type": "bearer",
     }
 
-@router.post("/login/test-token", response_model=UserInDB)
-def test_token(current_user: models.User = Depends(deps.get_current_user)) -> Any:
+@router.get("/login/test-token", response_model='UserInDB')
+async def test_token(current_user: 'models.User' = Depends(deps.get_current_user)) -> Any:
     """
     Test access token.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Test token endpoint called with user: {current_user.username}")
     return current_user
 
-@router.post("/register", response_model=UserInDB)
-def create_user(
+@router.post("/register", response_model='UserInDB')
+async def create_user(
     *,
     db: Session = Depends(deps.get_db),
-    user_in: UserCreate,
+    user_in: 'UserCreate',
 ) -> Any:
     """
     Create new user.
