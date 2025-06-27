@@ -1,154 +1,138 @@
-# Plan de reprise du développement AudioNexus
+# Plan de reprise AudioNexus
 
 ## Notes
-- La configuration actuelle des tests utilise partiellement SQLite in-memory mais doit être auditée pour garantir son usage systématique.
-- Les dépendances FastAPI (get_db, get_current_user, etc.) doivent être unifiées entre l'app et les tests pour éviter les erreurs 500.
-- Il existe des problèmes de gestion des sessions asynchrones dans les tests (erreur greenlet_spawn).
-- La configuration actuelle mélange moteur sync et async dans certains modules.
-- La configuration de la base de données de test a été unifiée et corrigée dans conftest.py (SQLite in-memory, sessions asynchrones, dépendances surchargées).
-- Blocage : la variable ACCESS_TOKEN_EXPIRE_MINUTES n'est pas correctement chargée/validée (problème de parsing ou de priorité des variables d'environnement). Correction nécessaire dans la gestion du chargement des variables d'environnement dans config.py.
-- Un conflit persiste car une variable d'environnement système ACCESS_TOKEN_EXPIRE_MINUTES contient un commentaire inline, ce qui provoque l'échec du cast en int lors du chargement par Pydantic. Il faut corriger la valeur de cette variable au niveau système ou la nettoyer dans le code avant parsing.
-- La tentative de nettoyage dans le code ne contourne pas la validation stricte de Pydantic : il faut nettoyer ou désactiver la variable d'environnement système ACCESS_TOKEN_EXPIRE_MINUTES avant d'exécuter les tests, ou s'assurer qu'elle ne contient pas de commentaire.
-- Nouvelle tentative de nettoyage dans le code (suppression de la variable d'environnement dans get_settings), mais le blocage persiste : la variable système ACCESS_TOKEN_EXPIRE_MINUTES doit être corrigée ou supprimée manuellement avant d'exécuter les tests.
-- Tentative de contournement radicale par configuration de test dédiée (test_config.py et injection dans conftest.py), mais le blocage persiste car l'import de la config principale (app/config.py) est toujours exécuté lors de l'import de l'app. Il faut refactoriser l'import de la configuration ou isoler totalement la stack de test pour éviter l'import de variables d'environnement système.
-- Nouveau blocage : la configuration du moteur SQLAlchemy (app/db/database.py) utilise des arguments incompatibles (pool_size, max_overflow, pool_timeout) avec SQLite asynchrone (aiosqlite/StaticPool). Il faut auditer et adapter la configuration du moteur pour le mode test/in-memory.
-- La configuration SQLAlchemy a été adaptée pour être compatible avec SQLite async et PostgreSQL (corrections dans database.py et session.py).
-- Le blocage principal sur la stack de test (erreur de moteur) est levé ; il reste des erreurs 500 lors des tests (ex : inscription utilisateur).
-- La migration vers Pydantic V2 est nécessaire : remplacer les validateurs @validator par @field_validator, remplacer la classe Config par ConfigDict, et adapter les clés de configuration obsolètes (orm_mode → from_attributes, schema_extra → json_schema_extra) pour garantir la compatibilité et éviter les erreurs critiques.
-- Migration initiale de la configuration Pydantic V2 effectuée (usage de @field_validator, SettingsConfigDict, FieldValidationInfo, etc.).
-- Migration des modèles Pydantic (db/models/base.py, schemas/audiobook.py) vers la V2 réalisée, compatibilité assurée.
-- Migration de la configuration de test (test_config.py) vers Pydantic V2 effectuée (SettingsConfigDict, model_config).
-- La variable d'environnement ACCESS_TOKEN_EXPIRE_MINUTES contenant un commentaire doit impérativement être corrigée ou supprimée manuellement au niveau système pour permettre la validation Pydantic et le passage des tests.
-- Des avertissements de dépréciation Pydantic subsistent (FieldValidationInfo, signatures des validateurs, etc.) : il faut corriger ces usages pour garantir la compatibilité avec la dernière version (2.11.7).
-- S'assurer que toutes les dépendances (Pydantic, FastAPI, etc.) sont à jour et que la base de code ne contient plus de formulations dépréciées.
-- Les principaux avertissements de dépréciation Pydantic (FieldValidationInfo, signatures des validateurs) ont été corrigés dans la configuration et les tests.
-- Les dépendances critiques (FastAPI, Pydantic, etc.) ont été vérifiées et mises à jour pour assurer la compatibilité avec Pydantic 2.x et FastAPI >=0.100.
-- L'avertissement PytestCollectionWarning sur TestSettings a été définitivement corrigé : la classe a été renommée (_TestSettings) pour éviter la collecte automatique par pytest.
-- L'avertissement DeprecationWarning sur 'crypt' dans passlib ne peut être corrigé qu'en attendant une mise à jour de passlib compatible avec Python >=3.13 (dépendance externe, aucune version plus récente disponible à ce jour).
-- Nouveau blocage lors de l'exécution des tests : le module Python 'asyncpg' (dépendance PostgreSQL pour SQLAlchemy async) est manquant (ModuleNotFoundError). Il faut installer la dépendance 'asyncpg' avant de poursuivre les tests.
-- La dépendance Python 'asyncpg' a été installée avec succès (pip install asyncpg).
-- Nouveau blocage lors de l'exécution des tests : ImportError sur 'async_engine' depuis 'app.db' (conftest.py). Il faut corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py.
-- Nouveau blocage lors de l'exécution des tests : ImportError sur 'app.core.config' dans test_auth.py (ligne 17). Il faut corriger l'import fautif (utiliser 'app.config' si nécessaire).
-- Blocage actuel : la stack de test tente toujours de se connecter à l'hôte "db" (configuration PostgreSQL par défaut) malgré la configuration de test (SQLite in-memory). Il subsiste une fuite de configuration critique dans l'initialisation du moteur sync (database.py) qui doit être corrigée pour empêcher toute connexion automatique lors des imports en mode test.
-- Ajouter : Il est nécessaire d'auditer la logique d'initialisation de async_engine dans session_manager.py pour garantir qu'elle utilise toujours la configuration de test (test_settings.DATABASE_URI) lors des tests, et non la valeur par défaut issue de settings ou d'une variable d'environnement.
-- Nouvelle note : Malgré la configuration test (test_config.py et apply_test_settings), les tests continuent d'utiliser la configuration PostgreSQL par défaut (host "db"). Il faut identifier et corriger la fuite de configuration pour forcer l'utilisation stricte de SQLite in-memory dans tous les contextes de test.
-- Nouvelle note : Un refactoring plus profond de l'initialisation des moteurs SQLAlchemy (sync et async) dans database.py, session.py et session_manager.py est probablement nécessaire pour garantir que la configuration de test (SQLite in-memory) soit utilisée systématiquement lors des tests, avant tout import du module principal ou de l'app.
-- Nouvelle note : La refactorisation de database.py et __init__.py a été amorcée pour permettre une initialisation différée et contrôlée des moteurs (sync/async) selon la configuration active (test ou prod).
-- Nouvelle note : La fixture de base de données de test dans conftest.py a été refactorisée pour garantir l'utilisation stricte de SQLite in-memory et une isolation transactionnelle robuste pour chaque test.
-- Des erreurs 500 persistent lors des tests d'authentification (notamment sur l'inscription utilisateur) malgré l'utilisation d'une base SQLite in-memory et la configuration des fixtures de test. L'initialisation de la base ou la gestion des sessions pourrait être en cause.
-- Il existe une incompatibilité entre l'utilisation de sessions synchrones (code principal) et asynchrones (tests) : cela peut générer des erreurs 500 et des comportements inattendus.
-- Plusieurs implémentations de la dépendance get_db coexistent dans le code (core/deps.py, db/database.py, db/session.py, api/deps.py, core/dependencies.py), ce qui rend la surcharge complexe et source d'erreurs.
-- Nécessité d'auditer et de refactorer tous les fichiers de dépendances (api/deps.py, core/deps.py, core/dependencies.py, db/session.py) pour garantir une gestion cohérente des sessions et des dépendances sync/async entre l'application et les tests.
-- Un gestionnaire unifié de sessions a été créé (db/session_manager.py) pour centraliser la gestion sync/async, et les fonctions sont exposées dans db/__init__.py.
-- Tous les modules de dépendances critiques (main.py, core/deps.py, api/deps.py, db/session.py) ont été migrés pour utiliser le gestionnaire unifié de sessions.
-- Audit en cours de la stack de test (fixtures, conftest.py, test_auth.py) pour garantir l'utilisation cohérente du gestionnaire unifié de sessions async/sync dans tous les tests.
-- Nouvelle note : Migration demandée vers un moteur MySQL pour la production, à intégrer dans la stack Docker (remplacement de PostgreSQL et adaptation du code/CI).
-- Nouvelle note : Le service MySQL a été ajouté et configuré dans docker-compose.yml (remplacement complet de PostgreSQL, volume mysql_data, healthcheck adapté).
-- Nouvelle note : La configuration de Docker a été adaptée pour supporter MySQL (docker-compose.yml, Dockerfile, etc.).
-- Nouvelle note : Un fichier d'initialisation SQL (init.sql) pour MySQL a été créé et intégré dans la stack Docker pour initialiser le schéma de base de données AudioNexus.
-- Nouvelle note : La dépendance pymysql doit être ajoutée à requirements.txt pour permettre la connexion SQLAlchemy/MySQL.
-- Nouvelle note : La configuration database.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
-- Nouvelle note : La configuration session.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
-- Nouvelle note : La configuration session.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
-- Nouvelle note : Les dépendances (requirements.txt, pyproject.toml) et la configuration Dockerfile ont été adaptées pour garantir l'installation de pymysql et la compatibilité MySQL.
-- Nouvelle note : La documentation (README.md) a été adaptée pour documenter la migration MySQL et la nouvelle configuration de la base de données.
-- Nouvelle note : La configuration des tests a été renforcée pour garantir l'utilisation stricte de SQLite in-memory et la robustesse de l'isolation transactionnelle.
-- Nouvelle note : La gestion conditionnelle des paramètres SQLAlchemy dans database.py a été améliorée pour distinguer correctement les modes test (SQLite in-memory) et production (MySQL).
-- Blocage critique : lors de l'exécution des tests, une erreur d'import survient (AttributeError: 'NoneType' object has no attribute 'User') liée à l'initialisation différée de la base et au cycle d'import des modèles dans app/db/__init__.py et les dépendances FastAPI. Il faut auditer et corriger l'initialisation différée de Base et des modèles pour garantir leur disponibilité lors de l'import des dépendances dans les tests.
-- Nouvelle note : L'initialisation différée des modèles dans app/db/__init__.py doit être revue pour garantir que les modèles sont correctement initialisés avant leur utilisation dans les tests.
-- Problème persistant : l'AttributeError ('NoneType' object has no attribute 'User') indique que l'initialisation de `models` n'est pas effective avant l'import dans les modules de dépendances (ex : app/api/deps.py). Il faut garantir l'appel explicite à `init_database()` ou l'initialisation de `models` avant tout import des dépendances FastAPI dans les tests.
-- Nouvelle note : le problème d'initialisation de `models` persiste dans certains modules (ex : app/core/api/auth.py), nécessitant un refactoring des annotations de type ou des imports pour éviter l'AttributeError lors des tests.
-- Nouvelle note : le problème d'initialisation de `models` et l'AttributeError persistent également dans d'autres modules critiques (ex : app/core/deps.py), nécessitant un refactoring similaire des annotations de type et des imports différés pour éviter les erreurs lors des tests.
-- Nouvelle note : une erreur NameError (name 'Token' is not defined) apparaît dans app/core/api/auth.py, liée à l'utilisation d'une annotation différée ou à l'oubli d'import dans le décorateur FastAPI. Il faut corriger l'import ou l'annotation pour Token.
-- Correction en cours : refactoring de l'initialisation différée dans app/__init__.py et app/db/__init__.py pour garantir que Base et les modèles sont disponibles avant tout import des dépendances lors des tests.
-- Mise à jour : Le refactoring des imports différés et des annotations de type (chaînes) dans api/deps.py, core/api/auth.py et core/deps.py permet désormais l'exécution des tests sans erreur d'importation circulaire ni NameError.
-- Nouvelle note : Les tests échouent désormais sur des erreurs 500 internes et des problèmes d'intégrité SQLite (transactions closes, contraintes d'unicité) lors des tests d'authentification. Il faut auditer l'isolation transactionnelle et la gestion des sessions dans les tests, ainsi que la création de données de test.
-- Nouvelle note : La gestion transactionnelle dans la fixture db_session a été améliorée (connexion explicite, transaction manuelle, session liée à la transaction, rollback/commit explicite, nettoyage renforcé). La surcharge des dépendances FastAPI (get_db, get_async_db) est désormais automatique et isolée pour chaque test.
-- Nouvelle note : Malgré l'amélioration de la gestion transactionnelle, les tests échouent toujours sur des erreurs d'intégrité (UNIQUE constraint failed sur username/email) et des statuts 500. Il faut auditer la création des utilisateurs de test et s'assurer que chaque test part d'une base propre.
-- Nouvelle note : Il est nécessaire d'auditer/adapter le CRUD utilisateur pour permettre la suppression ou le reset efficace des utilisateurs de test (table users) afin d'éviter les conflits d'unicité entre les tests.
-- Nouvelle note : La refactorisation des imports différés et des annotations de type a été réalisée avec succès, permettant l'exécution des tests sans erreur d'importation circulaire ni NameError.
-- Nouvelle note : Ajout d'un nettoyage automatique de la base de données avant chaque test dans la fixture db_session (conftest.py), garantissant une base propre et limitant les conflits d'unicité.
-- Nouvelle note : Ajout d'une vérification que la génération du token JWT dans la fixture normal_user_token_headers (conftest.py) correspond bien au format attendu par la dépendance OAuth2PasswordBearer et que l'en-tête Authorization est conforme ("Bearer <token>").
-- Nouvelle note : Ajout d'une vérification de la cohérence entre les routes d'authentification, les dépendances FastAPI (get_db, get_current_user), la configuration de test (conftest.py) et la gestion des sessions (async/sync) dans la stack de test, car des erreurs 500 persistent lors des tests d'authentification malgré le nettoyage de la base et la configuration des fixtures.
-  - [ ] Auditer la cohérence entre les routes d'authentification, les dépendances FastAPI et la configuration de test (conftest.py, main.py, core/api/auth.py, core/deps.py) pour expliquer et corriger les erreurs 500 persistantes dans les tests d'authentification
-  - [ ] Vérifier que la suppression de la double définition de oauth2_scheme et l'unification de la dépendance dans main.py et core/deps.py corrigent bien le problème de cohérence OAuth2 et l'erreur 422 sur /login/test-token
-  - [ ] Auditer/corriger la cohérence du schéma OAuth2 et des dépendances d'authentification (tokenUrl, oauth2_scheme) dans l'app et les tests pour corriger l'erreur 422 sur /login/test-token
-{{ ... }}
-    - [x] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
-{{ ... }}
-    - [x] Auditer la fixture db_session pour garantir le rollback correct et l'isolation entre les tests
-    - [x] Auditer la création d'utilisateurs et l'insertion de données pour éviter les conflits d'unicité (username/email)
-    - [x] Corriger les usages de commit/rollback dans les tests pour éviter ResourceClosedError et PendingRollbackError
-    - [x] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
-    - [x] Auditer/adapter le CRUD utilisateur pour permettre le nettoyage efficace de la table users entre les tests
-  - [x] Auditer/corriger la création de données de test pour éviter les contraintes d'unicité et les transactions closes (sqlite3.IntegrityError, ResourceClosedError)
-
+- Utilisation du protocole de début de session décrit dans PROTOCOLE_DEBUT.md
+- Le dépôt Git est sur la branche main, PROJET.md a été commité et poussé
+- La branche develop n'existe pas localement ni à distance (seule main est présente)
+- Un fichier .env existe à la racine du projet ; il doit être vérifié et adapté si besoin
+- Correction du script init.sql : remplacement de ${MYSQL_DATABASE} par 'audionexus' (résout l'init de la DB)
+- Les services Docker et la base MySQL démarrent correctement après correction
+- Les variables d'environnement FIRST_SUPERUSER_EMAIL, FIRST_SUPERUSER_PASSWORD et FIRST_SUPERUSER_USERNAME étaient absentes du .env, ce qui empêchait la création de l'utilisateur admin ; elles ont été ajoutées et le backend redémarré.
+- Le backend redémarre en boucle : module pymysql manquant dans l'image backend
+- Reconstruction de l'image Docker backend (build --no-cache) pour corriger les dépendances
+- Après reconstruction, le backend échoue sur ModuleNotFoundError: No module named 'jwt' (PyJWT manquant)
+- Arrêt complet des conteneurs Docker pour repartir d'une base propre (protocole)
+- Tentative d'installation des dépendances backend en local échouée : pas de pyproject.toml ni setup.py dans audionexus/backend
+- Les dépendances backend et frontend ont été installées à la racine du projet (pip install -e ".[dev]" et npm install)
+- Les conteneurs db et redis démarrent correctement, mais backend/nginx/certbot absents ou non démarrés
+- Erreur de configuration certbot : argument email manquant (voir logs)
+- Variables CERTBOT_EMAIL et DOMAIN_NAME ajoutées à .env (valeurs par défaut, à adapter)
+- Le backend ne démarre toujours pas : ModuleNotFoundError: No module named 'jwt' malgré PyJWT ajouté et image reconstruite
+- Nouvelle reconstruction de l'image Docker backend pour corriger l'installation effective de PyJWT
+- Nouvelle erreur critique : SQLAlchemy async requiert un driver asynchrone, mais pymysql (non async) est utilisé. Corriger le driver (ex : utiliser aiomysql) pour l'accès MySQL asynchrone.
+- Dépendance aiomysql ajoutée, sqlalchemy[asyncio] utilisé. Mise à jour de la configuration et du code de connexion async en cours.
+- L'URL de connexion à la base de données a été modifiée pour utiliser mysql+aiomysql (pilote asynchrone) à la place de mysql+pymysql.
+- Un commit a été réalisé pour valider toutes les modifications récentes (amélioration du logging, correction de l'initialisation de la base, mise à jour des dépendances, structure users).
+- La configuration des variables d'environnement dans .env et config.py a été vérifiée et semble correcte pour le backend.
+- Les dépendances backend ont été mises à jour pour utiliser aiomysql (requirements.txt)
+- L'URL de connexion dans .env a été corrigée pour mysql+aiomysql
+- Aucun outil de migration (Alembic, dossier migrations) n'a été détecté dans le projet. La gestion du schéma se fait probablement par `Base.metadata.create_all()`.
+- Erreur critique au démarrage du frontend : crash du composant <Router> (voir console log, probable problème de configuration du routeur ou du contexte d'authentification).
+- Correction appliquée : suppression du BrowserRouter redondant dans App.tsx (la configuration du routeur est désormais centralisée dans main.tsx).
+- Correction appliquée : amélioration de la gestion d'erreur et de l'état de chargement dans AuthProvider (frontend) pour éviter les crashs lors de la vérification d'authentification.
+- Aucun test backend détecté (pas de fichiers test_*.py ni de configuration pytest dans backend).
+- Dépendances de test frontend installées (vitest, testing-library, etc.)
+- Configuration initiale de Vitest et Testing Library créée (vitest.config.ts, src/test/setup.ts) pour permettre l'écriture et l'exécution de tests frontend.
+- Un test de base pour le composant LoginPage a été créé dans src/pages/__tests__/LoginPage.test.tsx pour valider la configuration de test frontend.
+- Correction apportée : remplacement de tous les appels à `jest` par `vi` (API de Vitest) dans les tests frontend, y compris `clearAllMocks`.
+- Les tests frontend ne passent pas : le test de LoginPage échoue (élément attendu non trouvé dans le rendu, probablement un problème de sélection ou de structure du DOM dans le test).
+- Le rendu réel de la page de connexion montre que le titre affiché est "Connectez-vous à votre compte". Les sélecteurs de test doivent être ajustés pour correspondre au texte effectivement rendu.
+- Le texte "Connectez-vous à votre compte" est affiché dans un composant <Text> et non dans un heading (<h1>, <h2>, ...), ce qui explique pourquoi getByRole('heading') échoue dans le test. Adapter le test pour cibler ce texte via getByText ou modifier le composant pour utiliser un heading si nécessaire.
+- Les tests frontend LoginPage passent après adaptation du sélecteur (getByText).
+- La configuration CORS du backend est fonctionnelle (testée via curl et avec Origin http://localhost:3000 autorisé).
+- Problème identifié lors du test d'authentification : la table users dans la base MySQL contient un champ username NOT NULL absent du modèle SQLAlchemy User, ce qui empêche la création d'un utilisateur (admin) à l'initialisation.
+- Le modèle User (SQLAlchemy) ne définit pas le champ username, alors que la base l'exige (contrainte NOT NULL et UNIQUE).
+- Conséquence : toute tentative de création d'utilisateur échoue silencieusement ou sans retour d'erreur explicite dans les logs, rendant l'authentification impossible.
+- Prochaine étape : aligner la structure de la table users et du modèle User (ajouter le champ username au modèle ou le supprimer de la base, puis réinitialiser la base ou migrer le schéma).
+- Le modèle User SQLAlchemy, les schémas Pydantic (UserBase/UserCreate/UserUpdate) et le service d'authentification ont été mis à jour pour inclure le champ username (obligatoire, unique).
+- La table users créée dans MySQL ne contient pas le champ username malgré la mise à jour du modèle (voir DESCRIBE users). Il faut corriger la structure réelle de la table pour inclure ce champ avant de pouvoir créer l'admin.
+- La structure SQL de la table users a été corrigée pour inclure le champ username (voir DESCRIBE users après modification). La prochaine étape est de vérifier la création de l'utilisateur admin lors de l'initialisation.
+- Découverte : la fonction init_db() (app/core/database.py) passe un dictionnaire à AuthService.create_user(), alors que cette méthode attend un schéma Pydantic UserCreate. Cela peut causer l'échec silencieux ou des erreurs inattendues lors de la création de l'utilisateur admin initial. Corriger pour instancier un UserCreate.
+- Correction de la configuration du mot de passe root MySQL dans .env et docker-compose.yml pour permettre l'accès à la base.
+- Après redémarrage du backend, la table users reste vide : la logique d'initialisation de l'utilisateur admin ne fonctionne pas malgré la correction du schéma et de l'appel à UserCreate. Il faut diagnostiquer pourquoi la création échoue (logs, erreurs, etc.).
+- Après redémarrage du backend, la table users reste vide : la logique d'initialisation de l'utilisateur admin ne fonctionne pas (vérifié dans la base). Il faut diagnostiquer et corriger la création automatique de l'utilisateur admin dans le code (init_db/AuthService).
+- L'inscription via l'API (/register) échoue avec une erreur Pydantic/FastAPI liée à JoinTransactionMode : le backend retourne une erreur 500 et l'utilisateur n'est pas créé.
+- Incompatibilité détectée : le backend utilise Pydantic <2.0.0 mais pydantic-settings >=2.0.0 est installé, ce qui peut causer l'erreur sur /register. Il faut aligner toutes les dépendances Pydantic sur la même version majeure (idéalement <2.0.0 pour FastAPI <0.100).
+- Un fichier app/models/__init__.py a été ajouté pour garantir l'import explicite des modèles User et RefreshToken lors de l'initialisation de la base (évite des problèmes de tables non créées ou d'import implicite).
+- Des logs détaillés ont été ajoutés dans la fonction init_db pour diagnostiquer la création de l'utilisateur admin.
+- Un fichier __init__.py a été créé dans app/core pour assurer l'import correct des modules.
+- Un logger explicite a été ajouté dans app/core/database.py pour améliorer la visibilité des logs de debug.
+- Des logs de debug très visibles ont été ajoutés dans init_db et main.py pour vérifier l'appel effectif de l'initialisation de la base.
+- La configuration du logging backend (main.py et database.py) a été refondue pour une meilleure visibilité des logs de débogage.
+- Ajout d'une amélioration de la configuration des logs dans main.py pour une meilleure visibilité dans les conteneurs Docker.
+- Ajout de logs détaillés dans init_db (app/core/database.py) et dans create_user (app/services/auth.py) pour diagnostiquer la création de l'utilisateur admin et les erreurs éventuelles.
+- Vérification de la présence et de la validité des variables d'environnement nécessaires dans le fichier .env (notamment FIRST_SUPERUSER_EMAIL, FIRST_SUPERUSER_PASSWORD, FIRST_SUPERUSER_USERNAME, DATABASE_URL, SECRET_KEY...)
+- Vérification que la fonction init_db() est bien appelée dans main.py lors du démarrage de l'application.
+- Vérification que la variable APP_DEBUG est bien présente dans .env et que le fichier .env est bien chargé dans le conteneur backend (vérifié via docker-compose et inspection du fichier /app/.env dans le conteneur).
+- La configuration des variables d'environnement dans .env et config.py a été vérifiée et semble correcte pour le backend.
 ## Task List
-- [x] Supprimer la double déclaration de Base dans database.py (instance partagée)
-- [x] Unifier et clarifier les dépendances (get_db, get_current_user, etc.) entre l'application et les tests
-- [x] Corriger la configuration de la base de données pour que les tests utilisent systématiquement SQLite in-memory
-- [x] Corriger la gestion des sessions asynchrones dans les tests pour résoudre l’erreur "greenlet_spawn has not been called"
-  - [x] Auditer et corriger l'utilisation de AsyncSession dans toutes les dépendances FastAPI et les fixtures de tests
-  - [x] Unifier l'utilisation du moteur async et de AsyncSession dans toute la stack de test (dépendances, fixtures, configuration, endpoints)
-- [ ] Ajouter des tests supplémentaires et configurer la couverture de code
-  - [ ] Vérifier la couverture actuelle avec pytest-cov
-  - [ ] Ajouter des tests unitaires sur les endpoints principaux (auth, user, livre, etc.)
-  - [ ] Ajouter des tests pour les cas d'erreur (validation, accès refusé, etc.)
-  - [ ] Générer et analyser le rapport coverage.xml
-  - [ ] Diagnostiquer et corriger les erreurs 500 lors des tests d'authentification (register, login)
-- [ ] Corriger le chargement des variables d'environnement et la validation Pydantic dans config.py
-- [ ] Corriger tous les avertissements de dépréciation liés à Pydantic (FieldValidationInfo, signatures des validateurs, ConfigDict, etc.)
-- [x] Corriger l'avertissement PytestCollectionWarning sur TestSettings (renommage de la classe)
-- [x] Documenter l'avertissement passlib/crypt et suivre la mise à jour de la dépendance
-- [ ] Vérifier et mettre à jour les dépendances critiques (Pydantic, FastAPI, etc.)
-- [ ] Reprendre la correction de la configuration Docker
-- [x] Ajouter/mettre à jour les fichiers et dossiers pertinents depuis template.git
-- [ ] En fin de session, arrêter et supprimer tous les containers de test et retirer toute référence au projet
-- [x] Migrer la configuration et les validateurs Pydantic vers la V2 (usage de @field_validator, ConfigDict, etc.)
-- [x] Adapter la configuration de test pour Pydantic V2 (SettingsConfigDict, model_config)
-- [x] Auditer et corriger la gestion des dépendances get_db et des sessions (sync/async) entre l'application et les tests pour garantir la cohérence et la stabilité des tests
-  - [x] Auditer et refactorer tous les fichiers de dépendances (api/deps.py, core/deps.py, core/dependencies.py, db/session.py) pour garantir une gestion unifiée et cohérente des sessions et dépendances
-  - [x] Créer un gestionnaire unifié de sessions (session_manager.py) et l'exposer dans db/__init__.py
-  - [x] Intégrer le gestionnaire unifié de sessions dans les fichiers principaux (main.py, core/deps.py)
-  - [x] Mettre à jour les fixtures et la stack de test (conftest.py, test_auth.py, etc.) pour garantir l'utilisation du gestionnaire unifié de sessions async/sync et la cohérence des tests
-    - [x] Adapter conftest.py pour utiliser le gestionnaire unifié
-    - [x] Adapter test_auth.py pour garantir l'utilisation correcte du gestionnaire unifié et vérifier la disparition des erreurs 500
-      - [x] Corriger l'import fautif de settings dans test_auth.py (ligne 17)
-      - [x] Auditer la configuration de la base de données utilisée lors des tests et forcer l'utilisation de SQLite in-memory (éviter toute tentative de connexion à l'hôte "db")
-      - [x] Auditer/corriger la logique d'initialisation de async_engine dans session_manager.py pour garantir l'usage de la bonne configuration de test
-      - [x] Corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py pour lever l'ImportError lors de l'exécution des tests
-      - [x] Corriger la fuite de configuration pour garantir l'utilisation stricte de SQLite in-memory dans tous les tests/auth
-      - [x] Finaliser le refactoring de l'initialisation des moteurs SQLAlchemy (sync et async) dans database.py, session.py et session_manager.py pour garantir l'usage de la bonne configuration selon le contexte (test/prod)
-- [x] Installer la dépendance Python 'asyncpg' pour permettre l'exécution des tests async/PostgreSQL
-- [x] Corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py pour lever l'ImportError lors de l'exécution des tests
-- [ ] Migrer la stack vers MySQL (adapter la config, les modèles, les dépendances, la CI, et la stack Docker)
-  - [x] Adapter docker-compose.yml pour remplacer PostgreSQL par MySQL
-  - [x] Créer et intégrer un fichier init.sql pour l'initialisation du schéma MySQL
-  - [x] Ajouter pymysql à requirements.txt pour la compatibilité SQLAlchemy/MySQL
-  - [x] Adapter database.py pour la compatibilité explicite MySQL
-  - [x] Adapter session.py pour la compatibilité explicite MySQL
-  - [x] Adapter pyproject.toml pour la compatibilité explicite MySQL
-  - [x] Vérifier la compatibilité du Dockerfile pour l'installation de pymysql
-  - [x] Mettre à jour la documentation (README.md) pour la migration MySQL
-- [x] Mettre à jour la documentation (README.md) pour la migration MySQL
-  - [x] Renforcer la configuration de test pour garantir l'utilisation stricte de SQLite in-memory et la robustesse de l'isolation transactionnelle
-  - [x] Améliorer la gestion conditionnelle des paramètres SQLAlchemy dans database.py pour les tests et la production
-- [ ] Corriger l'initialisation des modèles et la gestion des imports pour éviter l'AttributeError (NoneType/"User") lors de l'exécution des tests
-  - [ ] S'assurer que l'initialisation de `models` est effective avant tout import dans les modules de dépendances (ex : app/api/deps.py)
-  - [ ] Corriger les annotations de type et les imports dans app/core/api/auth.py pour éviter l'AttributeError
-  - [ ] Corriger l'import ou l'annotation différée de Token dans app/core/api/auth.py pour lever le NameError
-  - [ ] Corriger les annotations de type et les imports dans app/core/deps.py pour éviter l'AttributeError
-  - [ ] Valider la disparition de l'AttributeError lors des tests après refactoring
-  - [ ] Auditer/corriger l'isolation transactionnelle et la gestion des sessions/données de test dans les tests d'authentification (test_auth.py, conftest.py)
-    - [ ] Auditer la fixture db_session pour garantir le rollback correct et l'isolation entre les tests
-    - [ ] Auditer la création d'utilisateurs et l'insertion de données pour éviter les conflits d'unicité (username/email)
-    - [ ] Corriger les usages de commit/rollback dans les tests pour éviter ResourceClosedError et PendingRollbackError
-    - [ ] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
-    - [ ] Auditer/adapter le CRUD utilisateur pour permettre le nettoyage efficace de la table users entre les tests
-  - [ ] Auditer/corriger la création de données de test pour éviter les contraintes d'unicité et les transactions closes (sqlite3.IntegrityError, ResourceClosedError)
-- [ ] Vérifier que la génération du token JWT dans la fixture normal_user_token_headers et l'en-tête Authorization sont conformes à l'attendu par OAuth2PasswordBearer
-- [ ] Appliquer le protocole de fin de session : mise à jour documentation, changelog, état du projet, exécution des tests, nettoyage des containers, sauvegarde et clôture propre
-- [ ] Corriger les erreurs 500 et 422 dans les tests d'authentification (priorité à la reprise)
-
+- [x] Vérifier l'état du dépôt Git (fait : git status)
+- [x] S'assurer qu'aucune modification non commitée n'est en attente
+- [x] Mettre de côté ou committer les modifications si besoin (fait : commit & push PROJET.md)
+- [x] Récupérer les derniers changements (git fetch origin)
+- [x] Vérifier les branches distantes mises à jour (git branch -vva)
+- [ ] Mettre à jour la branche principale locale (git checkout develop && git pull --rebase) (non applicable, pas de branche develop)
+- [x] Vérifier la présence et la configuration du fichier .env (présent, contenu à vérifier/adapter)
+- [x] Démarrer les services Docker (succès après correction init.sql)
+- [x] Mettre à jour les dépendances backend et frontend (backend : erreur ModuleNotFoundError pymysql, reconstruction image en cours)
+- [x] Relancer les services backend pour vérifier la résolution du problème (toujours erreur : module jwt manquant)
+- [x] Ajouter la dépendance PyJWT au backend et reconstruire l'image
+- [x] Arrêter et relancer les conteneurs selon le protocole
+- [x] Mettre à jour les dépendances backend en local ou corriger la structure du backend (pyproject.toml/setup.py manquant)
+- [x] Vérifier l'état des conteneurs
+- [x] Vérifier la configuration certbot et le démarrage du backend
+- [x] Diagnostiquer et corriger l'installation effective de PyJWT dans l'image backend
+- [x] Reconstruire l'image Docker backend après vérification PyJWT
+- [x] Vérifier le démarrage effectif du backend (échec : erreur driver non async)
+- [x] Corriger la configuration du driver SQLAlchemy async (remplacer pymysql par aiomysql ou autre driver async compatible)
+- [x] Adapter le code de connexion et la configuration SQLAlchemy pour utiliser aiomysql
+- [x] Vérifier l'accès à la base de données
+- [x] Corriger la gestion des imports et initialisations des sessions (SessionLocal, AsyncSessionLocal) dans le backend
+- [x] Corriger l'import et l'initialisation de async_engine dans le backend (utiliser app.db.session_manager)
+- [x] Diagnostiquer et corriger l'accès synchrone à un moteur async (erreur MissingGreenlet)
+  - [x] Identifier les endroits où un accès synchrone tente d'utiliser async_engine/AsyncSessionLocal
+  - [x] Refactorer le code pour garantir un accès asynchrone dans un contexte async (endpoints async, dépendances async)
+  - [x] Refactorer la fonction health_check pour garantir l'utilisation correcte du moteur synchrone ou asynchrone selon le contexte
+  - [x] Analyser la séquence d'initialisation et les dépendances d'import pour s'assurer qu'aucun accès async n'a lieu hors contexte (notamment dans __init__.py et database.py)
+    - [x] Refactorer l'initialisation dans app/db/__init__.py pour garantir que init_async_engine() et l'accès async ne sont jamais appelés/importés dans un contexte synchrone
+    - [x] S'assurer qu'aucune référence à async_engine/AsyncSessionLocal n'est exposée globalement ou importée dans des modules utilisés par du code synchrone
+  - [x] Vérifier/corriger la gestion du cycle de vie FastAPI (lifespan) dans main.py
+  - [x] Adapter la configuration pour que l'URL de la base de données utilisée lors de l'initialisation synchrone (création des tables) soit compatible avec un moteur synchrone (ex : mysql+pymysql), et réserver l'usage d'aiomysql à l'accès async uniquement
+- [x] Redémarrer le backend et vérifier la disparition de l'erreur
+- [x] Appliquer les migrations si nécessaire (aucun outil de migration détecté, étape non applicable)
+- [x] Démarrer le serveur de développement frontend
+- [x] Vérifier l'accès aux applications (frontend, API, docs)
+  - [x] Diagnostiquer et corriger l'erreur React Router/AuthProvider dans le frontend (crash au démarrage)
+- [x] Vérifier le fonctionnement du frontend après correction
+- [x] Exécuter les tests backend et frontend
+  - [x] Configurer les tests frontend (Vitest, Testing Library)
+  - [x] Créer un test de base pour LoginPage (Vitest)
+  - [x] Corriger les appels à jest/clearAllMocks par vi/clearAllMocks
+  - [x] Lancer les tests frontend (Vitest)
+  - [x] Diagnostiquer et corriger l'échec du test de LoginPage (sélecteur ou rendu)
+    - [x] Adapter le test pour rechercher le texte via getByText (ou modifier le composant pour utiliser un heading si la sémantique le justifie)
+  - [x] Créer une branche pour la fonctionnalité
+- [x] Initialiser la session (noter l'heure, définir objectifs)
+  - [x] Configurer CORS dans le backend
+  - [x] Tester et corriger l'authentification (corriger structure users, vérifier la création de l'admin, tester login/register)
+    - [x] Mettre à jour le modèle User (SQLAlchemy) pour inclure username
+    - [x] Mettre à jour les schémas Pydantic UserBase/UserCreate/UserUpdate pour inclure username
+    - [x] Mettre à jour le service d'authentification pour gérer username (unicité, création)
+    - [x] Réinitialiser la base ou migrer le schéma si besoin
+    - [x] Corriger la structure SQL de la table users pour inclure username
+    - [x] Vérifier la création de l'utilisateur admin (échec, la table est vide)
+    - [x] Diagnostiquer et corriger la logique de création automatique de l'utilisateur admin dans le code (init_db/AuthService)
+    - [ ] Tester login/register (échec actuel : erreur 500 sur /register, diagnostiquer et corriger l'erreur Pydantic/FastAPI/SQLAlchemy)
+      - [ ] Aligner la version de pydantic-settings sur <2.0.0 (ou migrer tout le backend en Pydantic v2 si possible)
+      - [x] Corriger l'appel à AuthService.create_user dans init_db() pour passer un UserCreate (et non un dict)
+      - [x] Ajouter des logs détaillés dans init_db pour diagnostiquer la création de l'admin
+      - [x] Ajouter des logs détaillés dans create_user pour diagnostiquer la création de l'utilisateur admin
+      - [x] Vérifier la présence et la validité des variables d'environnement dans .env
+      - [x] Vérifier l'appel effectif à init_db() dans main.py
+      - [x] Vérifier la visibilité des logs de débogage backend
+      - [x] Mettre à jour la dépendance aiomysql dans requirements.txt
+      - [x] Corriger l'URL de connexion dans .env pour mysql+aiomysql
+      - [x] Vérifier la création effective de l'utilisateur admin lors de l'initialisation
+      - [x] Améliorer la configuration des logs dans main.py pour une meilleure visibilité dans Docker
 ## Current Goal
-Documenter la fin de session et préparer la reprise sur les tests
+Diagnostiquer et corriger l'erreur 500 sur /register

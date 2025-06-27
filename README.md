@@ -11,6 +11,36 @@
 
 **AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
 
+## 🏗️ Structure du projet
+
+```
+.
+├── app/                      # Code source du backend (FastAPI)
+│   ├── api/                  # Définitions des routes API
+│   ├── core/                 # Configuration et utilitaires de base
+│   ├── crud/                 # Opérations de base de données
+│   ├── db/                   # Configuration et modèles de base de données
+│   ├── schemas/              # Schémas Pydantic
+│   ├── services/             # Logique métier
+│   ├── tests/                # Tests unitaires et d'intégration
+│   ├── __init__.py
+│   ├── config.py             # Configuration de l'application
+│   └── main.py               # Point d'entrée de l'application
+├── audionexus/               # Ancienne structure (dépréciée)
+│   └── backend/              # Contenu déplacé vers la racine
+├── backup_audionexus_backend/ # Sauvegarde de l'ancienne structure
+├── data/                     # Données persistantes
+├── docs/                     # Documentation
+├── nginx/                    # Configuration Nginx
+├── .dockerignore
+├── .env.example             # Exemple de configuration
+├── docker-compose.yml       # Configuration Docker Compose
+├── Dockerfile               # Configuration Docker
+└── pyproject.toml           # Configuration Python et dépendances
+```
+
+> **Note** : L'ancienne structure dans `audionexus/backend/` a été dépréciée et son contenu a été déplacé vers la racine du projet. Une sauvegarde est disponible dans `backup_audionexus_backend/`.
+
 ## 📝 Auteur
 
 - **Fabrice Lamachère** (fabrice@lamachere.fr) - Développeur principal

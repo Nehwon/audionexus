@@ -1,5 +1,6 @@
 import logging
 import sys
+import os
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -8,21 +9,44 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import init_db, logger as db_logger
 from app.api.v1.auth.router import router as auth_router
+from app.api.v1.health import router as health_router
+
+# Configuration du format des logs
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_LEVEL = logging.DEBUG if settings.APP_DEBUG else logging.INFO
 
 # Configuration du logger racine
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+root_logger = logging.getLogger()
+root_logger.setLevel(LOG_LEVEL)
+
+# Configuration du handler pour la sortie standard
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(LOG_LEVEL)
+formatter = logging.Formatter(LOG_FORMAT)
+handler.setFormatter(formatter)
+
+# Supprimer les handlers existants
+if root_logger.hasHandlers():
+    root_logger.handlers.clear()
+
+# Ajouter le nouveau handler
+root_logger.addHandler(handler)
+
+# Désactiver les logs de certains modules trop verbeux
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+logging.getLogger('uvicorn.error').setLevel(logging.INFO)
+logging.getLogger('uvicorn.access').setLevel(logging.INFO)
 
 # Création du logger pour ce module
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(LOG_LEVEL)
 
-# Création de l'application FastAPI
+# Afficher la configuration des logs
+logger.info("\n" + "="*80)
+logger.info(f"CONFIGURATION DES LOGS - NIVEAU: {logging.getLevelName(LOG_LEVEL)}")
+logger.info("="*80)
+
+# Création de l'application FastAPI avec configuration Pydantic v2
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
@@ -30,6 +54,22 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    # Configuration pour Pydantic v2
+    swagger_ui_parameters={"syntaxHighlight.theme": "monokai"},
+    # Désactiver la validation automatique des réponses pour améliorer les performances
+    # et éviter les problèmes de compatibilité avec Pydantic v2
+    default_response_class=JSONResponse,
+    # Activer la validation stricte des types
+    json_encoders={
+        # Ajouter des encodeurs personnalisés si nécessaire
+    },
+    # Configuration pour la documentation OpenAPI
+    openapi_tags=[
+        {
+            "name": "auth",
+            "description": "Opérations d'authentification et d'autorisation",
+        },
+    ],
 )
 
 # Configuration CORS
@@ -59,6 +99,12 @@ async def root():
     }
 
 # Inclure les routeurs
+app.include_router(
+    health_router,
+    prefix=settings.API_V1_STR,
+    tags=["Health"]
+)
+
 app.include_router(
     auth_router,
     prefix=f"{settings.API_V1_STR}/auth",
