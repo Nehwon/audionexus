@@ -1,116 +1,154 @@
-# Plan de reprise - AudioNexus
+# Plan de reprise du développement AudioNexus
 
 ## Notes
-- AudioNexus est une plateforme de gestion centralisée pour bibliothèques de livres audio, intégrant Audiobookshelf.
-- Version actuelle : 0.3.2-alpha, développement actif.
-- Le backend (FastAPI) et le frontend (React/TS) sont en place avec authentification fonctionnelle.
-- Les prochaines étapes immédiates concernent la résolution des problèmes de base de données de test et l'intégration Audiobookshelf.
-- Intégrer les fichiers et dossiers pertinents du dépôt modèle (template.git) pour harmoniser la structure et les pratiques du projet.
-- Fichiers identifiés à intégrer depuis le modèle : COMPORTEMENT.md, CONTRIBUTING.md, docs/README.md, GUIDE_UTILISATION.md, INITIALISATION.md, PROCESSUS.md, PROTOCOLE_DEBUT.md, PROTOCOLE_FIN.md, VALIDATION.md
-- En fin de session, retirer toute référence au projet, notamment arrêter et supprimer les containers de test.
-- Le reverse proxy Nginx est configuré pour le développement local (voir nginx/conf.d/audionexus.conf)
-- La configuration Nginx a été adaptée pour supporter les téléversements volumineux (client_max_body_size, timeouts, buffers)
-- Le fichier .env a été mis à jour pour la configuration Postgres, JWT, Redis, Audiobookshelf, etc.
-- Correction de la variable ACCESS_TOKEN_EXPIRE_MINUTES dans le .env (valeur numérique attendue par Pydantic)
-- Un client Python pour l'API Audiobookshelf existe déjà (voir app/core/api/audiobookshelf.py)
-- Un service de synchronisation avec Audiobookshelf a été créé (voir app/services/audiobookshelf_sync.py)
-- La base de données doit être initialisée ou migrée pour inclure les nouvelles tables (utiliser init_db() ou ajouter Alembic)
-- Les modèles de base (User, Book, Library, etc.) sont définis dans app/db/models/base.py et importés via app/db/models/__init__.py ; la table "users" existe bien dans le modèle. Il faut s'assurer que l'initialisation de la base de données lors des tests inclut bien tous les modèles nécessaires.
-- La fixture de tests (conftest.py) initialise la base SQLite en mémoire avec Base.metadata.create_all, ce qui inclut la table "users". Les modèles sont correctement importés. Si l'erreur persiste, il faudra vérifier le scope des fixtures, l'ordre d'import ou d'autres conflits d'initialisation.
-- Problème identifié : il existe deux instances différentes de Base (declarative_base) dans le projet, ce qui peut empêcher l'enregistrement correct des modèles lors de l'initialisation de la base de test. Il faut s'assurer que l'import de Base et des modèles est unique et partagé entre l'application et les tests (voir database.py et models/base.py).
-- Découverte : models/base.py et database.py déclarent chacun leur propre Base (declarative_base), ce qui explique la non-création de la table "users" dans les tests. Il faut unifier l'utilisation de Base dans tout le projet (import commun).
-- Correction en cours : models/base.py importe désormais Base depuis database.py, et les imports dans les modèles ont été vérifiés/corrigés pour garantir l'utilisation de la même instance de Base. Il reste à supprimer la double déclaration dans database.py.
-- Diagnostic en cours : les tests de création de tables montrent que la table "users" n'est pas créée en base de test à cause de cette duplication de Base. Les logs de debug confirment que la métadonnée Base.metadata ne contient pas les modèles attendus lors de l'initialisation de la base de test.
-- Problème résolu : les schémas AudiobookProgressCreate et AudiobookProgressUpdate ont été créés dans app/schemas/audiobook.py, ce qui débloque l'import dans app/crud/audiobook.py et la synchronisation Audiobookshelf.
-- La création des tables de tests fonctionne désormais (la table "users" est bien créée). Il reste à corriger la gestion des sessions sync/async et des dépendances dans les tests pour supprimer les erreurs 500.
-- Un client Python pour l'API Audiobookshelf existe déjà (voir app/core/api/audiobookshelf.py)
-- Un service de synchronisation avec Audiobookshelf a été créé (voir app/services/audiobookshelf_sync.py)
-- La base de données doit être initialisée ou migrée pour inclure les nouvelles tables (utiliser init_db() ou ajouter Alembic)
-- Les modèles de base (User, Book, Library, etc.) sont définis dans app/db/models/base.py et importés via app/db/models/__init__.py ; la table "users" existe bien dans le modèle. Il faut s'assurer que l'initialisation de la base de données lors des tests inclut bien tous les modèles nécessaires.
-- La fixture de tests (conftest.py) initialise la base SQLite en mémoire avec Base.metadata.create_all, ce qui inclut la table "users". Les modèles sont correctement importés. Si l'erreur persiste, il faudra vérifier le scope des fixtures, l'ordre d'import ou d'autres conflits d'initialisation.
-- Problème identifié : il existe deux instances différentes de Base (declarative_base) dans le projet, ce qui peut empêcher l'enregistrement correct des modèles lors de l'initialisation de la base de test. Il faut s'assurer que l'import de Base et des modèles est unique et partagé entre l'application et les tests (voir database.py et models/base.py).
-- Découverte : models/base.py et database.py déclarent chacun leur propre Base (declarative_base), ce qui explique la non-création de la table "users" dans les tests. Il faut unifier l'utilisation de Base dans tout le projet (import commun).
-- Correction en cours : models/base.py importe désormais Base depuis database.py, et les imports dans les modèles ont été vérifiés/corrigés pour garantir l'utilisation de la même instance de Base. Il reste à supprimer la double déclaration dans database.py.
-- Diagnostic en cours : les tests de création de tables montrent que la table "users" n'est pas créée en base de test à cause de cette duplication de Base. Les logs de debug confirment que la métadonnée Base.metadata ne contient pas les modèles attendus lors de l'initialisation de la base de test.
-- Problème résolu : les schémas AudiobookProgressCreate et AudiobookProgressUpdate ont été créés dans app/schemas/audiobook.py, ce qui débloque l'import dans app/crud/audiobook.py et la synchronisation Audiobookshelf.
-- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
-- La configuration FastAPI doit être auditée pour garantir la gestion correcte des uploads volumineux
-- L'audit de la configuration FastAPI côté uploads volumineux a été effectué : la route de téléversement existe, le backend accepte les UploadFile, la configuration Nginx est adaptée. Rester vigilant sur les limites de mémoire/process côté backend.
-- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
-- Plusieurs systèmes de dépendances (get_db, get_current_user) coexistent dans le projet (ex : app/core/dependencies.py et app/api/deps.py), ce qui peut causer des erreurs HTTP 500 lors des tests si les surcharges ou le wiring ne sont pas cohérents entre l'application et les tests. Il faut unifier ou clarifier l'usage de ces dépendances dans les tests et l'application.
-- Correction à faire : unifier et clarifier l'utilisation des dépendances (get_db, get_current_user, etc.) entre l'application et les tests pour éviter les incohérences et les erreurs 500 lors des tests d'authentification.
-- Une version unifiée des dépendances (get_db, get_current_user, etc.) a été créée dans app/core/deps.py ; les imports du projet doivent pointer vers ce fichier pour garantir la cohérence entre application et tests.
-- Mise à jour de la configuration des tests et des dépendances dans conftest.py pour utiliser les dépendances unifiées (get_db, oauth2_scheme, etc.) et corriger les erreurs 500 dans les tests d'authentification.
-- Problème de configuration identifié : malgré l'utilisation de SQLite en mémoire dans les fixtures de test, la configuration globale de l'application (app/config.py et app/db/database.py) continue d'utiliser la configuration PostgreSQL par défaut. Il faut s'assurer que la configuration de la base de données pour les tests surcharge correctement celle de production (via variable d'environnement ou injection explicite dans les tests) pour éviter toute tentative de connexion à PostgreSQL lors des tests.
-- Correction à faire : modifier la configuration globale pour que lors de l'exécution des tests, l'application et toutes les dépendances utilisent systématiquement SQLite in-memory.
-- Problème identifié : après correction de la configuration de la base de données pour les tests, une nouvelle erreur apparaît : "greenlet_spawn has not been called; can't call await_only() here". Cela indique un problème de gestion des sessions asynchrones avec SQLAlchemy async dans les tests. Il faut s'assurer que toutes les dépendances et la création de session utilisent bien le moteur asynchrone dans le contexte des tests.
-- Découverte : Certaines dépendances et routes utilisent encore des sessions synchrones (SessionLocal) ou des moteurs synchrones dans l'application et/ou les tests, alors que les tests et la base de test attendent AsyncSession et un moteur asynchrone. Cela crée des conflits et l'erreur greenlet_spawn. Il faut unifier l'utilisation de AsyncSession et du moteur async dans tous les contextes de test.
-- Ajouter : Vérifier que toutes les dépendances FastAPI (get_db, get_current_user, etc.) et toutes les fixtures de tests utilisent bien AsyncSession et le moteur async, sans mélange avec les sessions synchrones.
-- La configuration FastAPI doit être auditée pour garantir la gestion correcte des uploads volumineux
-- L'audit de la configuration FastAPI côté uploads volumineux a été effectué : la route de téléversement existe, le backend accepte les UploadFile, la configuration Nginx est adaptée. Rester vigilant sur les limites de mémoire/process côté backend.
-- Un README d'administration a été ajouté pour documenter l'utilisation des scripts d'init_db et de synchronisation
-
-## Informations complèmentaires
-- [x] Il faut passer la license à AGPL3+
-- [x] Je me nomme Fabrice Lamachère (fabrice@lamachere.fr) alias Nehwon
-- [ ] Refactoriser le README pour qu'il soit plus logique et organiser
-- [ ] Vérifier d'avoir bien mis une variable d'environnement pour retirer le certbot. J'utilise un reverse proxy qui fait le nécessaire.
-- [ ] Vérifier la variable d'environnement liée à Certbot/reverse proxy.
-- [ ] Configurer le certbot pour qu'il fonctionne correctement avec le reverse proxy.
-- [ ] Vérifier que le certbot ne génère pas de problèmes avec les containers de test.
+- La configuration actuelle des tests utilise partiellement SQLite in-memory mais doit être auditée pour garantir son usage systématique.
+- Les dépendances FastAPI (get_db, get_current_user, etc.) doivent être unifiées entre l'app et les tests pour éviter les erreurs 500.
+- Il existe des problèmes de gestion des sessions asynchrones dans les tests (erreur greenlet_spawn).
+- La configuration actuelle mélange moteur sync et async dans certains modules.
+- La configuration de la base de données de test a été unifiée et corrigée dans conftest.py (SQLite in-memory, sessions asynchrones, dépendances surchargées).
+- Blocage : la variable ACCESS_TOKEN_EXPIRE_MINUTES n'est pas correctement chargée/validée (problème de parsing ou de priorité des variables d'environnement). Correction nécessaire dans la gestion du chargement des variables d'environnement dans config.py.
+- Un conflit persiste car une variable d'environnement système ACCESS_TOKEN_EXPIRE_MINUTES contient un commentaire inline, ce qui provoque l'échec du cast en int lors du chargement par Pydantic. Il faut corriger la valeur de cette variable au niveau système ou la nettoyer dans le code avant parsing.
+- La tentative de nettoyage dans le code ne contourne pas la validation stricte de Pydantic : il faut nettoyer ou désactiver la variable d'environnement système ACCESS_TOKEN_EXPIRE_MINUTES avant d'exécuter les tests, ou s'assurer qu'elle ne contient pas de commentaire.
+- Nouvelle tentative de nettoyage dans le code (suppression de la variable d'environnement dans get_settings), mais le blocage persiste : la variable système ACCESS_TOKEN_EXPIRE_MINUTES doit être corrigée ou supprimée manuellement avant d'exécuter les tests.
+- Tentative de contournement radicale par configuration de test dédiée (test_config.py et injection dans conftest.py), mais le blocage persiste car l'import de la config principale (app/config.py) est toujours exécuté lors de l'import de l'app. Il faut refactoriser l'import de la configuration ou isoler totalement la stack de test pour éviter l'import de variables d'environnement système.
+- Nouveau blocage : la configuration du moteur SQLAlchemy (app/db/database.py) utilise des arguments incompatibles (pool_size, max_overflow, pool_timeout) avec SQLite asynchrone (aiosqlite/StaticPool). Il faut auditer et adapter la configuration du moteur pour le mode test/in-memory.
+- La configuration SQLAlchemy a été adaptée pour être compatible avec SQLite async et PostgreSQL (corrections dans database.py et session.py).
+- Le blocage principal sur la stack de test (erreur de moteur) est levé ; il reste des erreurs 500 lors des tests (ex : inscription utilisateur).
+- La migration vers Pydantic V2 est nécessaire : remplacer les validateurs @validator par @field_validator, remplacer la classe Config par ConfigDict, et adapter les clés de configuration obsolètes (orm_mode → from_attributes, schema_extra → json_schema_extra) pour garantir la compatibilité et éviter les erreurs critiques.
+- Migration initiale de la configuration Pydantic V2 effectuée (usage de @field_validator, SettingsConfigDict, FieldValidationInfo, etc.).
+- Migration des modèles Pydantic (db/models/base.py, schemas/audiobook.py) vers la V2 réalisée, compatibilité assurée.
+- Migration de la configuration de test (test_config.py) vers Pydantic V2 effectuée (SettingsConfigDict, model_config).
+- La variable d'environnement ACCESS_TOKEN_EXPIRE_MINUTES contenant un commentaire doit impérativement être corrigée ou supprimée manuellement au niveau système pour permettre la validation Pydantic et le passage des tests.
+- Des avertissements de dépréciation Pydantic subsistent (FieldValidationInfo, signatures des validateurs, etc.) : il faut corriger ces usages pour garantir la compatibilité avec la dernière version (2.11.7).
+- S'assurer que toutes les dépendances (Pydantic, FastAPI, etc.) sont à jour et que la base de code ne contient plus de formulations dépréciées.
+- Les principaux avertissements de dépréciation Pydantic (FieldValidationInfo, signatures des validateurs) ont été corrigés dans la configuration et les tests.
+- Les dépendances critiques (FastAPI, Pydantic, etc.) ont été vérifiées et mises à jour pour assurer la compatibilité avec Pydantic 2.x et FastAPI >=0.100.
+- L'avertissement PytestCollectionWarning sur TestSettings a été définitivement corrigé : la classe a été renommée (_TestSettings) pour éviter la collecte automatique par pytest.
+- L'avertissement DeprecationWarning sur 'crypt' dans passlib ne peut être corrigé qu'en attendant une mise à jour de passlib compatible avec Python >=3.13 (dépendance externe, aucune version plus récente disponible à ce jour).
+- Nouveau blocage lors de l'exécution des tests : le module Python 'asyncpg' (dépendance PostgreSQL pour SQLAlchemy async) est manquant (ModuleNotFoundError). Il faut installer la dépendance 'asyncpg' avant de poursuivre les tests.
+- La dépendance Python 'asyncpg' a été installée avec succès (pip install asyncpg).
+- Nouveau blocage lors de l'exécution des tests : ImportError sur 'async_engine' depuis 'app.db' (conftest.py). Il faut corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py.
+- Nouveau blocage lors de l'exécution des tests : ImportError sur 'app.core.config' dans test_auth.py (ligne 17). Il faut corriger l'import fautif (utiliser 'app.config' si nécessaire).
+- Blocage actuel : la stack de test tente toujours de se connecter à l'hôte "db" (configuration PostgreSQL par défaut) malgré la configuration de test (SQLite in-memory). Il subsiste une fuite de configuration critique dans l'initialisation du moteur sync (database.py) qui doit être corrigée pour empêcher toute connexion automatique lors des imports en mode test.
+- Ajouter : Il est nécessaire d'auditer la logique d'initialisation de async_engine dans session_manager.py pour garantir qu'elle utilise toujours la configuration de test (test_settings.DATABASE_URI) lors des tests, et non la valeur par défaut issue de settings ou d'une variable d'environnement.
+- Nouvelle note : Malgré la configuration test (test_config.py et apply_test_settings), les tests continuent d'utiliser la configuration PostgreSQL par défaut (host "db"). Il faut identifier et corriger la fuite de configuration pour forcer l'utilisation stricte de SQLite in-memory dans tous les contextes de test.
+- Nouvelle note : Un refactoring plus profond de l'initialisation des moteurs SQLAlchemy (sync et async) dans database.py, session.py et session_manager.py est probablement nécessaire pour garantir que la configuration de test (SQLite in-memory) soit utilisée systématiquement lors des tests, avant tout import du module principal ou de l'app.
+- Nouvelle note : La refactorisation de database.py et __init__.py a été amorcée pour permettre une initialisation différée et contrôlée des moteurs (sync/async) selon la configuration active (test ou prod).
+- Nouvelle note : La fixture de base de données de test dans conftest.py a été refactorisée pour garantir l'utilisation stricte de SQLite in-memory et une isolation transactionnelle robuste pour chaque test.
+- Des erreurs 500 persistent lors des tests d'authentification (notamment sur l'inscription utilisateur) malgré l'utilisation d'une base SQLite in-memory et la configuration des fixtures de test. L'initialisation de la base ou la gestion des sessions pourrait être en cause.
+- Il existe une incompatibilité entre l'utilisation de sessions synchrones (code principal) et asynchrones (tests) : cela peut générer des erreurs 500 et des comportements inattendus.
+- Plusieurs implémentations de la dépendance get_db coexistent dans le code (core/deps.py, db/database.py, db/session.py, api/deps.py, core/dependencies.py), ce qui rend la surcharge complexe et source d'erreurs.
+- Nécessité d'auditer et de refactorer tous les fichiers de dépendances (api/deps.py, core/deps.py, core/dependencies.py, db/session.py) pour garantir une gestion cohérente des sessions et des dépendances sync/async entre l'application et les tests.
+- Un gestionnaire unifié de sessions a été créé (db/session_manager.py) pour centraliser la gestion sync/async, et les fonctions sont exposées dans db/__init__.py.
+- Tous les modules de dépendances critiques (main.py, core/deps.py, api/deps.py, db/session.py) ont été migrés pour utiliser le gestionnaire unifié de sessions.
+- Audit en cours de la stack de test (fixtures, conftest.py, test_auth.py) pour garantir l'utilisation cohérente du gestionnaire unifié de sessions async/sync dans tous les tests.
+- Nouvelle note : Migration demandée vers un moteur MySQL pour la production, à intégrer dans la stack Docker (remplacement de PostgreSQL et adaptation du code/CI).
+- Nouvelle note : Le service MySQL a été ajouté et configuré dans docker-compose.yml (remplacement complet de PostgreSQL, volume mysql_data, healthcheck adapté).
+- Nouvelle note : La configuration de Docker a été adaptée pour supporter MySQL (docker-compose.yml, Dockerfile, etc.).
+- Nouvelle note : Un fichier d'initialisation SQL (init.sql) pour MySQL a été créé et intégré dans la stack Docker pour initialiser le schéma de base de données AudioNexus.
+- Nouvelle note : La dépendance pymysql doit être ajoutée à requirements.txt pour permettre la connexion SQLAlchemy/MySQL.
+- Nouvelle note : La configuration database.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
+- Nouvelle note : La configuration session.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
+- Nouvelle note : La configuration session.py a été adaptée pour supporter explicitement MySQL (pool, connect_args, echo, etc.).
+- Nouvelle note : Les dépendances (requirements.txt, pyproject.toml) et la configuration Dockerfile ont été adaptées pour garantir l'installation de pymysql et la compatibilité MySQL.
+- Nouvelle note : La documentation (README.md) a été adaptée pour documenter la migration MySQL et la nouvelle configuration de la base de données.
+- Nouvelle note : La configuration des tests a été renforcée pour garantir l'utilisation stricte de SQLite in-memory et la robustesse de l'isolation transactionnelle.
+- Nouvelle note : La gestion conditionnelle des paramètres SQLAlchemy dans database.py a été améliorée pour distinguer correctement les modes test (SQLite in-memory) et production (MySQL).
+- Blocage critique : lors de l'exécution des tests, une erreur d'import survient (AttributeError: 'NoneType' object has no attribute 'User') liée à l'initialisation différée de la base et au cycle d'import des modèles dans app/db/__init__.py et les dépendances FastAPI. Il faut auditer et corriger l'initialisation différée de Base et des modèles pour garantir leur disponibilité lors de l'import des dépendances dans les tests.
+- Nouvelle note : L'initialisation différée des modèles dans app/db/__init__.py doit être revue pour garantir que les modèles sont correctement initialisés avant leur utilisation dans les tests.
+- Problème persistant : l'AttributeError ('NoneType' object has no attribute 'User') indique que l'initialisation de `models` n'est pas effective avant l'import dans les modules de dépendances (ex : app/api/deps.py). Il faut garantir l'appel explicite à `init_database()` ou l'initialisation de `models` avant tout import des dépendances FastAPI dans les tests.
+- Nouvelle note : le problème d'initialisation de `models` persiste dans certains modules (ex : app/core/api/auth.py), nécessitant un refactoring des annotations de type ou des imports pour éviter l'AttributeError lors des tests.
+- Nouvelle note : le problème d'initialisation de `models` et l'AttributeError persistent également dans d'autres modules critiques (ex : app/core/deps.py), nécessitant un refactoring similaire des annotations de type et des imports différés pour éviter les erreurs lors des tests.
+- Nouvelle note : une erreur NameError (name 'Token' is not defined) apparaît dans app/core/api/auth.py, liée à l'utilisation d'une annotation différée ou à l'oubli d'import dans le décorateur FastAPI. Il faut corriger l'import ou l'annotation pour Token.
+- Correction en cours : refactoring de l'initialisation différée dans app/__init__.py et app/db/__init__.py pour garantir que Base et les modèles sont disponibles avant tout import des dépendances lors des tests.
+- Mise à jour : Le refactoring des imports différés et des annotations de type (chaînes) dans api/deps.py, core/api/auth.py et core/deps.py permet désormais l'exécution des tests sans erreur d'importation circulaire ni NameError.
+- Nouvelle note : Les tests échouent désormais sur des erreurs 500 internes et des problèmes d'intégrité SQLite (transactions closes, contraintes d'unicité) lors des tests d'authentification. Il faut auditer l'isolation transactionnelle et la gestion des sessions dans les tests, ainsi que la création de données de test.
+- Nouvelle note : La gestion transactionnelle dans la fixture db_session a été améliorée (connexion explicite, transaction manuelle, session liée à la transaction, rollback/commit explicite, nettoyage renforcé). La surcharge des dépendances FastAPI (get_db, get_async_db) est désormais automatique et isolée pour chaque test.
+- Nouvelle note : Malgré l'amélioration de la gestion transactionnelle, les tests échouent toujours sur des erreurs d'intégrité (UNIQUE constraint failed sur username/email) et des statuts 500. Il faut auditer la création des utilisateurs de test et s'assurer que chaque test part d'une base propre.
+- Nouvelle note : Il est nécessaire d'auditer/adapter le CRUD utilisateur pour permettre la suppression ou le reset efficace des utilisateurs de test (table users) afin d'éviter les conflits d'unicité entre les tests.
+- Nouvelle note : La refactorisation des imports différés et des annotations de type a été réalisée avec succès, permettant l'exécution des tests sans erreur d'importation circulaire ni NameError.
+- Nouvelle note : Ajout d'un nettoyage automatique de la base de données avant chaque test dans la fixture db_session (conftest.py), garantissant une base propre et limitant les conflits d'unicité.
+- Nouvelle note : Ajout d'une vérification que la génération du token JWT dans la fixture normal_user_token_headers (conftest.py) correspond bien au format attendu par la dépendance OAuth2PasswordBearer et que l'en-tête Authorization est conforme ("Bearer <token>").
+- Nouvelle note : Ajout d'une vérification de la cohérence entre les routes d'authentification, les dépendances FastAPI (get_db, get_current_user), la configuration de test (conftest.py) et la gestion des sessions (async/sync) dans la stack de test, car des erreurs 500 persistent lors des tests d'authentification malgré le nettoyage de la base et la configuration des fixtures.
+  - [ ] Auditer la cohérence entre les routes d'authentification, les dépendances FastAPI et la configuration de test (conftest.py, main.py, core/api/auth.py, core/deps.py) pour expliquer et corriger les erreurs 500 persistantes dans les tests d'authentification
+  - [ ] Vérifier que la suppression de la double définition de oauth2_scheme et l'unification de la dépendance dans main.py et core/deps.py corrigent bien le problème de cohérence OAuth2 et l'erreur 422 sur /login/test-token
+  - [ ] Auditer/corriger la cohérence du schéma OAuth2 et des dépendances d'authentification (tokenUrl, oauth2_scheme) dans l'app et les tests pour corriger l'erreur 422 sur /login/test-token
+{{ ... }}
+    - [x] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
+{{ ... }}
+    - [x] Auditer la fixture db_session pour garantir le rollback correct et l'isolation entre les tests
+    - [x] Auditer la création d'utilisateurs et l'insertion de données pour éviter les conflits d'unicité (username/email)
+    - [x] Corriger les usages de commit/rollback dans les tests pour éviter ResourceClosedError et PendingRollbackError
+    - [x] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
+    - [x] Auditer/adapter le CRUD utilisateur pour permettre le nettoyage efficace de la table users entre les tests
+  - [x] Auditer/corriger la création de données de test pour éviter les contraintes d'unicité et les transactions closes (sqlite3.IntegrityError, ResourceClosedError)
 
 ## Task List
-- [x] Mise en place du backend FastAPI (structure, modèles utilisateurs, authentification)
-- [x] Authentification complète côté frontend (connexion, stockage JWT, routes protégées)
-- [x] Nettoyage du frontend et intégration du routage
-- [x] Préparation des fichiers d'environnement et configuration Nginx simplifiée
-- [x] Correction des problèmes de démarrage backend (imports, dépendances, Dockerfile)
-- [x] Lancer le serveur de développement frontend
-- [x] Vérifier l'accessibilité et le fonctionnement de l'application
-- [x] Interface administrateur minimale : vue fichiers en traitement
-- [x] Créer/copier le fichier .env pour la configuration
-- [x] Redémarrer les services Docker après modification de la configuration
-- [x] Corriger la variable ACCESS_TOKEN_EXPIRE_MINUTES dans le .env (valeur numérique)
-- [x] Corriger la configuration Nginx : remplacer l'upstream "app" par "backend"
-- [ ] Intégration Audiobookshelf (configuration, authentification, synchronisation)
-  - [x] Créer un service ou une dépendance FastAPI pour AudiobookshelfClient
-    - [x] Créer un routeur FastAPI pour Audiobookshelf (endpoints de base)
-    - [x] Inclure le routeur dans l'API principale
-    - [x] Ajouter endpoints avancés (recherche, collections, progression, upload, admin)
-  - [x] Créer un service de synchronisation avec Audiobookshelf
-  - [x] Créer un script CLI de synchronisation Audiobookshelf
-  - [ ] Implémenter la logique de synchronisation effective entre la base locale et Audiobookshelf
-    - [x] Vérifier/créer les modèles et schémas nécessaires pour la synchronisation Audiobookshelf
-    - [x] Créer les modèles SQLAlchemy pour la synchronisation Audiobookshelf
-    - [x] Créer les fonctions CRUD pour Audiobook et AudiobookProgress
-    - [x] Initialiser ou migrer la base de données pour ajouter les tables Audiobook et AudiobookProgress
-  - [x] Créer ou compléter le schéma AudiobookProgressCreate dans app/schemas/audiobook.py pour lever l'erreur d'import dans app/crud/audiobook.py
-- [ ] Gestion des fichiers de base (zone de dépôt, upload/extraction)
-  - [x] Auditer la configuration FastAPI pour les téléversements volumineux (UploadFile, endpoints, limites)
-- [x] Résoudre l'erreur "no such table: users" dans les tests d'authentification
-  - [x] Vérifier/initier la base de données de test avant l'exécution des tests d'authentification pour s'assurer que la table "users" existe bien
-  - [x] Si l'erreur persiste, auditer le scope des fixtures et l'ordre d'import des modèles dans les tests
-  - [x] Corriger l'import de Base et des modèles dans database.py pour garantir que tous les modèles sont enregistrés sur la même instance de Base (supprimer les multiples declarative_base)
-    - [x] Unifier l'import de Base dans models/base.py et les modèles associés
-    - [x] Supprimer la double déclaration de Base dans database.py (garder une seule instance partagée)
-- [x] Unifier et clarifier les dépendances (get_db, get_current_user, etc.) entre l'application et les tests pour éviter les erreurs 500
-- [ ] Corriger la configuration de la base de données pour que les tests utilisent systématiquement SQLite in-memory et non PostgreSQL
-- [ ] Corriger la gestion des sessions asynchrones dans les tests pour résoudre l’erreur "greenlet_spawn has not been called"
-  - [ ] Auditer et corriger l'utilisation de AsyncSession dans toutes les dépendances FastAPI et les fixtures de tests
-  - [ ] Unifier l'utilisation du moteur async et de AsyncSession dans toute la stack de test (dépendances, fixtures, configuration, endpoints)
+- [x] Supprimer la double déclaration de Base dans database.py (instance partagée)
+- [x] Unifier et clarifier les dépendances (get_db, get_current_user, etc.) entre l'application et les tests
+- [x] Corriger la configuration de la base de données pour que les tests utilisent systématiquement SQLite in-memory
+- [x] Corriger la gestion des sessions asynchrones dans les tests pour résoudre l’erreur "greenlet_spawn has not been called"
+  - [x] Auditer et corriger l'utilisation de AsyncSession dans toutes les dépendances FastAPI et les fixtures de tests
+  - [x] Unifier l'utilisation du moteur async et de AsyncSession dans toute la stack de test (dépendances, fixtures, configuration, endpoints)
 - [ ] Ajouter des tests supplémentaires et configurer la couverture de code
+  - [ ] Vérifier la couverture actuelle avec pytest-cov
+  - [ ] Ajouter des tests unitaires sur les endpoints principaux (auth, user, livre, etc.)
+  - [ ] Ajouter des tests pour les cas d'erreur (validation, accès refusé, etc.)
+  - [ ] Générer et analyser le rapport coverage.xml
+  - [ ] Diagnostiquer et corriger les erreurs 500 lors des tests d'authentification (register, login)
+- [ ] Corriger le chargement des variables d'environnement et la validation Pydantic dans config.py
+- [ ] Corriger tous les avertissements de dépréciation liés à Pydantic (FieldValidationInfo, signatures des validateurs, ConfigDict, etc.)
+- [x] Corriger l'avertissement PytestCollectionWarning sur TestSettings (renommage de la classe)
+- [x] Documenter l'avertissement passlib/crypt et suivre la mise à jour de la dépendance
+- [ ] Vérifier et mettre à jour les dépendances critiques (Pydantic, FastAPI, etc.)
 - [ ] Reprendre la correction de la configuration Docker
 - [x] Ajouter/mettre à jour les fichiers et dossiers pertinents depuis template.git
-  - [x] COMPORTEMENT.md
-  - [x] CONTRIBUTING.md
-  - [x] docs/README.md
-  - [x] GUIDE_UTILISATION.md
-  - [x] INITIALISATION.md
-  - [x] PROCESSUS.md
-  - [x] PROTOCOLE_DEBUT.md
-  - [x] PROTOCOLE_FIN.md
-  - [x] VALIDATION.md
 - [ ] En fin de session, arrêter et supprimer tous les containers de test et retirer toute référence au projet
+- [x] Migrer la configuration et les validateurs Pydantic vers la V2 (usage de @field_validator, ConfigDict, etc.)
+- [x] Adapter la configuration de test pour Pydantic V2 (SettingsConfigDict, model_config)
+- [x] Auditer et corriger la gestion des dépendances get_db et des sessions (sync/async) entre l'application et les tests pour garantir la cohérence et la stabilité des tests
+  - [x] Auditer et refactorer tous les fichiers de dépendances (api/deps.py, core/deps.py, core/dependencies.py, db/session.py) pour garantir une gestion unifiée et cohérente des sessions et dépendances
+  - [x] Créer un gestionnaire unifié de sessions (session_manager.py) et l'exposer dans db/__init__.py
+  - [x] Intégrer le gestionnaire unifié de sessions dans les fichiers principaux (main.py, core/deps.py)
+  - [x] Mettre à jour les fixtures et la stack de test (conftest.py, test_auth.py, etc.) pour garantir l'utilisation du gestionnaire unifié de sessions async/sync et la cohérence des tests
+    - [x] Adapter conftest.py pour utiliser le gestionnaire unifié
+    - [x] Adapter test_auth.py pour garantir l'utilisation correcte du gestionnaire unifié et vérifier la disparition des erreurs 500
+      - [x] Corriger l'import fautif de settings dans test_auth.py (ligne 17)
+      - [x] Auditer la configuration de la base de données utilisée lors des tests et forcer l'utilisation de SQLite in-memory (éviter toute tentative de connexion à l'hôte "db")
+      - [x] Auditer/corriger la logique d'initialisation de async_engine dans session_manager.py pour garantir l'usage de la bonne configuration de test
+      - [x] Corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py pour lever l'ImportError lors de l'exécution des tests
+      - [x] Corriger la fuite de configuration pour garantir l'utilisation stricte de SQLite in-memory dans tous les tests/auth
+      - [x] Finaliser le refactoring de l'initialisation des moteurs SQLAlchemy (sync et async) dans database.py, session.py et session_manager.py pour garantir l'usage de la bonne configuration selon le contexte (test/prod)
+- [x] Installer la dépendance Python 'asyncpg' pour permettre l'exécution des tests async/PostgreSQL
+- [x] Corriger l'import ou l'exposition de 'async_engine' dans app/db/__init__.py pour lever l'ImportError lors de l'exécution des tests
+- [ ] Migrer la stack vers MySQL (adapter la config, les modèles, les dépendances, la CI, et la stack Docker)
+  - [x] Adapter docker-compose.yml pour remplacer PostgreSQL par MySQL
+  - [x] Créer et intégrer un fichier init.sql pour l'initialisation du schéma MySQL
+  - [x] Ajouter pymysql à requirements.txt pour la compatibilité SQLAlchemy/MySQL
+  - [x] Adapter database.py pour la compatibilité explicite MySQL
+  - [x] Adapter session.py pour la compatibilité explicite MySQL
+  - [x] Adapter pyproject.toml pour la compatibilité explicite MySQL
+  - [x] Vérifier la compatibilité du Dockerfile pour l'installation de pymysql
+  - [x] Mettre à jour la documentation (README.md) pour la migration MySQL
+- [x] Mettre à jour la documentation (README.md) pour la migration MySQL
+  - [x] Renforcer la configuration de test pour garantir l'utilisation stricte de SQLite in-memory et la robustesse de l'isolation transactionnelle
+  - [x] Améliorer la gestion conditionnelle des paramètres SQLAlchemy dans database.py pour les tests et la production
+- [ ] Corriger l'initialisation des modèles et la gestion des imports pour éviter l'AttributeError (NoneType/"User") lors de l'exécution des tests
+  - [ ] S'assurer que l'initialisation de `models` est effective avant tout import dans les modules de dépendances (ex : app/api/deps.py)
+  - [ ] Corriger les annotations de type et les imports dans app/core/api/auth.py pour éviter l'AttributeError
+  - [ ] Corriger l'import ou l'annotation différée de Token dans app/core/api/auth.py pour lever le NameError
+  - [ ] Corriger les annotations de type et les imports dans app/core/deps.py pour éviter l'AttributeError
+  - [ ] Valider la disparition de l'AttributeError lors des tests après refactoring
+  - [ ] Auditer/corriger l'isolation transactionnelle et la gestion des sessions/données de test dans les tests d'authentification (test_auth.py, conftest.py)
+    - [ ] Auditer la fixture db_session pour garantir le rollback correct et l'isolation entre les tests
+    - [ ] Auditer la création d'utilisateurs et l'insertion de données pour éviter les conflits d'unicité (username/email)
+    - [ ] Corriger les usages de commit/rollback dans les tests pour éviter ResourceClosedError et PendingRollbackError
+    - [ ] S'assurer que chaque test part d'une base propre (reset ou nettoyage efficace de la table users)
+    - [ ] Auditer/adapter le CRUD utilisateur pour permettre le nettoyage efficace de la table users entre les tests
+  - [ ] Auditer/corriger la création de données de test pour éviter les contraintes d'unicité et les transactions closes (sqlite3.IntegrityError, ResourceClosedError)
+- [ ] Vérifier que la génération du token JWT dans la fixture normal_user_token_headers et l'en-tête Authorization sont conformes à l'attendu par OAuth2PasswordBearer
+- [ ] Appliquer le protocole de fin de session : mise à jour documentation, changelog, état du projet, exécution des tests, nettoyage des containers, sauvegarde et clôture propre
+- [ ] Corriger les erreurs 500 et 422 dans les tests d'authentification (priorité à la reprise)
 
 ## Current Goal
-Corriger la gestion des sessions asynchrones dans les tests d'authentification
+Documenter la fin de session et préparer la reprise sur les tests
