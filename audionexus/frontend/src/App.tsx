@@ -1,5 +1,5 @@
 import { ChakraProvider, Box } from '@chakra-ui/react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
@@ -32,9 +32,8 @@ function App() {
     <ChakraProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <Router>
-            <Box minH="100vh" bg="gray.50">
-              <Routes>
+          <Box minH="100vh" bg="gray.50">
+            <Routes>
                 {/* Public routes */}
                 <Route path="/login" element={<LoginPage />} />
                 
@@ -67,9 +66,8 @@ function App() {
                 {/* 404 - Not Found */}
                 <Route path="/404" element={<NotFoundPage />} />
                 <Route path="*" element={<Navigate to="/404" replace />} />
-              </Routes>
-            </Box>
-          </Router>
+            </Routes>
+          </Box>
         </AuthProvider>
         <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
       </QueryClientProvider>

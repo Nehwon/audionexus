@@ -2,6 +2,13 @@
 
 Ce document décrit les étapes à suivre pour démarrer une session de travail sur le projet AudioNexus de manière organisée et efficace.
 
+## 0. Remarques initiales
+- Tu ne dois faire que des tests, pas de développement
+- si des problèmes surviennent, ajoute les en tâches à la fin de la liste.
+- Prends la liste de façon sequentielle, une tâche à la fois.
+- Prends le temps pour chaque lancement de docker, particulièrement les base de données (au moins 30s lors du premier lancement)
+- si tu n'as pas appliqué le protocole de début de session, arrete tout et applique le protocole.
+
 ## 1. Vérifications Initiales
 
 ### 1.1. État du Dépôt

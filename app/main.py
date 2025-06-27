@@ -3,6 +3,7 @@
 Point d'entrée principal de l'application de gestion d'audiobooks.
 """
 import os
+import logging
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -18,21 +19,33 @@ from app.core.api import api_router
 # Configuration du cycle de vie de l'application
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Gestionnaire de cycle de vie de l'application FastAPI.
+    
+    Ce gestionnaire est responsable de l'initialisation et du nettoyage des ressources
+    au démarrage et à l'arrêt de l'application.
+    """
     # Démarrage de l'application
-    print("Démarrage de l'application...")
+    logger = logging.getLogger(__name__)
+    logger.info("Démarrage de l'application...")
     
-    # Initialisation de la base de données (sauf en environnement de test)
-    if not os.getenv("TESTING"):
-        init_database()
-        print("Base de données initialisée")
-    else:
-        print("Mode test - Initialisation de la base de données différée")
+    try:
+        # Initialisation de la base de données (sauf en environnement de test)
+        if not os.getenv("TESTING"):
+            logger.info("Initialisation de la base de données...")
+            init_database()
+            logger.info("Base de données initialisée avec succès")
+        else:
+            logger.info("Mode test - Initialisation de la base de données différée")
+    except Exception as e:
+        logger.error(f"Erreur lors de l'initialisation de la base de données: {e}")
+        raise
     
-    yield
-    
-    # Nettoyage à l'arrêt
-    if not os.getenv("TESTING"):
-        print("Arrêt de l'application...")
+    try:
+        yield
+    finally:
+        # Nettoyage à l'arrêt
+        if not os.getenv("TESTING"):
+            logger.info("Arrêt de l'application...")
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -108,24 +121,22 @@ async def health_check():
     Vérifie également la connexion à la base de données.
     """
     from sqlalchemy import text
-    from app.database import SessionLocal
+    from app.db.session_manager import get_async_db_session
     
-    db = SessionLocal()
     try:
-        # Vérification de la connexion à la base de données
-        db.execute(text("SELECT 1"))
-        return {
-            "status": "ok",
-            "database": "connected"
-        }
+        async with get_async_db_session() as db:
+            # Vérification de la connexion à la base de données
+            await db.execute(text("SELECT 1"))
+            return {
+                "status": "ok",
+                "database": "connected"
+            }
     except Exception as e:
         return {
             "status": "error",
             "database": "disconnected",
             "error": str(e)
         }, 500
-    finally:
-        db.close()
 
 # Gestion des erreurs
 @app.exception_handler(404)

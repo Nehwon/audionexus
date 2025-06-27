@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "audionexus")
     DB_NAME: str = os.getenv("DB_NAME", "audionexus")
     DATABASE_URI: Optional[str] = None
+    DATABASE_URI_SYNC: Optional[str] = None
     
     @field_validator("DATABASE_URI", mode='before')
     @classmethod
@@ -78,7 +79,21 @@ class Settings(BaseSettings):
             # En mode test, on utilise SQLite en mémoire
             return "sqlite+aiosqlite:///:memory:"
             
-        # En production/développement, on utilise MySQL
+        # En production/développement, on utilise MySQL avec le pilote asynchrone aiomysql
+        return f"mysql+aiomysql://{values.get('DB_USER')}:{values.get('DB_PASSWORD')}@{values.get('DB_HOST')}:{values.get('DB_PORT')}/{values.get('DB_NAME')}?charset=utf8mb4"
+    
+    @field_validator("DATABASE_URI_SYNC", mode='before')
+    @classmethod
+    def assemble_sync_db_connection(cls, v: Optional[str], info: 'ValidationInfo') -> str:
+        if isinstance(v, str) and v:
+            return v
+            
+        values = info.data
+        if os.getenv("TESTING", "").lower() == "true":
+            # En mode test, on utilise SQLite en mémoire
+            return "sqlite:///:memory:"
+            
+        # URL de connexion synchrone pour l'initialisation
         return f"mysql+pymysql://{values.get('DB_USER')}:{values.get('DB_PASSWORD')}@{values.get('DB_HOST')}:{values.get('DB_PORT')}/{values.get('DB_NAME')}?charset=utf8mb4"
     
     # Configuration JWT

@@ -33,13 +33,15 @@ dependencies = [
     "python-multipart>=0.0.6",
     
     # Database
-    "sqlalchemy>=2.0.0",
+    "sqlalchemy[asyncio]>=2.0.0",
     "alembic>=1.11.0",
-    "pymysql>=1.1.0",  # Connexion MySQL pour SQLAlchemy
+    "aiomysql>=0.1.1",  # Connexion asynchrone MySQL pour SQLAlchemy
+    "pymysql>=1.1.0",   # Connexion synchrone MySQL pour l'initialisation de la base de données
     # "psycopg2-binary>=2.9.5",  # Ancienne dépendance PostgreSQL (conservée pour référence)
     
     # Authentication & Security
     "python-jose[cryptography]>=3.3.0",
+    "PyJWT>=2.8.0",
     "passlib[bcrypt]>=1.7.4",
     "python-magic>=0.4.27",
     

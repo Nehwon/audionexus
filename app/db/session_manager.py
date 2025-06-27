@@ -50,8 +50,8 @@ def init_async_engine() -> None:
         expire_on_commit=False
     )
 
-# Initialisation du moteur au chargement du module
-init_async_engine()
+# L'initialisation du moteur est maintenant gérée de manière différée
+# via la fonction init_async_engine() appelée depuis app/db/__init__.py
 
 def get_db() -> Generator[Session, None, None]:
     """

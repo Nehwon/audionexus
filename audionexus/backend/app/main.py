@@ -1,11 +1,26 @@
+import logging
+import sys
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import init_db, logger as db_logger
 from app.api.v1.auth.router import router as auth_router
+
+# Configuration du logger racine
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Création du logger pour ce module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -53,9 +68,27 @@ app.include_router(
 # Événement de démarrage de l'application
 @app.on_event("startup")
 async def startup_event():
+    logger.info("\n" + "="*80)
+    logger.info(f"DÉMARRAGE DE L'APPLICATION {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info("="*80 + "\n")
+    
+    # Afficher les variables d'environnement pour le débogage
+    logger.info("Variables d'environnement:")
+    logger.info(f"- DATABASE_URL: {settings.DATABASE_URL}")
+    logger.info(f"- FIRST_SUPERUSER_EMAIL: {settings.FIRST_SUPERUSER_EMAIL}")
+    logger.info(f"- FIRST_SUPERUSER_PASSWORD: {'*' * len(settings.FIRST_SUPERUSER_PASSWORD) if settings.FIRST_SUPERUSER_PASSWORD else 'Non défini'}\n")
+    
     # Initialiser la base de données
-    init_db()
-    print(f"{settings.PROJECT_NAME} v{settings.VERSION} démarré avec succès!")
+    logger.info("Appel de init_db()...")
+    try:
+        init_db()
+        logger.info("✓ init_db() terminé avec succès\n")
+    except Exception as e:
+        logger.error(f"✗ ERREUR lors de l'appel à init_db(): {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
+    logger.info(f"\n{settings.PROJECT_NAME} v{settings.VERSION} démarré avec succès!\n")
 
 # Montage des fichiers statiques (pour les fichiers téléchargés)
 app.mount("/static", StaticFiles(directory="static"), name="static")

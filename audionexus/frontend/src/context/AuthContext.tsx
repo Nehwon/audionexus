@@ -31,24 +31,46 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
 
   // Vérifier l'état d'authentification au chargement
   useEffect(() => {
+    let isMounted = true;
+    
     const checkAuth = async () => {
       const token = getToken();
-      if (token) {
-        try {
-          const response = await authService.getMe();
+      if (!token) {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await authService.getMe();
+        if (isMounted) {
           setUser(response.data);
-        } catch (error) {
-          console.error('Erreur de vérification de l\'authentification:', error);
+          setError(null);
+        }
+      } catch (error) {
+        console.error('Erreur de vérification de l\'authentification:', error);
+        if (isMounted) {
+          setError(error as Error);
           clearLocalToken();
         }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
     };
 
     checkAuth();
+    
+    // Nettoyage lors du démontage du composant
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

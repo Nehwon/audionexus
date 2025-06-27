@@ -6,7 +6,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Création de la base de données si elle n'existe pas déjà
 -- La base de données est déjà créée par les variables d'environnement, mais nous pouvons la sélectionner
-USE `${MYSQL_DATABASE}`;
+USE `audionexus`;
 
 -- Désactiver temporairement les contraintes de clé étrangère
 SET FOREIGN_KEY_CHECKS = 0;

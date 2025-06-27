@@ -28,12 +28,12 @@ def init_engine() -> None:
     # Import différé pour permettre la configuration des tests
     from app.config import settings
     
-    # Configuration de l'URL de la base de données
-    database_uri = settings.DATABASE_URI
+    # Utilisation de l'URL de base de données synchrone pour l'initialisation
+    database_uri = settings.DATABASE_URI_SYNC
     
     # Détection du type de base de données
     is_sqlite = database_uri.startswith('sqlite')
-    is_mysql = 'mysql' in database_uri
+    is_mysql = 'mysql' in database_uri or 'pymysql' in database_uri
     
     # Paramètres communs
     engine_kwargs: Dict[str, Any] = {
@@ -79,7 +79,7 @@ def init_engine() -> None:
         engine_kwargs.setdefault('connect_args', {'check_same_thread': False})
     
     # Désactiver le pool pour SQLite en mémoire
-    if database_uri == 'sqlite+aiosqlite:///:memory:':
+    if database_uri == 'sqlite:///:memory:':
         engine_kwargs['poolclass'] = StaticPool
         engine_kwargs['connect_args'] = {'check_same_thread': False}
     

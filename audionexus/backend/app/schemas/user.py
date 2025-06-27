@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field, validator
 
 class UserBase(BaseModel):
     """Schéma de base pour un utilisateur."""
+    username: str = Field(..., min_length=3, max_length=50, regex=r'^[a-zA-Z0-9_]+$')
     email: EmailStr
     full_name: Optional[str] = None
     is_active: bool = True
@@ -28,6 +29,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """Schéma pour la mise à jour d'un utilisateur."""
+    username: Optional[str] = Field(None, min_length=3, max_length=50, regex=r'^[a-zA-Z0-9_]+$')
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8, max_length=100)

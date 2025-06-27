@@ -135,16 +135,26 @@ class AuthService:
     def create_user(db: Session, user: UserCreate) -> User:
         """Crée un nouvel utilisateur."""
         # Vérifie si l'email est déjà utilisé
-        db_user = AuthService.get_user(db, email=user.email)
+        db_user = db.query(User).filter(
+            (User.email == user.email) | (User.username == user.username)
+        ).first()
+        
         if db_user:
-            raise HTTPException(
-                status_code=400,
-                detail="Cet email est déjà utilisé"
-            )
+            if db_user.email == user.email:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cet email est déjà utilisé"
+                )
+            elif db_user.username == user.username:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ce nom d'utilisateur est déjà utilisé"
+                )
         
         # Crée l'utilisateur
         hashed_password = AuthService.get_password_hash(user.password)
         db_user = User(
+            username=user.username,
             email=user.email,
             hashed_password=hashed_password,
             full_name=user.full_name,
