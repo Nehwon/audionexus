@@ -118,9 +118,17 @@ def get_db():
     finally:
         db.close()
 
-def init_db():
+async def init_db():
     """
     Initialise la base de données en créant toutes les tables.
+    Gère à la fois les moteurs synchrones et asynchrones.
     """
-    # Utilisation de l'instance unique de Base importée au début du fichier
-    Base.metadata.create_all(bind=engine)
+    from sqlalchemy.ext.asyncio import AsyncEngine
+    
+    if isinstance(engine, AsyncEngine):
+        # Pour un moteur asynchrone, on utilise run_sync
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    else:
+        # Pour un moteur synchrone, on utilise directement create_all
+        Base.metadata.create_all(bind=engine)

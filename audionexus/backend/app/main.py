@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.v1.auth.router import router as auth_router
+from app.api import api_router
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -48,6 +49,12 @@ app.include_router(
     auth_router,
     prefix=f"{settings.API_V1_STR}/auth",
     tags=["auth"],
+)
+
+# Inclure le routeur principal d'API
+app.include_router(
+    api_router,
+    prefix=settings.API_V1_STR,
 )
 
 # Événement de démarrage de l'application

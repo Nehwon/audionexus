@@ -52,9 +52,10 @@ class UserInDB(UserInDBBase):
     hashed_password: str
 
 class Token(BaseModel):
-    """Schéma pour le jeton d'accès."""
+    """Schéma pour le jeton d'accès et de rafraîchissement."""
     access_token: str
     token_type: str = "bearer"
+    refresh_token: str
 
 class TokenData(BaseModel):
     """Schéma pour les données du jeton."""

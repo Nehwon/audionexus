@@ -78,8 +78,8 @@ class Settings(BaseSettings):
             # En mode test, on utilise SQLite en mémoire
             return "sqlite+aiosqlite:///:memory:"
             
-        # En production/développement, on utilise MySQL
-        return f"mysql+pymysql://{values.get('DB_USER')}:{values.get('DB_PASSWORD')}@{values.get('DB_HOST')}:{values.get('DB_PORT')}/{values.get('DB_NAME')}?charset=utf8mb4"
+        # En production/développement, on utilise MySQL avec aiomysql pour le support asynchrone
+        return f"mysql+aiomysql://{values.get('DB_USER')}:{values.get('DB_PASSWORD')}@{values.get('DB_HOST')}:{values.get('DB_PORT')}/{values.get('DB_NAME')}?charset=utf8mb4"
     
     # Configuration JWT
     JWT_SECRET: str = Field(

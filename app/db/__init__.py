@@ -44,12 +44,21 @@ def init_database() -> None:
     try:
         # Import différé pour éviter les imports circulaires
         from sqlalchemy.orm import declarative_base
-        from .database import init_engine, Base as DatabaseBase
-        from .session import SessionLocal as SessionLocalFactory
-        from .session_manager import get_db as get_db_func, get_async_db as get_async_db_func
+        from .database import init_engine, Base as DatabaseBase, engine as db_engine, \
+                            SessionLocal as db_SessionLocal, ScopedSession as db_ScopedSession
+        from .session_manager import (
+            get_db as get_db_func, 
+            get_async_db as get_async_db_func,
+            get_db_session as get_db_session_func,
+            get_async_db_session as get_async_db_session_func,
+            async_engine as db_async_engine,
+            AsyncSessionLocal as db_AsyncSessionLocal,
+            init_async_engine
+        )
         
-        # Initialisation du moteur de base de données
+        # Initialisation des moteurs
         init_engine()
+        init_async_engine()
         
         # Assignation des références globales
         Base = DatabaseBase
@@ -57,11 +66,6 @@ def init_database() -> None:
         models = models_module
         
         # Initialisation des sessions
-        from .database import engine as db_engine, SessionLocal as db_SessionLocal, \
-                              ScopedSession as db_ScopedSession
-        from .session import async_engine as db_async_engine, \
-                             AsyncSessionLocal as db_AsyncSessionLocal
-        
         engine = db_engine
         SessionLocal = db_SessionLocal
         ScopedSession = db_ScopedSession
@@ -71,8 +75,8 @@ def init_database() -> None:
         # Initialisation des fonctions d'aide
         get_db = get_db_func
         get_async_db = get_async_db_func
-        get_db_session = get_db_func
-        get_async_db_session = get_async_db_func
+        get_db_session = get_db_session_func
+        get_async_db_session = get_async_db_session_func
         
         _initialized = True
         logger.info("Base de données initialisée avec succès")
@@ -115,6 +119,25 @@ def init_database() -> None:
         async_engine = async_engine_import
         models = models_import
         _initialized = True
+        
+        # Appel à init_db de manière synchrone ou asynchrone selon le moteur
+        try:
+            import asyncio
+            if hasattr(engine, 'run_sync'):
+                # Si le moteur supporte run_sync (moteur asynchrone)
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Si on est déjà dans une boucle d'événements
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    loop.run_until_complete(init_db())
+                else:
+                    loop.run_until_complete(init_db())
+            else:
+                # Pour les moteurs synchrones
+                init_db()
+        except Exception as e:
+            logger.warning(f"Erreur lors de l'initialisation de la base de données: {e}")
         
     except ImportError as e:
         warnings.warn(f"Erreur lors de l'initialisation différée de la base de données: {e}")
