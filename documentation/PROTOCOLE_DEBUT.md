@@ -44,9 +44,24 @@ Ce document décrit les étapes à suivre pour démarrer une session de travail 
   npm install
   ```
 
-## 3. Démarrage des Services
+## 3. Documentation
 
-### 3.1. Services Docker
+- [ ] Consulter la documentation du projet
+  ```bash
+  # Ouvrir la documentation dans le navigateur
+  open documentation/README.md
+  # Ou consulter directement les fichiers Markdown dans les sous-dossiers thématiques
+  ```
+- [ ] Vérifier les mises à jour de la documentation
+- [ ] Si nécessaire, générer une nouvelle documentation
+  ```bash
+  # Générer la documentation de l'API
+  pdoc --html -o documentation/api app --force
+  ```
+
+## 4. Démarrage des Services
+
+### 4.1. Services Docker
 - [ ] Démarrer les services en arrière-plan
   ```bash
   docker-compose up -d

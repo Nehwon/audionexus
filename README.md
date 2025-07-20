@@ -1,8 +1,8 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
-[![Version](https://img.shields.io/badge/version-0.3.2--alpha-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.6--alpha-blue.svg)](documentation/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](docs/)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](documentation/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI-009485.svg)](backend/)
@@ -445,7 +445,7 @@ Voir le dossier `examples/` pour plus de cas d'utilisation :
 │
 ├── scripts/            # Scripts utilitaires
 ├── tests/               # Tests automatisés
-└── docs/                # Documentation
+└── documentation/       # Documentation complète
 ```
 
 ## 🛠️ Développement
@@ -528,18 +528,31 @@ mypy app/
 
 ## 📚 Documentation
 
-La documentation est disponible dans le dossier `docs/` :
+La documentation complète est organisée dans le dossier [documentation/](documentation/) :
 
-- [Guide d'installation](docs/installation.md)
-- [Guide d'utilisation](docs/usage.md)
-- [Documentation de l'API](docs/api.md)
-- [Développement](docs/development.md)
+### Guides
+- [Guide d'installation](documentation/guides/installation.md)
+- [Guide de développement](documentation/development/)
+- [Documentation de l'API](documentation/api/)
+- [Intégration avec Audiobookshelf](documentation/guides/audiobookshelf_integration.md)
 
-Pour générer la documentation :
+### Référence
+- [Documentation de l'API](documentation/api/)
+- [Référence technique](documentation/reference/)
+
+### Développement
+- [Guide du développeur](documentation/development/)
+- [Architecture](documentation/architecture/)
+- [Décisions techniques](documentation/decisions/)
+
+### Contribution
+- [Code de conduite](documentation/contributing/CODE_OF_CONDUCT.md)
+- [Guide de contribution](documentation/contributing/CONTRIBUTING.md)
+- [Processus de développement](documentation/contributing/DEVELOPMENT.md) :
 
 ```bash
 # Installer les dépendances de documentation
-pip install -r docs/requirements.txt
+pip install -r requirements.txt
 
 # Générer la documentation
 cd docs && make html

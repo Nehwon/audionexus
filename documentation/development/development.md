@@ -81,6 +81,13 @@ audionexus/
 │       ├── services/        # Services API
 │       └── App.tsx          # Composant racine
 │
+├── documentation/         # Documentation complète
+│   ├── api/              # Documentation de l'API (générée)
+│   ├── architecture/     # Documentation d'architecture
+│   ├── decisions/        # Décisions techniques (ADR)
+│   ├── guides/           # Guides pratiques
+│   ├── user-guide/       # Guide utilisateur
+│   └── contributing/     # Documentation pour les contributeurs
 ├── docs/                   # Documentation
 ├── nginx/                   # Configuration Nginx
 └── scripts/                 # Scripts utilitaires
@@ -184,15 +191,22 @@ docker-compose exec backend pytest --cov=app tests/
 
 ## Documentation
 
-### Génération de la Documentation
+La documentation est essentielle pour maintenir le projet. Suivez ces directives :
 
-Backend :
+1. **Docstrings** : Toutes les fonctions et classes doivent avoir des docstrings au format Google Style.
+2. **Mise à jour** : Mettez à jour la documentation quand vous modifiez le code.
+3. **Génération** : La documentation est générée avec `pdoc`.
+
+Pour générer la documentation :
 
 ```bash
-docker-compose exec backend pdoc --html -o docs/api app
+# Générer la documentation HTML
+pdoc --html -o documentation/api app --force
 ```
 
-Frontend :
+Consultez le [guide de documentation](contributing/DOCUMENTATION.md) pour des directives détaillées sur la documentation du code.
+
+### Frontend
 
 ```bash
 cd audionexus/frontend

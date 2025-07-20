@@ -144,7 +144,7 @@ docker compose exec backend bash
   ```
 - **Frontend** : JSDoc pour les composants et fonctions
 - **API** : Documentation OpenAPI via FastAPI
-- **Bases de données** : Schémas et relations dans `/docs/database.md`
+- **Bases de données** : Schémas et relations dans `documentation/architecture/database.md`
 
 ## 🧪 Tests
 

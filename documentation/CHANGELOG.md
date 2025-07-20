@@ -5,6 +5,19 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2025-07-21
+
+### Modifié
+- Mise à jour des endpoints d'authentification pour supporter Pydantic v2
+- Amélioration de la gestion des erreurs dans les endpoints d'API
+- Mise à jour de la documentation des endpoints
+
+### Corrigé
+- Résolution des erreurs 500 dans les endpoints d'authentification
+- Correction de la gestion des sessions asynchrones
+- Problèmes de validation des modèles Pydantic v2
+- Configuration des tests pour utiliser SQLite in-memory
+
 ## [0.3.5] - 2025-06-27
 
 ### Modifié

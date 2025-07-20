@@ -3,11 +3,12 @@ Routes d'authentification pour l'API.
 """
 from __future__ import annotations
 from datetime import timedelta
-from typing import Any, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.core import security
@@ -20,15 +21,45 @@ if TYPE_CHECKING:
 
 router = APIRouter()
 
-@router.post("/login/access-token", response_model="Token")
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@router.post("/login/access-token", response_model=Dict[str, str])
 async def login_access_token(
-    db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
-) -> Any:
+    request: Request,
+    db: AsyncSession = Depends(deps.get_async_db)
+) -> Dict[str, str]:
     """
     OAuth2 compatible token login, get an access token for future requests.
+    Accepts both form data and JSON input.
     """
-    user = crud.crud_user.authenticate_user(
-        db, username=form_data.username, password=form_data.password
+    content_type = request.headers.get("Content-Type", "")
+    
+    if "application/x-www-form-urlencoded" in content_type:
+        form_data = await request.form()
+        username = form_data.get("username")
+        password = form_data.get("password")
+    else:
+        try:
+            json_data = await request.json()
+            login_data = LoginRequest(**json_data)
+            username = login_data.username
+            password = login_data.password
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid request data format"
+            )
+    
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Username and password are required"
+        )
+    
+    user = await crud.crud_user.authenticate_user(
+        db, username=username, password=password
     )
     if not user:
         raise HTTPException(
@@ -54,26 +85,41 @@ async def test_token(current_user: 'models.User' = Depends(deps.get_current_user
     logger.info(f"Test token endpoint called with user: {current_user.username}")
     return current_user
 
-@router.post("/register", response_model='UserInDB')
+@router.post("/register", response_model=Dict[str, Any])
 async def create_user(
-    *,
-    db: Session = Depends(deps.get_db),
-    user_in: 'UserCreate',
-) -> Any:
+    user_in: 'UserCreate' = Body(...),
+    db: AsyncSession = Depends(deps.get_async_db),
+) -> Dict[str, Any]:
     """
     Create new user.
     """
-    user = crud.crud_user.get_user_by_email(db, email=user_in.email)
-    if user:
+    # Check if email already exists
+    existing_user = await crud.crud_user.get_user_by_email(db, email=user_in.email)
+    if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="The user with this email already exists in the system.",
         )
-    user = crud.crud_user.get_user_by_username(db, username=user_in.username)
-    if user:
+        
+    # Check if username already exists
+    existing_user = await crud.crud_user.get_user_by_username(db, username=user_in.username)
+    if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="The user with this username already exists in the system.",
         )
-    user = crud.crud_user.create_user(db=db, user=user_in)
-    return user
+    
+    # Create new user
+    user = await crud.crud_user.create_user(db=db, user=user_in)
+    
+    # Convert user to dict for response
+    user_dict = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+    }
+    
+    return user_dict

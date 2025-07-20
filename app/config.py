@@ -136,27 +136,34 @@ def get_settings() -> Settings:
     Cette fonction permet de gérer correctement le rechargement des variables d'environnement
     lors des tests et nettoie les valeurs problématiques.
     """
-    # En mode test, on force certaines valeurs et on nettoie les variables d'environnement problématiques
+    # Nettoyage des variables d'environnement problématiques en premier
+    clean_environment_variables()
+    
+    # En mode test, on force certaines valeurs
     if os.getenv("TESTING", "").lower() == "true":
         logger.info("Chargement de la configuration en mode TEST")
         
-        # Nettoyage des variables d'environnement problématiques
-        if "ACCESS_TOKEN_EXPIRE_MINUTES" in os.environ:
-            logger.warning("Suppression de la variable d'environnement ACCESS_TOKEN_EXPIRE_MINUTES pour les tests")
-            del os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"]
+        # Suppression définitive des variables problématiques
+        for var in ["ACCESS_TOKEN_EXPIRE_MINUTES"]:
+            if var in os.environ:
+                logger.warning(f"Suppression de la variable d'environnement {var} pour les tests")
+                del os.environ[var]
         
         # Chargement des paramètres avec des valeurs par défaut pour les tests
         return Settings(
             DEBUG=True,
+            TESTING=True,
             DATABASE_URI="sqlite+aiosqlite:///:memory:",
             ACCESS_TOKEN_EXPIRE_MINUTES=60,  # 1h pour les tests
             # Désactive le chargement des variables d'environnement
             _env_file=None,
-            _env_file_encoding=None
+            _env_file_encoding=None,
+            # Désactive la validation des champs requis pour les tests
+            _env_ignore_extra=True,
+            _env_ignore_unknown=True
         )
     
-    # En mode production/développement, on nettoie les variables d'environnement avant utilisation
-    clean_environment_variables()
+    # En mode production/développement, on utilise la configuration normale
     return Settings()
 
 # Instance des paramètres

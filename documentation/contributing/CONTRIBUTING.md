@@ -158,7 +158,7 @@ npm test
 
 - Mettez à jour la documentation lorsque vous ajoutez ou modifiez des fonctionnalités
 - Utilisez des commentaires clairs et concis dans le code
-- Documentez les décisions techniques importantes dans `docs/decisions`
+- Documentez les décisions techniques importantes dans `documentation/decisions/`
 
 ## Questions
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "audionexus"
-version = "0.3.2"
+version = "0.3.6"  # Updated for authentication fixes and Pydantic v2 migration
 description = "Plateforme de gestion centralisée d'instances Audiobookshelf avec interface web unifiée"
 readme = "README.md"
 requires-python = ">=3.8"

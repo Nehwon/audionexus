@@ -23,6 +23,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy import text
 
@@ -34,19 +35,24 @@ from app.db import get_db as get_db_dep, get_async_db, async_engine, AsyncSessio
 from app.core.deps import oauth2_scheme
 
 # Configuration de la base de données de test
-TEST_SQLALCHEMY_DATABASE_URL = test_settings.DATABASE_URI
+TEST_SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 # Création d'un moteur SQLite en mémoire pour les tests
 @pytest_asyncio.fixture(scope="session")
 async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Crée un moteur SQLite en mémoire pour les tests."""
     from sqlalchemy.ext.asyncio import create_async_engine
+    from app.db.session_manager import init_async_engine
     
+    # Forcer l'initialisation avec SQLite en mémoire
+    init_async_engine(TEST_SQLALCHEMY_DATABASE_URL, force=True)
+    
+    # Créer le moteur directement pour les tests
     engine = create_async_engine(
         TEST_SQLALCHEMY_DATABASE_URL,
         echo=False,
         poolclass=StaticPool,
-        connect_args={"check_same_thread": False} if "sqlite" in TEST_SQLALCHEMY_DATABASE_URL else {}
+        connect_args={"check_same_thread": False}
     )
     
     # Création des tables
@@ -58,6 +64,11 @@ async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
     
     # Nettoyage
     await engine.dispose()
+    
+    # Réinitialiser le moteur global pour les autres tests
+    from app.db.session_manager import async_engine as global_engine
+    if global_engine:
+        await global_engine.dispose()
 
 # Nettoyage de la base de données avant chaque test
 async def cleanup_database(async_engine: AsyncEngine):
@@ -87,35 +98,42 @@ async def db_session(async_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, 
     - Gère correctement les erreurs et le nettoyage
     """
     from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy import event
     
-    # Nettoyer la base de données avant chaque test
-    await cleanup_database(async_engine)
-    
-    # Créer une nouvelle session avec un rollback automatique en cas d'erreur
-    connection = await async_engine.connect()
-    transaction = await connection.begin()
-    
-    # Créer une session liée à cette transaction
-    session = AsyncSession(
-        bind=connection,
+    # Créer une factory pour les sessions asynchrones
+    async_session_factory = sessionmaker(
+        bind=async_engine,
+        class_=AsyncSession,
         expire_on_commit=False,
         autocommit=False,
         autoflush=False
     )
     
-    # S'assurer que la session utilise notre transaction
-    session.sync_session.begin_nested()
-    
-    try:
-        yield session
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise
-    finally:
-        await session.close()
-        await transaction.rollback()
-        await connection.close()
+    # Créer une nouvelle session
+    async with async_session_factory() as session:
+        # Commencer une transaction imbriquée
+        await session.begin_nested()
+        
+        # Configuration pour réinitialiser la connexion après chaque test
+        @event.listens_for(session.sync_session, 'after_transaction_end')
+        def restart_savepoint(session, transaction):
+            if transaction.nested and not transaction._parent.nested:
+                session.expire_all()
+                session.begin_nested()
+        
+        try:
+            # Nettoyer la base de données avant le test
+            await cleanup_database(async_engine)
+            
+            yield session
+            
+            # S'assurer que toutes les opérations sont validées
+            await session.commit()
+            
+        except Exception:
+            await session.rollback()
+            raise
 
 # Surcharge de la dépendance get_db pour les tests
 @pytest_asyncio.fixture(autouse=True)
@@ -141,13 +159,18 @@ async def override_dependencies(db_session: AsyncSession):
 
 # Fixture pour le client de test asynchrone
 @pytest_asyncio.fixture(scope="function")
-async def async_client() -> AsyncGenerator[AsyncClient, None]:
+async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """
     Crée un client de test asynchrone FastAPI avec une base de données propre.
     
     - Utilise ASGITransport pour une intégration complète avec FastAPI
+    - Surcharge les dépendances pour utiliser la session de test
     - Nettoie les dépendances après utilisation
     """
+    # Surcharge des dépendances pour utiliser la session de test
+    app.dependency_overrides[get_async_db] = lambda: db_session
+    
+    # Création du client de test asynchrone
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"
@@ -155,7 +178,8 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
         try:
             yield client
         finally:
-            # Nettoyage des dépendances
+            # Nettoyage après le test
+            await db_session.rollback()
             app.dependency_overrides.clear()
 
 # Fixture pour le client de test synchrone (compatibilité)

@@ -1,57 +1,61 @@
 """
 Opérations CRUD pour les utilisateurs.
 """
-from typing import Optional
-from sqlalchemy.orm import Session
+from typing import Optional, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.core.security import get_password_hash, verify_password
 from app.db.models.base import User, UserCreate
 
-def get_user(db: Session, user_id: int) -> Optional[User]:
+async def get_user(db: AsyncSession, user_id: int) -> Optional[User]:
     """
     Récupère un utilisateur par son ID.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         user_id: ID de l'utilisateur
         
     Returns:
         User: L'utilisateur trouvé ou None
     """
-    return db.query(User).filter(User.id == user_id).first()
+    result = await db.execute(select(User).filter(User.id == user_id))
+    return result.scalars().first()
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     """
     Récupère un utilisateur par son email.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         email: Email de l'utilisateur
         
     Returns:
         User: L'utilisateur trouvé ou None
     """
-    return db.query(User).filter(User.email == email).first()
+    result = await db.execute(select(User).filter(User.email == email))
+    return result.scalars().first()
 
-def get_user_by_username(db: Session, username: str) -> Optional[User]:
+async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
     """
     Récupère un utilisateur par son nom d'utilisateur.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         username: Nom d'utilisateur
         
     Returns:
         User: L'utilisateur trouvé ou None
     """
-    return db.query(User).filter(User.username == username).first()
+    result = await db.execute(select(User).filter(User.username == username))
+    return result.scalars().first()
 
-def create_user(db: Session, user: UserCreate) -> User:
+async def create_user(db: AsyncSession, user: UserCreate) -> User:
     """
     Crée un nouvel utilisateur.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         user: Données de l'utilisateur à créer
         
     Returns:
@@ -65,42 +69,43 @@ def create_user(db: Session, user: UserCreate) -> User:
         full_name=user.full_name
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user
 
-def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     """
     Authentifie un utilisateur avec son nom d'utilisateur et son mot de passe.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         username: Nom d'utilisateur
         password: Mot de passe en clair
         
     Returns:
         User: L'utilisateur authentifié ou None
     """
-    user = get_user_by_username(db, username)
+    user = await get_user_by_username(db, username)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
         return None
     return user
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
+async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
     """
     Récupère une liste d'utilisateurs avec pagination.
     
     Args:
-        db: Session de base de données
+        db: Session de base de données asynchrone
         skip: Nombre d'utilisateurs à sauter
         limit: Nombre maximum d'utilisateurs à retourner
         
     Returns:
         List[User]: Liste des utilisateurs
     """
-    return db.query(User).offset(skip).limit(limit).all()
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    return result.scalars().all()
 
 def is_active(user: User) -> bool:
     """

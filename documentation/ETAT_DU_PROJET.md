@@ -1,11 +1,24 @@
-# État du Projet AudioNexus - 27/06/2025
+# État du Projet AudioNexus - 20/07/2025
 
 ## 📌 Vue d'ensemble
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
+## ⚠️ État actuel (21/07/2025)
+- **Dernière action** : Correction des erreurs d'authentification
+- **Statut** : Développement actif - Correction des tests
+- **Branche** : `fix/authentication-issues`
+- **Problèmes critiques** : 
+  - Erreur 500 dans l'endpoint `/auth/register`
+  - Problème de validation Pydantic v2 avec `UserCreate`
+  - Gestion des sessions asynchrones à finaliser
+- **Tâches en cours** :
+  - Migration complète vers MySQL
+  - Correction des tests d'authentification
+  - Unification de la gestion des sessions
+
 ## 📊 Version actuelle
 - **Version** : 0.3.5-alpha (en développement actif)
-- **Dernière mise à jour** : 27/06/2025
+- **Dernière mise à jour** : 20/07/2025
 - **Statut** : Développement actif - Migration vers MySQL
 - **Branche** : `feature/mysql-migration`
 - **Environnement** : Développement local avec Docker (MySQL)
@@ -14,14 +27,26 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 
 ### Backend (Python/FastAPI)
 - ✅ API RESTful avec FastAPI
-- ✅ Migration de PostgreSQL vers MySQL avec SQLAlchemy ORM
+- 🟡 Migration de PostgreSQL vers MySQL avec SQLAlchemy ORM (en cours)
+  - ✅ Ajout du service MySQL dans docker-compose
+  - ✅ Création du script d'initialisation SQL
+  - ✅ Configuration des connexions SQLAlchemy
+  - ⏳ Adaptation des modèles et requêtes
 - ✅ Authentification JWT avec refresh tokens
+- ✅ Migration vers Pydantic V2
+  - ✅ Mise à jour des validateurs (@validator → @field_validator)
+  - ✅ Adaptation des classes de configuration
+  - ✅ Correction des avertissements de dépréciation
 - ✅ Configuration Docker
   - ✅ Services conteneurisés avec MySQL
   - ✅ Dépendances entre services résolues
   - ✅ Configuration des volumes persistants pour MySQL
   - ✅ Correction des chemins d'importation
   - ✅ Mise à jour des dépendances Python (pymysql, asyncpg)
+- 🔄 Gestion des sessions (en cours)
+  - ✅ Création d'un gestionnaire unifié de sessions
+  - ✅ Migration des dépendances vers le gestionnaire unifié
+  - ⏳ Correction des problèmes de sessions sync/async
 
 ### Frontend (React/TypeScript)
 - ✅ Structure de base du projet avec Vite + React + TypeScript
@@ -47,20 +72,35 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
   - ✅ Backend FastAPI
   - ✅ Base de données PostgreSQL
 
-## Prochaines étapes
+## 🎯 Prochaines étapes
 
-### Court terme (Sprint actuel)
-- [x] Mise en place de l'authentification frontend
-- [x] Configuration de l'environnement de développement Docker
-- [ ] Finaliser la configuration des services
-  - [ ] Résoudre les problèmes de dépendances entre services
-  - [ ] Configurer correctement les volumes
-  - [ ] Tester le démarrage de tous les services
+### Priorité haute (Blocages critiques)
+- [ ] Corriger la configuration des tests
+  - [ ] Forcer l'utilisation de SQLite in-memory pour les tests
+  - [ ] Isoler la configuration de test de la configuration de développement
+  - [ ] Nettoyer les variables d'environnement système problématiques
+
+- [ ] Résoudre les erreurs 500/422 dans les tests d'authentification
+  - [ ] Auditer la génération des tokens JWT
+  - [ ] Vérifier les en-têtes OAuth2
+  - [ ] Valider la configuration des routes protégées
+
+### Priorité moyenne (Améliorations en cours)
 - [ ] Finaliser la migration vers MySQL
-- [ ] Corriger les tests d'authentification
+  - [ ] Adapter la configuration des moteurs SQLAlchemy
+  - [ ] Tester les requêtes spécifiques à MySQL
+  - [ ] Mettre à jour la documentation de déploiement
+
+- [ ] Unifier la gestion des sessions
+  - [ ] Supprimer les implémentations redondantes de get_db
+  - [ ] Documenter l'utilisation du gestionnaire unifié
+  - [ ] Mettre à jour les tests pour utiliser la nouvelle API
+
+### Documentation
 - [ ] Mettre à jour la documentation technique
-- [ ] Tester la configuration de production avec MySQL
-- [ ] Préparer le déploiement de préproduction
+  - [ ] Configuration requise
+  - [ ] Guide de démarrage rapide
+  - [ ] Dépannage des problèmes courants
 
 ### Prochain sprint
 - [ ] Tests d'intégration
@@ -75,15 +115,33 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 - **Frontend** : React 18, TypeScript 5, Chakra UI
 - **Backend** : FastAPI, SQLAlchemy 2.0, Pydantic v2
 
-## Problèmes connus
-1. **Configuration Docker**
-   - Erreur de dépendance entre les services
-   - Problème de volume pour Redis
-   - Configuration Nginx à finaliser
-- Résolution des erreurs 500 dans les tests d'authentification
-- Correction des problèmes de configuration OAuth2
-- Gestion des sessions de base de données dans les tests
-- Problèmes de dépendances circulaires dans les modèles
+## 🚧 Problèmes connus et blocages
+
+### Configuration et Variables d'environnement
+- ⚠️ Variable `ACCESS_TOKEN_EXPIRE_MINUTES` corrompue (contient un commentaire)
+  - Impact : Empêche la validation Pydantic
+  - Solution : Nettoyer ou supprimer la variable système
+
+### Base de données
+- ⚠️ Conflit de configuration entre SQLite (tests) et MySQL (prod)
+  - Impact : Les tests tentent de se connecter à PostgreSQL/MySQL au lieu de SQLite
+  - Solution : Isoler la configuration de test
+
+### Tests
+- ⚠️ Erreurs 500/422 dans les tests d'authentification
+  - Causes possibles : 
+    - Gestion incohérente des sessions sync/async
+    - Problèmes de configuration des dépendances
+    - Conflits entre différentes implémentations de get_db
+
+### Dépendances
+- ⚠️ Multiples implémentations de get_db détectées
+  - Fichiers concernés :
+    - core/deps.py
+    - db/database.py 
+    - db/session.py
+    - api/deps.py
+    - core/dependencies.py
 
 2. **Documentation**
    - Mise à jour en cours de la documentation technique
@@ -219,11 +277,26 @@ audionexus/
 
 ## 📚 Documentation
 
-### En Ligne
-- [Documentation de l'API](https://audionexus.docs.apiary.io/)
-- [Guide d'installation](/docs/installation.md)
-- [Guide du développeur](/docs/development.md)
-- [API Reference](/docs/api/README.md)
+La documentation complète est organisée dans le dossier `documentation/` :
+
+### Guides
+- [Guide d'installation](guides/installation.md)
+- [Guide d'utilisation](user-guide/usage.md)
+- [Intégration avec Audiobookshelf](guides/audiobookshelf_integration.md)
+
+### Référence
+- [Documentation de l'API](api/)
+- [Référence technique](reference/)
+
+### Développement
+- [Guide du développeur](development/)
+- [Architecture](architecture/)
+- [Décisions techniques](decisions/)
+
+### Contribution
+- [Code de conduite](contributing/CODE_OF_CONDUCT.md)
+- [Guide de contribution](contributing/CONTRIBUTING.md)
+- [Processus de développement](contributing/DEVELOPMENT.md)
 
 ### Génération Locale
 ```bash

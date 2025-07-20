@@ -10,16 +10,57 @@ L'API utilise JWT (JSON Web Tokens) pour l'authentification. Incluez le token da
 Authorization: Bearer votre_token_jwt
 ```
 
-### Obtenir un Token
+### Obtenir un Token d'Accès
+
+#### 1. Authentification avec JSON (Recommandé)
 
 ```http
-POST /api/auth/login
+POST /api/v1/auth/login/access-token
 Content-Type: application/json
 
 {
-  "email": "utilisateur@example.com",
+  "username": "votre_nom_utilisateur",
   "password": "votre_mot_de_passe"
 }
+```
+
+#### 2. Authentification avec Formulaire (Compatibilité OAuth2)
+
+```http
+POST /api/v1/auth/login/access-token
+Content-Type: application/x-www-form-urlencoded
+
+username=votre_nom_utilisateur&password=votre_mot_de_passe
+```
+
+#### Réponse en cas de succès (200 OK)
+
+```json
+{
+  "access_token": "votre_jwt_token",
+  "token_type": "bearer"
+}
+```
+
+### Créer un Compte
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "nouvel_utilisateur",
+  "email": "utilisateur@example.com",
+  "password": "mot_de_passe_securise",
+  "full_name": "Prénom Nom"
+}
+```
+
+### Tester un Token
+
+```http
+GET /api/v1/auth/login/test-token
+Authorization: Bearer votre_jwt_token
 ```
 
 ## Points de Terminaison
