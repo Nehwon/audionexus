@@ -1,15 +1,18 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
-[![Version](https://img.shields.io/badge/version-0.3.6--alpha-blue.svg)](documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.6--dev-blue.svg)](documentation/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](documentation/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI-009485.svg)](backend/)
+[![Tests](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml/badge.svg)](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml)
 
 ## 📋 Description
 
 **AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
+
+> **Note de développement (21/07/2025)** : Le projet est actuellement en développement actif, avec une attention particulière sur la stabilisation du système d'authentification et la gestion des sessions asynchrones. Consultez le [journal des changements](documentation/CHANGELOG.md) pour plus de détails sur les dernières modifications.
 
 ## 📝 Auteur
 
@@ -24,8 +27,8 @@
 - Docker et Docker Compose
 - Node.js 18+ (pour le développement frontend)
 - Python 3.11+ (pour le développement backend)
-- MySQL 8.0+ (ou conteneur Docker) pour la production
-- SQLite (pour les tests)
+- SQLite (utilisé par défaut pour le développement et les tests)
+- (Optionnel) MySQL 8.0+ pour la production
 
 ### Avec Docker (recommandé)
 
@@ -80,12 +83,14 @@ npm run dev
 
 ## 🌟 Fonctionnalités
 
-### 🔐 Authentification & Sécurité
+### 🔐 Authentification & Sécurité (En cours de stabilisation)
 - ✅ Authentification JWT avec rafraîchissement de token
 - ✅ Protection des routes avec authentification
-- ✅ Gestion des sessions utilisateur
-- 🔄 En cours : 2FA (Authentification à deux facteurs)
-- 🔄 En cours : Réinitialisation de mot de passe
+- ✅ Gestion des sessions utilisateur asynchrones
+- ✅ Validation des données avec Pydantic v2
+- 🔄 En cours : Résolution des problèmes de dépendances circulaires
+- 🔄 Planifié : 2FA (Authentification à deux facteurs)
+- 🔄 Planifié : Réinitialisation de mot de passe
 
 ### 👤 Gestion des Utilisateurs
 - ✅ Création et gestion des comptes
@@ -448,6 +453,29 @@ Voir le dossier `examples/` pour plus de cas d'utilisation :
 └── documentation/       # Documentation complète
 ```
 
+## 🗃️ Base de Données
+
+AudioNexus utilise actuellement SQLite comme base de données par défaut pour le développement et les tests, offrant une configuration simplifiée et une meilleure expérience de développement.
+
+### Configuration actuelle
+
+- **Moteur de base de données** : SQLite
+- **Fichier de données** : `./audionexus.db`
+- **Outil ORM** : SQLAlchemy 2.0 avec support asynchrone
+- **Gestion des migrations** : Alembic
+
+### Gestion des migrations
+
+```bash
+# Créer une nouvelle migration
+alembic revision --autogenerate -m "Description des modifications"
+
+# Appliquer les migrations
+alembic upgrade head
+```
+
+> **Note** : Pour la production, une migration vers MySQL ou PostgreSQL est recommandée pour les déploiements à grande échelle. Consultez la documentation pour plus de détails sur la configuration des bases de données de production.
+
 ## 🛠️ Développement
 
 ### Configuration initiale
@@ -471,27 +499,23 @@ Voir le dossier `examples/` pour plus de cas d'utilisation :
    
    # Installer en mode développement
    pip install -e .
-   ```
 
-3. **Configuration**
+3. **Configuration initiale**
    ```bash
-   # Copier le fichier .env
+   # Copier le fichier .env d'exemple
    cp .env.example .env
    
-   # Configurer les variables d'environnement
-   nano .env
+   # Modifier le fichier .env selon vos besoins
+   # (assurez-vous que SQLite est configuré comme base de données par défaut)
    ```
 
-4. **Base de données**
+4. **Initialisation de la base de données**
    ```bash
-   # Démarrer PostgreSQL avec Docker
-   docker compose up -d db
+   # Créer les tables de la base de données
+   python -m app.db.init_db
    
-   # Exécuter les migrations
+   # Appliquer les migrations
    alembic upgrade head
-   
-   # Créer un superutilisateur
-   python -m app.scripts.create_admin
    ```
 
 5. **Lancer le serveur de développement**
@@ -499,79 +523,119 @@ Voir le dossier `examples/` pour plus de cas d'utilisation :
    uvicorn app.main:app --reload
    ```
 
-### Tests
+## 🧪 Tests
+
+### Exécution des tests
 
 ```bash
-# Lancer les tests
+# Lancer tous les tests
 pytest
 
-# Avec couverture de code
+# Lancer les tests avec couverture de code
 pytest --cov=app tests/
 
-# Générer un rapport HTML
+# Générer un rapport HTML de couverture
 pytest --cov=app --cov-report=html tests/
-open htmlcov/index.html  # Ouvrir le rapport
+
+# Ouvrir le rapport de couverture (Linux/Mac)
+open htmlcov/index.html
+
+# Pour les tests spécifiques à l'authentification
+pytest app/tests/test_auth.py -v
 ```
+
+### Environnement de test
+
+Les tests s'exécutent avec une base de données SQLite en mémoire par défaut. Assurez-vous que votre fichier `.env.test` est correctement configuré :
+
+```env
+# .env.test
+DATABASE_URL=sqlite+aiosqlite:///:memory:
+TESTING=true
+```
+
+## 🛠️ Qualité du code
 
 ### Linting et formatage
 
 ```bash
-# Vérifier le style de code
+# Vérifier le style du code avec flake8
 flake8 app/
 
-# Formater le code
+# Formater automatiquement le code avec black
 black app/
 
-# Vérifier les types
+# Vérifier les types statiques avec mypy
 mypy app/
+
+# Vérifier les imports non utilisés et les erreurs de qualité
+python -m pylint app/
+
+# Vérifier la sécurité avec bandit (analyse de sécurité)
+bandit -r app/
+```
+
+### Pré-commit
+
+Un hook de pré-commit est configuré pour exécuter automatiquement les vérifications de qualité avant chaque commit :
+
+1. Installez le hook :
+   ```bash
+   pre-commit install
+   ```
+
+2. Le hook exécutera automatiquement :
+   - Black (formatage)
+   - isort (organisation des imports)
+   - flake8 (vérification de style)
+   - mypy (vérification de types)
+
+Pour exécuter manuellement les vérifications sur tous les fichiers :
+```bash
+pre-commit run --all-files
 ```
 
 ## 📚 Documentation
 
-La documentation complète est organisée dans le dossier [documentation/](documentation/) :
+La documentation complète est organisée comme suit :
 
-### Guides
-- [Guide d'installation](documentation/guides/installation.md)
-- [Guide de développement](documentation/development/)
-- [Documentation de l'API](documentation/api/)
-- [Intégration avec Audiobookshelf](documentation/guides/audiobookshelf_integration.md)
+### Documentation utilisateur
+- [Guide d'installation](documentation/INSTALLATION.md) - Comment installer et configurer AudioNexus
+- [Guide de l'utilisateur](documentation/USER_GUIDE.md) - Comment utiliser l'application
+- [FAQ](documentation/FAQ.md) - Questions fréquemment posées
 
-### Référence
-- [Documentation de l'API](documentation/api/)
-- [Référence technique](documentation/reference/)
+### Documentation technique
+- [Architecture technique](documentation/ARCHITECTURE.md) - Vue d'ensemble de l'architecture
+- [Guide API](documentation/API.md) - Documentation de l'API REST
+- [Modèle de données](documentation/DATA_MODEL.md) - Structure de la base de données
+- [Journal des changements](CHANGELOG.md) - Historique des versions et changements
 
-### Développement
-- [Guide du développeur](documentation/development/)
-- [Architecture](documentation/architecture/)
-- [Décisions techniques](documentation/decisions/)
+### Pour les contributeurs
+- [Guide de contribution](documentation/CONTRIBUTING.md) - Comment contribuer au projet
+- [Guide de développement](documentation/DEVELOPMENT.md) - Configuration de l'environnement de développement
+- [Conventions de code](documentation/CODING_STANDARDS.md) - Standards et bonnes pratiques
+- [Processus de versioning](documentation/VERSIONING.md) - Gestion des versions et des releases
 
-### Contribution
+## 🤝 Comment contribuer
+
+Les contributions sont les bienvenues ! Voici comment procéder :
+
+1. **Forker** le dépôt
+2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/ma-nouvelle-fonctionnalite`)
+3. Committer vos modifications (`git commit -am 'Ajout d\'une nouvelle fonctionnalité'`)
+4. Pousser vers la branche (`git push origin feature/ma-nouvelle-fonctionnalite`)
+5. Créer une **Pull Request**
+
+### Ressources pour les contributeurs
+
 - [Code de conduite](documentation/contributing/CODE_OF_CONDUCT.md)
 - [Guide de contribution](documentation/contributing/CONTRIBUTING.md)
-- [Processus de développement](documentation/contributing/DEVELOPMENT.md) :
-
-```bash
-# Installer les dépendances de documentation
-pip install -r requirements.txt
-
-# Générer la documentation
-cd docs && make html
-
-# Ouvrir la documentation générée
-open _build/html/index.html
-```
-
-## 🤝 Contribution
-
-1. **Fork** le dépôt
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/ma-nouvelle-fonctionnalite`)
-3. Committez vos modifications (`git commit -am 'Ajout d\'une nouvelle fonctionnalité'`)
-4. Poussez vers la branche (`git push origin feature/ma-nouvelle-fonctionnalite`)
-5. Créez une **Pull Request**
+- [Processus de développement](documentation/contributing/DEVELOPMENT.md)
+- [Modèle de Pull Request](documentation/contributing/PULL_REQUEST_TEMPLATE.md)
 
 ## 📄 Licence
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+Ce projet est sous licence AGPL-3.0. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## 📝 Changelog
 
@@ -579,87 +643,67 @@ Consultez le [CHANGELOG.md](CHANGELOG.md) pour suivre les modifications récente
 
 ## 📞 Contact
 
-Pour toute question ou suggestion, veuillez ouvrir une [issue](https://github.com/votre-utilisateur/audiobooks-manager/issues).
+Pour toute question ou suggestion, veuillez ouvrir une [issue](https://github.com/votre-utilisateur/audionexus/issues) ou contacter l'équipe de développement.
 
 ---
 
 <div align="center">
-  <sub>Créé avec ❤️ par [Votre Nom]</sub>
+  <sub>Créé avec ❤️ par Fabrice Lamachère (Nehwon)</sub>
 </div>
+## 🚀 Déploiement
 
-## Sauvegarde et restauration
-
-### Sauvegarde de la base de données
-
-#### MySQL
+### Déploiement avec Docker (recommandé)
 
 ```bash
-docker-compose exec -T db mysqldump -u${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > backup_$(date +%Y%m%d).sql
+# Construire les images
+docker-compose build
+
+# Démarrer les services
+docker-compose up -d
+
+# Vérifier les logs
+docker-compose logs -f
 ```
 
-#### SQLite (tests uniquement)
+### Configuration requise
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- Au moins 2 Go de RAM disponibles
+- Au moins 1 Go d'espace disque
+
+### Variables d'environnement
+
+Copiez le fichier `.env.example` vers `.env` et ajustez les paramètres selon vos besoins :
 
 ```bash
-cp instance/test.db backup_$(date +%Y%m%d).db
+# Configuration de la base de données
+DATABASE_URL=sqlite+aiosqlite:///./audionexus.db
+
+# Configuration JWT
+JWT_SECRET=votre-clé-sécurisée
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Configuration de l'application
+APP_ENV=development
+DEBUG=true
+SECRET_KEY=votre-clé-sécurisée
+
+# Configuration CORS (pour le développement)
+CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000"]
 ```
 
-### Restauration de la base de données
-## Développement
+## 🤖 Intégration Continue
 
-### Technologies Utilisées
+Le projet utilise GitHub Actions pour l'intégration continue. Le workflow comprend :
 
-- Backend: Python (FastAPI)
-- Frontend: Vue.js
-- Base de données: PostgreSQL
-- Moteur de recherche: Meilisearch
-- Conteneurisation: Docker
+- Exécution des tests unitaires et d'intégration
+- Vérification du style de code avec black, isort et flake8
+- Vérification des types avec mypy
+- Construction des images Docker
 
-### Contribution
-
-1. Créer une branche pour votre fonctionnalité
-2. Faire vos modifications
-3. Soumettre une Pull Request
-
-## Développement
-
-### Configuration de l'environnement
-
-1. Installer les dépendances de développement :
-   ```bash
-   pip install -e .[dev]
-   ```
-
-2. Configurer les hooks Git (optionnel) :
-   ```bash
-   pre-commit install
-   ```
-
-### Intégration Continue et Déploiement Continu (CI/CD)
-
-Le projet utilise Gitea Actions pour le CI/CD. Le workflow comprend :
-
-- **Tests** : Exécution des tests unitaires et d'intégration
-- **Linting** : Vérification du style de code avec black, isort et flake8
-- **Construction** : Création des images Docker et envoi vers le registre Gitea
-- **Déploiement** : Déploiement automatique sur les environnements de staging et production
-
-#### Branches
-
-- `main` : Branche de production (déploiement automatique)
-- `develop` : Branche de développement (déploiement en staging)
-- `feature/*` : Branches de fonctionnalités (tests et linting uniquement)
-
-#### Configuration requise
-
-1. Activer les Actions dans les paramètres du dépôt Gitea
-2. Configurer les secrets nécessaires (voir [.gitea/workflows/SECRETS.md](.gitea/workflows/SECRETS.md))
-3. S'assurer que le registre de conteneurs est activé pour le dépôt
-
-#### Secrets requis
-
-Consultez le fichier [.gitea/workflows/SECRETS.md](.gitea/workflows/SECRETS.md) pour la liste complète des secrets nécessaires à la configuration du pipeline.
-
-#### Exécution locale des tests
+### Exécution locale des tests
 
 ```bash
 # Installer les dépendances de développement
@@ -672,48 +716,20 @@ pytest
 black .
 isort .
 flake8 .
+
+# Vérifier les types
+mypy .
 ```
 
-#### Construction locale de l'image Docker
+## 🌐 Navigation
 
-```bash
-docker build -t gitea.lamachere.fr/votre-utilisateur/audiobooks-manager:local .
-```
+- [Retour en haut du document](#audionexus---gestionnaire-daudiothèques)
+- [Documentation complète](documentation/)
+- [Journal des changements](CHANGELOG.md)
+- [Licence](LICENSE)
 
-### Tests
+---
 
-Lancer les tests unitaires :
-```bash
-pytest
-```
-
-### Formatage du code
-
-Le code est formaté avec `black` et `isort` :
-```bash
-black .
-isort .
-```
-
-## Licence
-
-Ce projet est sous licence MIT.
-
-## Contribution
-
-1. Créer une branche pour votre fonctionnalité :
-   ```bash
-   git checkout -b feature/nouvelle-fonctionnalite
-   ```
-
-2. Faire un commit de vos modifications :
-   ```bash
-   git commit -m "Ajout: Nouvelle fonctionnalité"
-   ```
-
-3. Pousser les modifications :
-   ```bash
-   git push origin feature/nouvelle-fonctionnalite
-   ```
-
-4. Créer une Pull Request sur GitHub
+<div align="center">
+  <sub>Créé avec ❤️ par Fabrice Lamachère (Nehwon) | 2023-2025</sub>
+</div>

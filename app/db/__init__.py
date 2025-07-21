@@ -90,7 +90,7 @@ def init_database() -> None:
         
     try:
         from .database import Base as BaseImport, engine as engine_import
-        from .database import init_db, SessionLocal as SessionLocalImport, ScopedSession as ScopedSessionImport
+        from .database import SessionLocal as SessionLocalImport, ScopedSession as ScopedSessionImport
         from .session_manager import (
             get_db as get_db_import,
             get_async_db as get_async_db_import,
@@ -102,8 +102,7 @@ def init_database() -> None:
         )
         from . import models as models_import
         
-        # Initialisation des moteurs
-        init_db()
+        # Initialisation du moteur asynchrone uniquement
         init_async_engine()
         
         # Mise à jour des références globales
@@ -120,24 +119,10 @@ def init_database() -> None:
         models = models_import
         _initialized = True
         
-        # Appel à init_db de manière synchrone ou asynchrone selon le moteur
-        try:
-            import asyncio
-            if hasattr(engine, 'run_sync'):
-                # Si le moteur supporte run_sync (moteur asynchrone)
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # Si on est déjà dans une boucle d'événements
-                    import nest_asyncio
-                    nest_asyncio.apply()
-                    loop.run_until_complete(init_db())
-                else:
-                    loop.run_until_complete(init_db())
-            else:
-                # Pour les moteurs synchrones
-                init_db()
-        except Exception as e:
-            logger.warning(f"Erreur lors de l'initialisation de la base de données: {e}")
+        # Initialisation différée de la base de données
+        # Note: L'initialisation complète se fera au premier accès via les dépendances FastAPI
+        # pour éviter les problèmes de boucle d'événements et de coroutines
+        logger.info("L'initialisation de la base de données sera effectuée au premier accès via les dépendances FastAPI")
         
     except ImportError as e:
         warnings.warn(f"Erreur lors de l'initialisation différée de la base de données: {e}")

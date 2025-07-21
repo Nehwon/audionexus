@@ -5,6 +5,23 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Non publié]
+
+### Ajouté
+- Logs de débogage avancés pour l'endpoint d'inscription utilisateur
+- Gestion des erreurs détaillée pour le processus d'inscription
+
+### Modifié
+- Amélioration de la gestion des sessions asynchrones dans les endpoints d'API
+- Refactorisation de la configuration de la base de données asynchrone
+- Mise à jour de la documentation technique des endpoints d'authentification
+
+### Corrigé
+- Problème de dépendance circulaire dans l'initialisation de la base de données
+- Erreur 500 lors de l'inscription utilisateur
+- Gestion incorrecte des paramètres de session dans les dépendances FastAPI
+- Problèmes de configuration de SQLite pour les tests
+
 ## [0.3.6] - 2025-07-21
 
 ### Modifié

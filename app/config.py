@@ -65,21 +65,22 @@ class Settings(BaseSettings):
     DB_USER: str = os.getenv("DB_USER", "audionexus")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "audionexus")
     DB_NAME: str = os.getenv("DB_NAME", "audionexus")
-    DATABASE_URI: Optional[str] = None
+    DATABASE_URI: Optional[str] = os.getenv("DATABASE_URL")
     
     @field_validator("DATABASE_URI", mode='before')
     @classmethod
     def assemble_db_connection(cls, v: Optional[str], info: 'ValidationInfo') -> str:
-        if isinstance(v, str) and v:
+        # Si DATABASE_URL est défini dans l'environnement, on l'utilise
+        if v:
             return v
             
         values = info.data
         if os.getenv("TESTING", "").lower() == "true":
             # En mode test, on utilise SQLite en mémoire
-            return "sqlite+aiosqlite:///:memory:"
+            return os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
             
-        # En production/développement, on utilise MySQL avec aiomysql pour le support asynchrone
-        return f"mysql+aiomysql://{values.get('DB_USER')}:{values.get('DB_PASSWORD')}@{values.get('DB_HOST')}:{values.get('DB_PORT')}/{values.get('DB_NAME')}?charset=utf8mb4"
+        # Sinon, on utilise la configuration par défaut (SQLite pour le développement)
+        return os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./audionexus.db")
     
     # Configuration JWT
     JWT_SECRET: str = Field(

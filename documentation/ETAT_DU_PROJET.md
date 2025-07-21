@@ -1,52 +1,51 @@
-# État du Projet AudioNexus - 20/07/2025
+# État du Projet AudioNexus - 21/07/2025
 
 ## 📌 Vue d'ensemble
 AudioNexus est une plateforme complète pour gérer et administrer plusieurs instances de bibliothèques audio à partir d'une interface unifiée. Le projet vise à simplifier la gestion des bibliothèques d'audiobooks avec des fonctionnalités avancées de traitement et de gestion.
 
 ## ⚠️ État actuel (21/07/2025)
-- **Dernière action** : Correction des erreurs d'authentification
-- **Statut** : Développement actif - Correction des tests
+- **Dernière action** : Résolution des erreurs d'authentification et de la gestion des sessions
+- **Statut** : Développement actif - Correction des tests d'authentification
 - **Branche** : `fix/authentication-issues`
 - **Problèmes critiques** : 
-  - Erreur 500 dans l'endpoint `/auth/register`
-  - Problème de validation Pydantic v2 avec `UserCreate`
+  - ~~Erreur 500 dans l'endpoint `/auth/register`~~ (Résolu)
+  - ~~Problème de validation Pydantic v2 avec `UserCreate`~~ (Résolu)
   - Gestion des sessions asynchrones à finaliser
+  - Problème de paramètre `kw` inattendu dans les dépendances
 - **Tâches en cours** :
-  - Migration complète vers MySQL
   - Correction des tests d'authentification
-  - Unification de la gestion des sessions
+  - Nettoyage des dépendances circulaires
+  - Documentation des changements récents
 
 ## 📊 Version actuelle
-- **Version** : 0.3.5-alpha (en développement actif)
-- **Dernière mise à jour** : 20/07/2025
-- **Statut** : Développement actif - Migration vers MySQL
-- **Branche** : `feature/mysql-migration`
-- **Environnement** : Développement local avec Docker (MySQL)
+- **Version** : 0.3.6-dev (en développement actif)
+- **Dernière mise à jour** : 21/07/2025
+- **Statut** : Développement actif - Correction des tests
+- **Branche** : `fix/authentication-issues`
+- **Environnement** : Développement local avec Docker (SQLite pour les tests)
 
 ## 🏗️ Architecture Technique
 
 ### Backend (Python/FastAPI)
 - ✅ API RESTful avec FastAPI
-- 🟡 Migration de PostgreSQL vers MySQL avec SQLAlchemy ORM (en cours)
-  - ✅ Ajout du service MySQL dans docker-compose
-  - ✅ Création du script d'initialisation SQL
-  - ✅ Configuration des connexions SQLAlchemy
-  - ⏳ Adaptation des modèles et requêtes
 - ✅ Authentification JWT avec refresh tokens
 - ✅ Migration vers Pydantic V2
   - ✅ Mise à jour des validateurs (@validator → @field_validator)
   - ✅ Adaptation des classes de configuration
   - ✅ Correction des avertissements de dépréciation
+  - ✅ Résolution des problèmes de validation des modèles
 - ✅ Configuration Docker
-  - ✅ Services conteneurisés avec MySQL
-  - ✅ Dépendances entre services résolues
-  - ✅ Configuration des volumes persistants pour MySQL
+  - ✅ Services conteneurisés avec SQLite pour les tests
+  - ✅ Configuration des volumes persistants
   - ✅ Correction des chemins d'importation
-  - ✅ Mise à jour des dépendances Python (pymysql, asyncpg)
 - 🔄 Gestion des sessions (en cours)
   - ✅ Création d'un gestionnaire unifié de sessions
   - ✅ Migration des dépendances vers le gestionnaire unifié
-  - ⏳ Correction des problèmes de sessions sync/async
+  - ✅ Correction des problèmes de sessions asynchrones
+  - ⏳ Nettoyage des dépendances circulaires
+- ✅ Logs de débogage avancés
+  - ✅ Journalisation détaillée des erreurs d'authentification
+  - ✅ Traçage des appels API problématiques
 
 ### Frontend (React/TypeScript)
 - ✅ Structure de base du projet avec Vite + React + TypeScript
@@ -75,15 +74,15 @@ AudioNexus est une plateforme complète pour gérer et administrer plusieurs ins
 ## 🎯 Prochaines étapes
 
 ### Priorité haute (Blocages critiques)
-- [ ] Corriger la configuration des tests
-  - [ ] Forcer l'utilisation de SQLite in-memory pour les tests
-  - [ ] Isoler la configuration de test de la configuration de développement
-  - [ ] Nettoyer les variables d'environnement système problématiques
+- [x] Résoudre l'erreur 500 dans l'endpoint `/auth/register`
+  - [x] Ajouter des logs de débogage détaillés
+  - [x] Corriger la validation Pydantic v2
+  - [ ] Résoudre le problème du paramètre `kw` inattendu
 
-- [ ] Résoudre les erreurs 500/422 dans les tests d'authentification
-  - [ ] Auditer la génération des tokens JWT
-  - [ ] Vérifier les en-têtes OAuth2
-  - [ ] Valider la configuration des routes protégées
+- [ ] Finaliser la gestion des sessions asynchrones
+  - [ ] Nettoyer les dépendances circulaires
+  - [ ] Uniformiser l'utilisation des sessions dans l'application
+  - [ ] Documenter les bonnes pratiques d'utilisation
 
 ### Priorité moyenne (Améliorations en cours)
 - [ ] Finaliser la migration vers MySQL

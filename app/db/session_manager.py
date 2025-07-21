@@ -57,7 +57,7 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
         connect_args = {"check_same_thread": False}
     
     # Création du moteur
-    async_engine = create_async_engine(
+    engine = create_async_engine(
         database_uri,
         echo=settings.DEBUG,
         pool_pre_ping=True,
@@ -65,11 +65,14 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
         connect_args=connect_args
     )
     
+    # Assigner le moteur à la variable globale
+    async_engine = engine
+    
     # Configuration de la session factory
     AsyncSessionLocal = async_sessionmaker(
         autocommit=False,
         autoflush=False,
-        bind=async_engine,
+        bind=engine,
         class_=AsyncDBSession,
         expire_on_commit=False
     )
@@ -142,5 +145,21 @@ async def get_async_db_session() -> AsyncGenerator[AsyncDBSession, None]:
             await session.rollback()
             raise
 
-# Alias pour la rétrocompatibilité
-get_async_db = get_async_db_session
+# Fonction pour FastAPI
+async def get_async_db() -> AsyncGenerator[AsyncDBSession, None]:
+    """
+    Fournit une session de base de données asynchrone pour FastAPI.
+    
+    À utiliser dans les endpoints FastAPI avec `Depends(get_async_db)`.
+    """
+    if AsyncSessionLocal is None:
+        raise RuntimeError("Le moteur asynchrone n'a pas été initialisé. Appelez init_async_engine() d'abord.")
+        
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        except Exception as e:
+            await db.rollback()
+            raise e
+        finally:
+            await db.close()

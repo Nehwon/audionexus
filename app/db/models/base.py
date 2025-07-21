@@ -157,6 +157,11 @@ class UserCreate(UserBase):
     model_config = ConfigDict(from_attributes=True)
     
     password: str
+    
+    # Explicitly include all fields from UserBase
+    username: str
+    email: EmailStr
+    full_name: Optional[str] = None
 
 
 class UserInDB(UserBase):

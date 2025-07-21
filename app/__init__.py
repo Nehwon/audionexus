@@ -7,7 +7,7 @@ from .config import settings
 models = None
 crud = None
 
-__version__ = "0.2.0"
+__version__ = "0.3.6"  # Doit correspondre à la version dans pyproject.toml
 
 def init_app():
     """Initialise l'application et ses dépendances."""
