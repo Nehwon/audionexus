@@ -2,13 +2,13 @@
 
 ## Notes
 - **Projet** : AudioNexus, une plateforme de gestion centralisée pour les bibliothèques de livres audio, s'intégrant avec des instances Audiobookshelf.
-- **Version actuelle** : 0.3.2-alpha (en développement actif).
+- **Version actuelle** : 0.3.6-dev (en développement actif).
 - **Stack Technique** :
-  - **Backend** : Python/FastAPI, PostgreSQL, SQLAlchemy.
+  - **Backend** : Python/FastAPI, SQLite (développement), PostgreSQL (production), SQLAlchemy 2.0.
   - **Frontend** : React/TypeScript, Chakra UI, Redux Toolkit, React Query.
-  - **Infrastructure** : Docker.
+  - **Infrastructure** : Docker, Docker Compose.
 - **Objectif principal** : Fournir une interface unifiée pour la gestion, le traitement et la synchronisation des fichiers audio sur plusieurs instances Audiobookshelf.
-- **Avancement** : L'API backend pour l'authentification est implémentée. Le frontend a été mis à jour avec un système d'authentification complet, un routage protégé et les pages de base. La correction de la configuration Docker est en pause. **La documentation du projet a été entièrement mise à jour et poussée vers le dépôt distant. La session de travail est terminée.**
+- **Avancement** : Correction des erreurs d'authentification et de validation Pydantic v2. Mise à jour de la documentation complète. **Problème en cours** : Résolution des erreurs de tests liées au paramètre 'kw' manquant dans les dépendances FastAPI.
 
 ## Task List
 
@@ -51,16 +51,21 @@
   - [x] Mettre à jour le fichier `README.md` principal et les autres README du projet.
   - [x] Commiter toutes les modifications en attente.
   - [x] Pousser les commits vers le dépôt distant.
-- [ ] **Interface Administrateur Minimale**
+- [ ] **Interface Administrateur Minimale** (Priorité Haute)
   - [x] Développer le tableau de bord principal (vue d'ensemble, état des instances).
   - [x] Créer la page de gestion des utilisateurs.
   - [x] Créer la page des paramètres.
   - [ ] Mettre en place la vue des fichiers en cours de traitement.
-- [ ] **Intégration Audiobookshelf**
+- [ ] **Correction des Tests d'Authentification** (Priorité Critique)
+  - [ ] Résoudre l'erreur liée au paramètre 'kw' manquant dans les dépendances FastAPI.
+  - [ ] Mettre à jour les tests pour refléter les changements de la validation Pydantic v2.
+  - [ ] Vérifier la couverture des tests pour les endpoints critiques.
+
+- [ ] **Intégration Audiobookshelf** (Priorité Moyenne)
   - [ ] Permettre la configuration des instances Audiobookshelf.
   - [ ] Gérer l'authentification et les tokens pour l'API Audiobookshelf.
   - [ ] Implémenter la synchronisation initiale (bibliothèques, métadonnées, utilisateurs).
-- [ ] **Gestion des Fichiers de Base**
+- [ ] **Gestion des Fichiers de Base** (Priorité Moyenne)
   - [ ] Mettre en place une zone de dépôt sécurisée.
   - [ ] Gérer le téléversement et l'extraction de fichiers compressés.
 
@@ -76,13 +81,18 @@
 - [ ] Intégration de la synthèse vocale.
 - [ ] Mise en place d'un cluster AudioNexus pour la haute disponibilité.
 
-## Prochaines Étapes
-1. Résoudre l'erreur `no such table: users` dans les tests d'authentification.
-2. Implémenter des tests supplémentaires pour couvrir les cas d'erreur.
-3. Configurer le suivi de la couverture de code.
-4. Reprendre la correction de la configuration Docker.
+## Prochaines Étapes (Priorité)
+1. Résoudre l'erreur liée au paramètre 'kw' manquant dans les dépendances FastAPI.
+2. Mettre à jour les tests pour refléter les changements de la validation Pydantic v2.
+3. Finaliser la migration vers SQLAlchemy 2.0 et la gestion unifiée des sessions asynchrones.
+4. Nettoyer les dépendances circulaires restantes.
+5. Améliorer la couverture des tests pour atteindre au moins 80%.
+6. Préparer la migration vers la base de données de production (MySQL/PostgreSQL).
+7. Mettre à jour la documentation technique avec les nouvelles fonctionnalités et corrections.
 
 ## Dernières Modifications
+- 2025-07-21 : Correction des erreurs de validation Pydantic v2 et mise à jour de la documentation.
+- 2025-07-20 : Résolution des erreurs 500 dans l'endpoint /auth/register.
+- 2025-07-19 : Mise à jour de la version à 0.3.6-dev et nettoyage du code.
 - 2025-06-20 : Correction des tests d'authentification et configuration de la base de données de test.
 - 2025-06-20 : Mise à jour de la documentation et du plan de développement.
-- 2025-06-20 : Correction des problèmes d'initialisation de la base de données.
