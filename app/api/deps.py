@@ -32,8 +32,15 @@ reusable_oauth2 = OAuth2PasswordBearer(
 get_db = get_async_db
 get_db_session = get_async_db
 
-# Alias pour la clarté du code
-get_async_db_session = get_async_db
+# Définition de get_async_db_session comme une vraie fonction génératrice asynchrone
+async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Fournit une session de base de données asynchrone pour FastAPI.
+    
+    À utiliser dans les endpoints FastAPI avec `Depends(get_async_db_session)`.
+    """
+    async for session in get_async_db():
+        yield session
 
 async def get_current_user(
     db: AsyncSession = Depends(get_async_db), 

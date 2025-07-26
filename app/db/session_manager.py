@@ -95,24 +95,6 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-async def get_async_db() -> AsyncGenerator[AsyncDBSession, None]:
-    """
-    Fournit une session de base de données asynchrone.
-    
-    À utiliser dans les endpoints FastAPI avec `Depends(get_async_db)`.
-    """
-    if AsyncSessionLocal is None:
-        raise RuntimeError("Le moteur asynchrone n'a pas été initialisé. Appelez init_async_engine() d'abord.")
-        
-    async with AsyncSessionLocal() as db:
-        try:
-            yield db
-        except Exception as e:
-            await db.rollback()
-            raise e
-        finally:
-            await db.close()
-
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
     """

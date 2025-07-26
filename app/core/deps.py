@@ -36,13 +36,23 @@ def get_db_session() -> Generator[Session, None, None]:
     return get_db()
 
 
-def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Fournit une session de base de données asynchrone.
     
-    À utiliser pour les opérations asynchrones.
+    À utiliser pour les opérations asynchrones avec FastAPI.
     """
-    return get_async_db()
+    db = None
+    try:
+        db = await anext(get_async_db())
+        yield db
+    except Exception as e:
+        if db:
+            await db.rollback()
+        raise e
+    finally:
+        if db:
+            await db.close()
 
 
 def get_audiobookshelf_client() -> AudiobookshelfClient:

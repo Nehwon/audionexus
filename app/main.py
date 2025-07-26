@@ -10,9 +10,10 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from app.config import settings
-from app.db import init_database, get_db, get_async_db
+from app.db import init_database, get_db, get_async_db, async_engine, AsyncSessionLocal
 from app.core.api import api_router
 
 # Configuration du cycle de vie de l'application
@@ -23,8 +24,21 @@ async def lifespan(app: FastAPI):
     
     # Initialisation de la base de données (sauf en environnement de test)
     if not os.getenv("TESTING"):
+        print("Initialisation de la base de données...")
+        from app.db import init_database, async_engine, AsyncSessionLocal
+        from app.db.session_manager import init_async_engine
+        
+        # Initialisation explicite
         init_database()
-        print("Base de données initialisée")
+        
+        # Vérification de la connexion
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(text("SELECT 1"))
+                print("Connexion à la base de données établie avec succès")
+        except Exception as e:
+            print(f"Erreur lors de la connexion à la base de données: {e}")
+            raise
     else:
         print("Mode test - Initialisation de la base de données différée")
     
@@ -33,6 +47,8 @@ async def lifespan(app: FastAPI):
     # Nettoyage à l'arrêt
     if not os.getenv("TESTING"):
         print("Arrêt de l'application...")
+        if 'async_engine' in locals() and async_engine is not None:
+            await async_engine.dispose()
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -107,7 +123,6 @@ async def health_check():
     Vérifie l'état de santé de l'application.
     Vérifie également la connexion à la base de données.
     """
-    from sqlalchemy import text
     from app.database import SessionLocal
     
     db = SessionLocal()

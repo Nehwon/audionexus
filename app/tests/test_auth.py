@@ -4,12 +4,18 @@ Tests pour les endpoints d'authentification.
 Ces tests vérifient le bon fonctionnement des endpoints d'authentification
 en utilisant le gestionnaire de sessions unifié.
 """
+import os
+import logging
 import pytest
 from fastapi import status, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Dict, Any
+
+# Configuration des logs
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.db.models.base import User
@@ -24,6 +30,8 @@ async def test_register_user(async_client: TestClient, db_session: AsyncSession)
     Vérifie que l'utilisateur peut s'enregistrer avec succès et que les données
     sont correctement enregistrées en base de données.
     """
+    logger.info("Début du test d'enregistrement utilisateur")
+    
     # Données du nouvel utilisateur
     user_data = {
         "username": "testuser",
@@ -32,12 +40,16 @@ async def test_register_user(async_client: TestClient, db_session: AsyncSession)
         "full_name": "Test User"
     }
     
+    logger.debug(f"Données utilisateur pour le test: {user_data}")
+    
     try:
+        logger.debug("Appel à l'endpoint d'enregistrement...")
         # Appel à l'endpoint d'enregistrement
         response = await async_client.post(
             f"{settings.API_V1_STR}/auth/register",
             json=user_data,
         )
+        logger.debug(f"Réponse reçue - Statut: {response.status_code}, Contenu: {response.text}")
         
         # Vérifications de la réponse
         assert response.status_code == status.HTTP_200_OK, \
