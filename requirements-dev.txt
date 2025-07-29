@@ -1,0 +1,34 @@
+# Dépendances de développement
+-r requirements.txt
+
+# Outils de test
+pytest==7.4.0
+pytest-cov==4.1.0
+pytest-mock==3.11.1
+pytest-asyncio==0.21.1
+
+# Outils de qualité de code
+black==23.7.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.4.1
+
+# Outils de documentation
+sphinx==7.0.1
+sphinx-rtd-theme==1.2.2
+sphinx-autodoc-typehints==1.23.0
+
+# Autres outils de développement
+python-dotenv==1.0.0
+ipython==8.14.0
+
+# Pour le débogage
+debugpy==1.7.0
+
+# Pour la génération de données de test
+factory-boy==3.2.1
+Faker==19.3.0
+
+# Pour les tests d'API
+httpx==0.24.1
+pytest-httpx==0.24.1

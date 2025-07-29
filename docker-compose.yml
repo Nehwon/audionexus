@@ -6,11 +6,15 @@ services:
     container_name: audionexus-backend
     restart: unless-stopped
     env_file: .env
+    environment:
+      - FLASK_APP=wsgi:app
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
     volumes:
       - .:/app
-      - ./data/audionexus:/data/audionexus
+      - ./data/audionexus:/app/data/audionexus
       - ./data/config:/app/config
-      - ./data/database:/data/database
+      - ./gunicorn.conf.py:/app/gunicorn.conf.py
     working_dir: /app
     ports:
       - "8000:8000"
@@ -22,7 +26,7 @@ services:
     networks:
       - audionexus-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -89,6 +93,25 @@ services:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
     command: certonly --webroot -w /var/www/certbot --email ${CERTBOT_EMAIL} --agree-tos --no-eff-email -d ${DOMAIN_NAME} --dry-run
+
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audionexus-audiobookshelf
+    restart: unless-stopped
+    environment:
+      - AUDIOBOOKSHELF_UID=99
+      - AUDIOBOOKSHELF_GID=100
+      - TZ=Europe/Paris
+      - AUDIOBOOKSHELF_BASE_URL=/audiobookshelf
+    volumes:
+      - ./data/audiobookshelf/config:/config
+      - ./data/audiobookshelf/metadata:/metadata
+      - ./data/audiobookshelf/podcasts:/podcasts
+      - ./data/audiobookshelf/audiobooks:/audiobooks
+    ports:
+      - "13378:80"
+    networks:
+      - audionexus-network
 
 networks:
   audionexus-network:

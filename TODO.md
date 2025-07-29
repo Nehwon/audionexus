@@ -2,55 +2,75 @@
 
 ## Notes
 - **Projet** : AudioNexus, une plateforme de gestion centralisée pour les bibliothèques de livres audio, s'intégrant avec des instances Audiobookshelf.
-- **Version actuelle** : 0.3.6-dev (en développement actif).
+- **Version actuelle** : 0.4.0-dev (refonte frontend en cours).
 - **Stack Technique** :
-  - **Backend** : Python/FastAPI, SQLite (développement), PostgreSQL (production), SQLAlchemy 2.0.
-  - **Frontend** : React/TypeScript, Chakra UI, Redux Toolkit, React Query.
-  - **Infrastructure** : Docker, Docker Compose.
+  - **Backend** : Python/FastAPI, MySQL, SQLAlchemy 2.0, VoidAuth.
+  - **Frontend** : Svelte, TypeScript, Tailwind CSS, VoidAuth.
+  - **Infrastructure** : Docker, Docker Compose, Nginx.
+  - **Outils** : FFmpeg pour le traitement audio.
 - **Objectif principal** : Fournir une interface unifiée pour la gestion, le traitement et la synchronisation des fichiers audio sur plusieurs instances Audiobookshelf.
 - **Avancement** : Correction des erreurs d'authentification et de validation Pydantic v2. Mise à jour de la documentation complète. **Problème en cours** : Résolution des erreurs de tests liées au paramètre 'kw' manquant dans les dépendances FastAPI.
 
+## Stack Technique Détail
+
+### Authentification - VoidAuth
+- **Intégration** : Utilisation de VoidAuth pour la gestion complète de l'authentification
+- **Fonctionnalités** :
+  - Inscription/Connexion
+  - Gestion des sessions
+  - Récupération de mot de passe
+  - Vérification d'email
+  - MFA (Authentification à deux facteurs)
+- **Documentation** : [GitHub VoidAuth](https://github.com/voidauth/voidauth)
+
+### Frontend - Svelte + Tailwind CSS
+- **Avantages** : 
+  - Performances optimales
+  - Taille réduite du bundle
+  - Intégration native avec Tailwind
+  - Meilleure expérience développeur
+
+
 ## Task List
 
-### Court Terme (v0.3.x)
-- [x] **Mise en Place du Backend**
-  - [x] Créer la structure du projet FastAPI.
-  - [x] Implémenter le modèle de données utilisateur (SQLAlchemy).
-  - [x] Implémenter les schémas de validation (Pydantic).
-  - [x] Développer le service d'authentification (logique métier).
-  - [x] Créer les routes API pour l'authentification (`/login`, `/register`, `/refresh`, `/me`).
-- [x] **Finaliser l'Authentification (Frontend)**
-  - [x] Connecter la page de connexion (`LoginPage.tsx`) à l'API backend.
-  - [x] Gérer le stockage des tokens JWT (access & refresh) côté client.
-  - [x] Mettre en place des routes protégées.
-  - [x] Implémenter la logique de déconnexion.
-  - [x] Implémenter la réinitialisation de mot de passe (UI + API call).
-- [x] **Nettoyage et Fiabilisation du Frontend**
-  - [x] Corriger les erreurs de linting restantes (imports, types, etc.).
-  - [x] Mettre à jour `App.tsx` pour intégrer le routage et le `AuthProvider`.
-  - [x] Mettre en place le routage principal de l'application avec les routes protégées.
-- [x] **Configuration de l'Environnement et Lancement**
-  - [x] Modifier les fichiers `.gitignore` pour autoriser la création du fichier `.env`.
-  - [x] Créer le fichier `.env` avec les variables de développement.
-  - [x] Lancer les services backend avec `docker compose`.
-  - [x] Simplifier la configuration Nginx pour le développement local (HTTP uniquement).
-  - [x] Redémarrer les services Docker pour appliquer la nouvelle configuration Nginx.
-  - [x] **Résoudre le problème de démarrage du backend**
-    - [x] Identifier la cause de l'erreur `ModuleNotFoundError: No module named 'app'`.
-    - [x] Corriger les chemins d'importation dans le code source.
-    - [x] Ajouter les dépendances manquantes (email-validator).
-    - [x] Mettre à jour le `Dockerfile` pour une construction et une exécution robustes.
-    - [x] Vérifier le bon démarrage du service backend.
-  - [x] Lancer le serveur de développement frontend.
-  - [x] Vérifier que l'application est accessible et fonctionnelle.
-  - [ ] Lancer le serveur de développement frontend.
-  - [ ] Vérifier que l'application est accessible et fonctionnelle.
-- [x] **Finalisation de la session et mise à jour de la documentation**
-  - [x] Mettre à jour le fichier `developpement.md`.
-  - [x] Mettre à jour le fichier `ETAT_DU_PROJET.md`.
-  - [x] Mettre à jour le fichier `README.md` principal et les autres README du projet.
-  - [x] Commiter toutes les modifications en attente.
-  - [x] Pousser les commits vers le dépôt distant.
+### Immédiat (v0.4.0 - Refonte Frontend)
+### Frontend (SvelteKit)
+- [ ] **Configuration Initiale**
+  - [ ] Initialiser un nouveau projet SvelteKit avec TypeScript
+  - [ ] Configurer Tailwind CSS et Skeleton UI
+  - [ ] Mettre en place la structure des dossiers
+  - [ ] Configurer le routage de base
+
+- [ ] **Authentification (VoidAuth)**
+  - [ ] Intégrer VoidAuth dans le projet
+  - [ ] Configurer les fournisseurs d'authentification
+  - [ ] Personnaliser les templates d'email
+  - [ ] Implémenter les callbacks personnalisés
+  - [ ] Tester les flux d'authentification
+- [ ] **Interface Utilisateur**
+  - [ ] Tableau de bord principal
+  - [ ] Gestion des fichiers/dossiers
+  - [ ] Lecteur audio intégré
+  - [ ] Thème sombre/clair
+  - [ ] Interface responsive
+### Backend (FastAPI)
+- [ ] **Authentification**
+  - [x] Système d'authentification JWT
+  - [ ] Gestion des rôles et permissions
+  - [ ] Mise à jour des tests unitaires
+
+- [ ] **Gestion des Fichiers**
+  - [ ] Téléversement de fichiers
+  - [ ] Extraction d'archifs (ZIP, RAR)
+  - [ ] Validation des fichiers audio
+  - [ ] Stockage sécurisé
+  - [ ] Conversion en M4B (FFmpeg)
+
+- [ ] **Intégration Audiobookshelf**
+  - [ ] Configuration des instances distantes
+  - [ ] Synchronisation des bibliothèques
+  - [ ] Gestion des métadonnées
+  - [ ] Transfert sécurisé des fichiers
 - [ ] **Interface Administrateur Minimale** (Priorité Haute)
   - [x] Développer le tableau de bord principal (vue d'ensemble, état des instances).
   - [x] Créer la page de gestion des utilisateurs.
@@ -69,17 +89,31 @@
   - [ ] Mettre en place une zone de dépôt sécurisée.
   - [ ] Gérer le téléversement et l'extraction de fichiers compressés.
 
+### Infrastructure
+- [ ] **Docker**
+  - [x] Configuration de base
+  - [ ] Optimisation des conteneurs
+  - [ ] Configuration de production
+
+- [ ] **Sécurité**
+  - [ ] Protection contre les attaques CSRF
+  - [ ] Rate limiting
+  - [ ] Journalisation des accès
+  - [ ] Chiffrement des données sensibles
+
 ### Moyen Terme (v0.5.0)
-- [ ] Gestion avancée des utilisateurs (rôles, permissions).
-- [ ] Tableau de bord complet (métriques, rapports, alertes).
-- [ ] Traitement des fichiers par lots.
-- [ ] Implémenter l'authentification à deux facteurs (2FA).
-- [ ] Gestion de plusieurs instances Audiobookshelf.
+- [ ] **Fonctionnalités Avancées**
+  - [ ] Traitement par lots
+  - [ ] Authentification à deux facteurs (2FA)
+  - [ ] Gestion de plusieurs instances Audiobookshelf
+  - [ ] Tableau de bord avancé (métriques, rapports)
 
 ### Long Terme (v1.0.0)
-- [ ] Génération de livres audio à partir de fichiers EPUB.
-- [ ] Intégration de la synthèse vocale.
-- [ ] Mise en place d'un cluster AudioNexus pour la haute disponibilité.
+- [ ] **Fonctionnalités Premium**
+  - [ ] Génération de livres audio depuis EPUB
+  - [ ] Synthèse vocale intégrée
+  - [ ] Cluster haute disponibilité
+  - [ ] API publique pour développeurs
 
 ## Prochaines Étapes (Priorité)
 1. Résoudre l'erreur liée au paramètre 'kw' manquant dans les dépendances FastAPI.

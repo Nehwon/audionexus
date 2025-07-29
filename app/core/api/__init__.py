@@ -1,15 +1,19 @@
 """
 Package contenant les routeurs et la logique d'API pour l'application.
 """
-from fastapi import APIRouter
+from flask_restx import Api
 
-# Création du routeur principal
-api_router = APIRouter()
+# Création de l'API principale
+api = Api(
+    version='1.0',
+    title='AudioNexus API',
+    description='API pour la gestion des livres audio',
+    doc='/docs',
+    default='AudioNexus',
+    default_label='Endpoints principaux',
+    validate=True
+)
 
-# Import des routeurs des différents modules
+# Import des namespaces API
 from . import auth
 from . import audiobookshelf_router
-
-# Inclusion des routeurs
-api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
-api_router.include_router(audiobookshelf_router.router, prefix="/audiobookshelf", tags=["audiobookshelf"])

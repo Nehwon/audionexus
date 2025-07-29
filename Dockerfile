@@ -10,9 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copier et installer les dépendances Python
-COPY pyproject.toml .
-RUN pip install --user -e .
+# Copier les fichiers de dépendances
+COPY requirements.txt .
+
+# Installer les dépendances Python
+RUN pip install --user -r requirements.txt
 
 # Étape d'exécution
 FROM python:3.11-slim
@@ -31,25 +33,23 @@ COPY --from=builder /root/.local /root/.local
 
 # Ajouter le chemin des binaires Python au PATH
 ENV PATH="/root/.local/bin:${PATH}"
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV FLASK_APP=wsgi:app
+ENV FLASK_ENV=production
 
 # Créer les répertoires nécessaires
-RUN mkdir -p /app/data/audionexus /app/data/config /app/data/database
+RUN mkdir -p /app/data/audionexus/uploads /app/data/config
 
 # Copier le code source
 COPY . .
 
-# Variables d'environnement
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV APP_ENV=production
-
 # Port d'écoute de l'application
 EXPOSE 8000
 
-# Configuration du PYTHONPATH pour inclure le répertoire racine
-ENV PYTHONPATH=/app
-
-# Commande de démarrage
+# Définir le répertoire de travail
 WORKDIR /app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Commande de démarrage avec Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "wsgi:app"]

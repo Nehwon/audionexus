@@ -1,18 +1,18 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
-[![Version](https://img.shields.io/badge/version-0.3.6--dev-blue.svg)](documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0--dev-blue.svg)](documentation/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](documentation/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
-[![Backend](https://img.shields.io/badge/Backend-FastAPI-009485.svg)](backend/)
+[![Frontend](https://img.shields.io/badge/Frontend-Svelte%2FTypeScript-FF3E00.svg)](frontend/)
+[![Backend](https://img.shields.io/badge/Backend-Flask-000000.svg)](app/)
 [![Tests](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml/badge.svg)](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml)
 
 ## 📋 Description
 
 **AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
 
-> **Note de développement (21/07/2025)** : Le projet est actuellement en développement actif, avec une attention particulière sur la stabilisation du système d'authentification et la gestion des sessions asynchrones. Consultez le [journal des changements](documentation/CHANGELOG.md) pour plus de détails sur les dernières modifications.
+> **Note de développement (28/07/2025)** : Le projet a été migré vers Flask pour le backend et Svelte pour le frontend. L'authentification est gérée par VoidAuth pour une meilleure sécurité et une meilleure maintenabilité. Consultez le [journal des changements](documentation/CHANGELOG.md) pour plus de détails sur les dernières modifications.
 
 ## 📝 Auteur
 
@@ -27,8 +27,8 @@
 - Docker et Docker Compose
 - Node.js 18+ (pour le développement frontend)
 - Python 3.11+ (pour le développement backend)
-- SQLite (utilisé par défaut pour le développement et les tests)
-- (Optionnel) MySQL 8.0+ pour la production
+- MySQL 8.0+ (base de données principale)
+- Redis (pour les sessions et le cache)
 
 ### Avec Docker (recommandé)
 
@@ -46,7 +46,7 @@ cp .env.example .env
 docker compose up -d
 
 # Initialiser la base de données (exécuter après le premier démarrage)
-docker compose exec backend python -m app.db.init_db
+docker compose exec backend flask db upgrade
 ```
 
 ### Développement local

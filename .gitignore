@@ -45,6 +45,79 @@ ENV/
 /media/
 /staticfiles/
 
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.flaskenv
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environment
+venv/
+ENV/
+.env/
+.python-version
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+*,cover
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Testing
+.tox/
+.nox/
+coverage.xml
+nosetests.xml
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific (customize as needed)
+data/
+!data/.gitkeep
+
+# Local development
+local_settings.py
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
 # Test coverage
 .coverage
 coverage.xml

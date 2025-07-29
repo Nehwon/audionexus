@@ -47,11 +47,68 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_seen = Column(DateTime, default=datetime.utcnow)
     
     # Relations
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     books = relationship('Book', back_populates='owner')
     libraries = relationship('Library', back_populates='owner')
+    
+    def __repr__(self):
+        return f"<User '{self.username}'>"
+    
+    def set_password(self, password: str):
+        """Définit le mot de passe de l'utilisateur."""
+        from app.core.security import get_password_hash
+        self.hashed_password = get_password_hash(password)
+        return self
+    
+    def check_password(self, password: str) -> bool:
+        """Vérifie si le mot de passe fourni correspond au hachage stocké."""
+        from app.core.security import verify_password
+        return verify_password(password, self.hashed_password)
+        
+    @property
+    def password(self) -> str:
+        raise AttributeError('password is not a readable attribute')
+        
+    @password.setter
+    def password(self, password: str):
+        """Définit le mot de passe de l'utilisateur (alias pour set_password)."""
+        self.set_password(password)
+    
+    def to_dict(self) -> dict:
+        """Convertit l'utilisateur en dictionnaire."""
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'full_name': self.full_name,
+            'is_active': self.is_active,
+            'is_superuser': self.is_superuser,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None
+        }
+    
+    @property
+    def avatar(self) -> str:
+        """Génère une URL d'avatar basée sur l'email de l'utilisateur."""
+        import hashlib
+        from urllib.parse import quote_plus, quote
+        
+        # Utilisation de Gravatar pour les avatars
+        email_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+        
+        # Créer une URL par défaut avec le nom d'utilisateur
+        default_url = 'https://ui-avatars.com/api/'
+        name = quote(self.username.encode('utf-8'))
+        default = f'{default_url}?name={name}&background=random'
+        
+        # Encoder l'URL par défaut pour l'utiliser comme paramètre
+        encoded_default = quote_plus(default)
+        
+        return f'https://www.gravatar.com/avatar/{email_hash}?d={encoded_default}&s=200'
 
 
 class Role(Base):

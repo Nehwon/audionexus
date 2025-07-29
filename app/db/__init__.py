@@ -7,17 +7,39 @@ que ce soit en mode synchrone ou asynchrone.
 import warnings
 import logging
 from typing import Any, Optional, TypeVar, Type, Dict, Callable, Awaitable, Union, List, cast
+from flask_sqlalchemy import SQLAlchemy
+from flask import current_app
 
 # Configuration du logger
 logger = logging.getLogger(__name__)
 
+# Initialisation de SQLAlchemy
+db = SQLAlchemy()
+
 # Variables globales qui seront initialisées de manière différée
-Base: Any = None
-engine: Any = None
-SessionLocal: Any = None
-ScopedSession: Any = None
-get_db: Any = None
-get_async_db: Any = None
+Base = db.Model
+
+# Ces variables seront initialisées lors de l'appel à init_app
+engine = None
+SessionLocal = None
+ScopedSession = None
+get_db = None
+
+def init_app(app):
+    """Initialise l'extension SQLAlchemy avec l'application Flask."""
+    global engine, SessionLocal, ScopedSession, get_db
+    
+    # Initialisation de SQLAlchemy avec l'application
+    db.init_app(app)
+    
+    # Création des variables globales dans le contexte de l'application
+    with app.app_context():
+        engine = db.engine
+        SessionLocal = db.session
+        ScopedSession = db.session
+        get_db = db.session
+    
+    return db
 get_db_session: Any = None
 get_async_db_session: Any = None
 AsyncSessionLocal: Any = None
@@ -129,6 +151,8 @@ def init_database() -> None:
         # Les variables globales restent à None en cas d'erreur
 
 __all__ = [
+    'db',
+    'init_app',
     'Base',
     'engine',
     'async_engine',

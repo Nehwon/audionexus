@@ -3,15 +3,91 @@ Configuration de l'application à partir des variables d'environnement.
 """
 import os
 import logging
-from typing import List, Optional, Union, ClassVar
-from pydantic import AnyHttpUrl, field_validator, Field, ConfigDict, ValidationInfo
+from typing import List, Union, Optional, Dict, Any
+import secrets
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Charge les variables d'environnement
+load_dotenv()
+
+class Config:
+    # Configuration de base
+    PROJECT_NAME = "AudioNexus"
+    VERSION = "0.4.0"
+    SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+    
+    # Base de données
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        f"mysql+pymysql://{os.getenv('DB_USER', 'audionexus')}:"
+        f"{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', 'localhost')}:"
+        f"{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_NAME', 'audionexus')}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # JWT
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+    JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES", 86400))  # 24h
+    
+    # CORS
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+    
+    # Stockage
+    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "/app/data/uploads")
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max upload
+    
+    # Audiobookshelf
+    AUDIOBOOKSHELF_URL = os.getenv("AUDIOBOOKSHELF_URL", "http://localhost:13378")
+    AUDIOBOOKSHELF_USERNAME = os.getenv("AUDIOBOOKSHELF_USERNAME", "admin")
+    AUDIOBOOKSHELF_PASSWORD = os.getenv("AUDIOBOOKSHELF_PASSWORD", "")
+    
+    # Redis
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    
+    # Socket.IO
+    SOCKETIO_MESSAGE_QUEUE = os.getenv("SOCKETIO_MESSAGE_QUEUE", REDIS_URL)
+    SOCKETIO_ASYNC_MODE = os.getenv("SOCKETIO_ASYNC_MODE", "threading")
+    
+    # Email - Désactivé pour le moment
+    MAIL_SERVER = ""
+    MAIL_PORT = 0
+    MAIL_USE_TLS = False
+    MAIL_USERNAME = ""
+    MAIL_PASSWORD = ""
+    MAIL_DEFAULT_SENDER = "noreply@audionexus.app"
+    MAIL_ENABLED = False
+    
+    # Frontend URL for password reset links
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    
+    # Debug
+    DEBUG = os.getenv("FLASK_DEBUG", "True").lower() in ("true", "1", "t")
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+
+class ProductionConfig(Config):
+    DEBUG = False
+    PROPAGATE_EXCEPTIONS = True
+    
+config = {
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def parse_bool(value: Union[str, bool]) -> bool:
+def parse_bool(value: str) -> bool:
     """Convertit une chaîne en booléen."""
     if isinstance(value, bool):
         return value
@@ -172,6 +248,12 @@ settings = get_settings()
 
 # Créer les dossiers nécessaires
 if not os.getenv("TESTING", "").lower() == "true":
-    os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
+    try:
+        os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
+    except PermissionError:
+        # Utiliser un répertoire temporaire si les permissions ne sont pas suffisantes
+        import tempfile
+        settings.UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'audionexus', 'uploads')
+        os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(settings.STATIC_FOLDER, exist_ok=True)
     logger.info("Dossiers de stockage initialisés")
