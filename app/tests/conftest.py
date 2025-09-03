@@ -40,7 +40,8 @@ from sqlalchemy import text
 
 from app.main import app
 from app.db.database import Base, init_db, SessionLocal as DBSessionLocal
-from app.core.security import create_access_token, get_password_hash
+from app.services.auth import create_access_token
+import app.core.security as core_security
 from app.db.models.base import User
 from app.db import get_db as get_db_dep, get_async_db, AsyncSessionLocal
 from app.core import deps as core_deps
@@ -202,10 +203,8 @@ async def override_dependencies(db_session: AsyncSession, app: FastAPI):
     logger = logging.getLogger(__name__)
     logger.info("Configuration des surcharges de dépendances pour les tests...")
     
-    # Importer les dépendances à surcharger
-    from app.db.session_manager import get_async_db as session_mgr_get_async_db
-    from app.core.deps import get_async_db as core_get_async_db
-    from app.api.deps import get_async_db as api_get_async_db
+    # Importer la dépendance canonique
+    from app.db import get_async_db
     
     # Fonction de surcharge pour les dépendances asynchrones
     async def override_async_db():
@@ -330,33 +329,8 @@ async def override_dependencies(db_session: AsyncSession, app: FastAPI):
         'oauth2_scheme': lambda: "test_token"
     })
     
-    # Surcharger les dépendances spécifiques aux modules
-    try:
-        from app.db.session_manager import get_async_db as session_manager_get_async_db
-        app.dependency_overrides[session_manager_get_async_db] = override_async_db
-        logger.info(f"Surcharge de la dépendance session_manager.get_async_db (ID: {id(session_manager_get_async_db)})")
-    except ImportError as e:
-        logger.warning(f"Impossible d'importer session_manager.get_async_db: {e}")
-    
-    try:
-        from app.core.deps import get_async_db as core_get_async_db, get_async_db_session as core_get_async_db_session
-        
-        # Surcharge de get_async_db
-        app.dependency_overrides[core_get_async_db] = override_async_db
-        logger.info(f"Surcharge de la dépendance core.deps.get_async_db (ID: {id(core_get_async_db)})")
-        
-        # Surcharge de get_async_db_session
-        app.dependency_overrides[core_get_async_db_session] = override_async_db_session
-        logger.info(f"Surcharge de la dépendance core.deps.get_async_db_session (ID: {id(core_get_async_db_session)})")
-    except ImportError as e:
-        logger.warning(f"Impossible d'importer core.deps: {e}")
-    
-    try:
-        from app.api.deps import get_async_db as api_get_async_db
-        app.dependency_overrides[api_get_async_db] = override_async_db
-        logger.info(f"Surcharge de la dépendance api.deps.get_async_db (ID: {id(api_get_async_db)})")
-    except ImportError as e:
-        logger.warning(f"Impossible d'importer api.deps.get_async_db: {e}")
+    # Toutes les dépendances pointent maintenant vers app.db.get_async_db
+    # Plus besoin de surcharger des dépendances spécifiques aux modules
     
     # Afficher les dépendances qui ont été surchargées avec leurs IDs
     logger.info("=== DÉPENDANCES SURCHARGÉES ===")

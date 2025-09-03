@@ -1,7 +1,10 @@
 """
 Dépendances FastAPI pour l'application.
+
+ATTENTION: Ce fichier contient encore des fonctions synchrones avec get_db pour rétrocompatibilité.
+Pour les nouvelles implémentations, utiliser les fonctions Async depuis app.db directement.
 """
-from typing import Generator
+from typing import Generator, Optional
 
 import jwt
 from fastapi import Depends, HTTPException, status, Request
@@ -15,44 +18,79 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 from app.config import settings
 from app.core.api.audiobookshelf import AudiobookshelfClient
 from app.db.database import SessionLocal
+from app.db import get_db, get_async_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 
+def get_audiobookshelf_client(instance_id: int = None) -> AudiobookshelfClient:
+    """
+    Fournit une instance du client Audiobookshelf.
 
-def get_db() -> Generator:
+    Args:
+        instance_id: ID de l'instance spécifique (optionnel). Si None, utilise la première instance active.
+
+    Returns:
+        AudiobookshelfClient: Une instance configurée du client
+
+    Raises:
+        HTTPException: Si la configuration est manquante ou instance non trouvée
     """
-    Fournit une session de base de données.
-    
-    Yields:
-        Session: Une session SQLAlchemy
-    """
+    from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
+
     db = SessionLocal()
     try:
-        yield db
+        service = AudiobookshelfInstanceService(db)
+
+        if instance_id:
+            instance = service.get_instance(instance_id)
+            if not instance or not instance.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Instance Audiobookshelf {instance_id} non trouvée ou inactive"
+                )
+        else:
+            # Utiliser la première instance active comme défaut
+            instances = service.get_instances(only_active=True)
+            if not instances:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Aucune instance Audiobookshelf active configurée"
+                )
+            instance = instances[0]
+
+        # Récupérer le token déchiffré
+        token = service.get_decrypted_token(instance.id)
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Impossible de récupérer le token pour l'instance {instance.name}"
+            )
+
+        return AudiobookshelfClient(instance.base_url, token)
+
     finally:
         db.close()
 
 
-def get_audiobookshelf_client() -> AudiobookshelfClient:
+from functools import partial
+
+
+def get_audiobookshelf_client_by_instance(instance_id: Optional[int] = None) -> AudiobookshelfClient:
     """
-    Fournit une instance du client Audiobookshelf.
-    
+    Fonction factory pour obtenir un client Audiobookshelf avec un ID spécifique.
+    À utiliser comme dépendance FastAPI.
+
+    Args:
+        instance_id: ID de l'instance (sera injecté par FastAPI depuis les paramètres de requête). Si None, utilise la première instance active.
+
     Returns:
-        AudiobookshelfClient: Une instance configurée du client
-        
-    Raises:
-        HTTPException: Si la configuration est manquante
+        AudiobookshelfClient: Client configuré pour l'instance sélectionnée
     """
-    if not all([settings.ABS_API_URL, settings.ABS_USERNAME, settings.ABS_PASSWORD]):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Configuration Audiobookshelf manquante"
-        )
-    
-    return AudiobookshelfClient(
-        base_url=settings.ABS_API_URL,
-        username=settings.ABS_USERNAME,
-        password=settings.ABS_PASSWORD
-    )
+    return get_audiobookshelf_client(instance_id)
+
+
+# Créer une dépendance par défaut pour la rétrocompatibilité
+get_audiobookshelf_client_default = partial(get_audiobookshelf_client_by_instance, instance_id=None)
 
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):

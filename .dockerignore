@@ -1,0 +1,72 @@
+# Fichiers versionnés Git
+.git
+.gitignore
+
+# Fichiers de développement Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+.Python
+*.so
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache
+.mypy_cache
+.tox
+.cache
+
+# Environnements virtuels
+venv/
+env/
+ENV/
+.venv/
+.env*
+
+# Tests (sauf si nécessaire pour les tests d'intégration Docker)
+tests/
+!tests/integration/
+
+# Documentation volumineuse
+documentation/
+docs/alfred/
+static/
+alembic/
+migrations/
+*.md
+
+# Archives et backups
+*.tar.gz
+*.zip
+*.backup
+archived_old_configs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+*.pid
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Scripts de déploiement
+scripts/
+
+# Configuration sensible
+*.env*
+
+# Migration stockée localement
+audionexus*.db

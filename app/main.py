@@ -11,10 +11,12 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.db import init_database, get_db, get_async_db, async_engine, AsyncSessionLocal
+from app.db import init_database, db, SessionLocal, init_app
 from app.core.api import api_router
+from app.core.api.auth_router import router as auth_router
 
 # Configuration du cycle de vie de l'application
 @asynccontextmanager
@@ -25,17 +27,16 @@ async def lifespan(app: FastAPI):
     # Initialisation de la base de données (sauf en environnement de test)
     if not os.getenv("TESTING"):
         print("Initialisation de la base de données...")
-        from app.db import init_database, async_engine, AsyncSessionLocal
-        from app.db.session_manager import init_async_engine
         
-        # Initialisation explicite
+        # Initialisation de la base de données
         init_database()
         
         # Vérification de la connexion
         try:
-            async with AsyncSessionLocal() as db:
-                await db.execute(text("SELECT 1"))
-                print("Connexion à la base de données établie avec succès")
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            db.close()
+            print("Connexion à la base de données établie avec succès")
         except Exception as e:
             print(f"Erreur lors de la connexion à la base de données: {e}")
             raise
@@ -47,8 +48,8 @@ async def lifespan(app: FastAPI):
     # Nettoyage à l'arrêt
     if not os.getenv("TESTING"):
         print("Arrêt de l'application...")
-        if 'async_engine' in locals() and async_engine is not None:
-            await async_engine.dispose()
+        if 'db' in locals():
+            db.close()
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -100,7 +101,8 @@ app.mount(
 from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix="/api")
+app.include_router(auth_router)
 
 # Route racine
 @app.get("/", tags=["Root"])

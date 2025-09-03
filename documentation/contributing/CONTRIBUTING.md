@@ -154,11 +154,121 @@ cd audionexus/frontend
 npm test
 ```
 
+## Architecture Unifiée
+
+### Architecture v0.6.0
+
+AudioNexus possède maintenant une architecture unifiée avec plusieurs améliorations majeures :
+
+#### 1. Système de Configuration Centralisée
+- **Fichier central** : `app/config.py` comme source unique de vérité
+- **Basculement automatique** : Détection automatique des environnements (développement/production/tests)
+- **Variables d'environnement** : Configuration via `.env.*` pour chaque environnement
+
+#### 2. Authentification VoidAuth Intégrée
+- **OIDC complet** : Support des flux d'authentification OpenID Connect
+- **Gestion des rôles** : Permissions avancées avec Keycloak realms
+- **2FA optionnel** : Authentification à deux facteurs disponible
+
+#### 3. Gestion de Base de Données Unifiée
+- **SQLite pour dev/tests** : Base de données fichier locale ou en mémoire
+- **MySQL pour production** : Support complet des performances élevées
+- **Migrations automatiques** : Gestion des schémas via Alembic
+- **Session manager** : Pool de connexions optimisé avec nettoyage automatique
+
+#### 4. Optimisations Docker
+- **Services conteneurisés** : Configuration Docker Compose complète
+- **Volumes optimisés** : Gestion persistante des données
+- **Health checks** : Monitoring automatique de l'état des services
+- **Load balancing** : Support du scaling horizontal
+
+#### 5. Sécurité Renforcée
+- **Middleware FastAPI** : Protection des routes avec validation stricte
+- **Chiffrement des données** : Tous les mots de passe hachés avec bcrypt/Argon2
+- **Logs de sécurité** : Traçage complet des accès sensibles
+- **Contrôles d'accès** : Permissions granulares au niveau des moyens
+
+### Développement avec l'Architecture Unifiée
+
+#### Prérequis Mise à Jour
+- Python 3.11+ avec Pydantic v2
+- Docker 20.10+ avec Compose v2.0+
+- MySQL 8.0+ pour la production
+- Redis 7+ pour le cache (optionnel)
+
+#### Commandes Essentielles
+```bash
+# Configuration d'environnement unifiée
+./scripts/setup_env.sh dev    # Développement SQLite
+./scripts/setup_env.sh prod   # Production MySQL
+
+# Tests unifiés
+./run_tests.sh                # Tests complets avec SQLite en mémoire
+
+# Migration de base de données
+export ENVIRONMENT=production  # Pour MySQL
+alembic upgrade head          # Migre vers la dernière version
+
+# Développement avec Docker optimisé
+docker-compose up -d          # Démarrage de tous les services
+docker-compose logs -f        # Suivi des logs en temps réel
+```
+
+#### Bonnes Pratiques d'Architecture
+
+1. **Injection de dépendances** : Utilisez les helpers FastAPI (Depends) pour la session DB
+2. **Modèles Pydantic** : Préférer les modèles v2 avec validation automatiques
+3. **Gestion d'erreurs** : Utilisez les exceptions personnalisées et logging structuré
+4. **Tests isolés** : Chaque test doit pouvoir s'exécuter indépendamment
+5. **Migrations sûres** : Testez toujours d'abord sur SQLite avant MySQL
+
+#### Exemples de Code Architecture Unifié
+
+**Endpoint FastAPI optimisé :**
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.api.deps import get_db, get_current_active_user
+from app.services import audiobookshelf_service
+
+router = APIRouter()
+
+@router.get("/audiobookshelf/libraries")
+async def get_libraries(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    """Récupère les bibliothèques Audiobookshelf avec authentification."""
+    try:
+        return await audiobookshelf_service.get_libraries(db, current_user)
+    except Exception as e:
+        logger.exception(f"Erreur récupération bibliothèques: {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne")
+```
+
+**Service avec gestion unifiée des sessions :**
+```python
+from app.db.session_manager import get_session_manager
+
+class AudiobookshelfService:
+    def __init__(self):
+        self.session_manager = get_session_manager()
+
+    async def get_libraries(self, db: Session, user):
+        async with self.session_manager(db) as session:
+            # Logique métier avec gestion automatique des sessions
+            return await session.execute(
+                select(LibraryModel).filter(LibraryModel.user_id == user.id)
+            )
+```
+
 ## Documentation
 
 - Mettez à jour la documentation lorsque vous ajoutez ou modifiez des fonctionnalités
 - Utilisez des commentaires clairs et concis dans le code
 - Documentez les décisions techniques importantes dans `documentation/decisions/`
+- Consultez `docs/DATABASE_CONFIG_GUIDE.md` pour la configuration DB unifiée
+- Reportez-vous à `docs/VOIDAUTH_INTEGRATION.md` pour l'authentification
 
 ## Questions
 

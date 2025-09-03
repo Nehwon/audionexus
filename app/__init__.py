@@ -8,7 +8,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_restx import Api
 from flask_socketio import SocketIO
-from config import Config
+from .config import Config
 from app.db import db
 from app.services import email as email_service
 

@@ -49,7 +49,11 @@ engine = create_engine(settings.DATABASE_URI, **engine_kwargs)
 """
 Module de compatibilité pour la gestion des sessions de base de données.
 
-Ce module est maintenu pour la rétrocompatibilité.
+CORRECTION_IMPORTANTE: Ce module peut causer des conflits 'kw' dans FastAPI
+à cause des définitions multiples de get_db(). Toujours importer depuis
+app.db.session_manager directement pour éviter les erreurs 500/422.
+
+Ce module est maintenu uniquement pour la rétrocompatibilité.
 Pour les nouvelles implémentations, utilisez directement `app.db.session_manager`.
 """
 import warnings

@@ -12,7 +12,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.config import settings
 from app.db.database import SessionLocal
 from app.services.audiobookshelf_sync import AudiobookshelfSyncService
 

@@ -52,11 +52,28 @@ async def run_migrations_online() -> None:
 
 def do_run_migrations(connection):
     """Run migrations in the current transaction."""
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=True,
-    )
+    from app.config import settings
+
+    # Configuration selon le type de base de données
+    configure_kwargs = {
+        'connection': connection,
+        'target_metadata': target_metadata,
+        'compare_type': True,
+    }
+
+    # Configuration spécifique par SGBD
+    if settings.database.type.value == 'sqlite':
+        # Pour SQLite, on peut avoir des contraintes moins strictes
+        configure_kwargs.update({
+            'render_as_batch': True,  # Utile pour SQLite
+        })
+    elif settings.database.type.value == 'mysql':
+        # Pour MySQL, activer les migrations avec charset
+        configure_kwargs.update({
+            'include_schemas': True,
+        })
+
+    context.configure(**configure_kwargs)
 
     with context.begin_transaction():
         context.run_migrations()

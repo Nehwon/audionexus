@@ -11,8 +11,9 @@ from typing import Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from app.core.api.audiobookshelf import AudiobookshelfClient
-from app.core.config import settings
-from app.crud import audiobook as audiobook_crud
+from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
+from app.config import settings
+from app.crud import audiobook as audiobook_crud, audiobookshelf_instance as instance_crud
 from app.db.database import SessionLocal
 from app.models.audiobook import Audiobook, AudiobookProgress
 from app.schemas.audiobook import AudiobookCreate, AudiobookProgressCreate
@@ -23,15 +24,62 @@ logger = logging.getLogger(__name__)
 class AudiobookshelfSyncService:
     """Service de synchronisation avec Audiobookshelf."""
     
-    def __init__(self, db: Session = None):
-        """Initialise le service de synchronisation."""
+    def __init__(self, db: Session = None, instance_id: int = None):
+        """Initialise le service de synchronisation.
+
+        Args:
+            db: Session de base de données
+            instance_id: ID de l'instance Audiobookshelf à utiliser
+        """
         self.db = db or SessionLocal()
-        self.audioshelf_client = AudiobookshelfClient(
-            base_url=settings.ABS_API_URL,
-            username=settings.ABS_USERNAME,
-            password=settings.ABS_PASSWORD
-        )
-    
+        self.instance_id = instance_id
+        self.instance_service = AudiobookshelfInstanceService(self.db)
+        self.audioshelf_client = None
+
+        # Initialiser le client si une instance est spécifiée
+        if instance_id:
+            self._init_client()
+
+    def _init_client(self) -> bool:
+        """Initialise le client Audiobookshelf avec l'instance sélectionnée."""
+        if not self.instance_id:
+            return False
+
+        instance = self.instance_service.get_instance(self.instance_id)
+        if not instance:
+            logger.error(f"Instance Audiobookshelf {self.instance_id} non trouvée")
+            return False
+
+        if not instance.is_active:
+            logger.warning(f"Instance Audiobookshelf {self.instance_id} est désactivée")
+            return False
+
+        try:
+            token = self.instance_service.get_decrypted_token(self.instance_id)
+            if not token:
+                logger.error(f"Impossible de récupérer le token pour l'instance {self.instance_id}")
+                return False
+
+            self.audioshelf_client = AudiobookshelfClient(instance.base_url, token)
+            return True
+
+        except Exception as e:
+            logger.error(f"Erreur lors de l'initialisation du client pour l'instance {self.instance_id}: {str(e)}")
+            return False
+
+    def set_instance(self, instance_id: int) -> bool:
+        """
+        Définit l'instance partenaire à utiliser pour la synchronisation.
+
+        Args:
+            instance_id: ID de l'instance Audiobookshelf
+
+        Returns:
+            True si l'instance a été définie avec succès
+        """
+        self.instance_id = instance_id
+        return self._init_client()
+
     def __del__(self):
         """Ferme la session de base de données lors de la destruction."""
         if hasattr(self, 'db') and self.db:
@@ -40,10 +88,10 @@ class AudiobookshelfSyncService:
     def sync_all(self, full_sync: bool = False) -> Dict[str, int]:
         """
         Effectue une synchronisation complète avec Audiobookshelf.
-        
+
         Args:
             full_sync: Si True, force une synchronisation complète même si non nécessaire
-            
+
         Returns:
             Dict: Statistiques de la synchronisation
         """
@@ -53,21 +101,211 @@ class AudiobookshelfSyncService:
             'progress_updated': 0,
             'errors': 0
         }
-        
+
+        # Vérifier si le client est initialisé
+        if not self.audioshelf_client:
+            logger.error("Client Audiobookshelf non initialisé. Définissez d'abord une instance.")
+            stats['errors'] += 1
+            return stats
+
         try:
             # 1. Synchroniser les bibliothèques
             stats['libraries_synced'] = self.sync_libraries()
-            
-            # 2. Synchroniser les livres audio
-            stats['audiobooks_synced'] = self.sync_audiobooks(full_sync=full_sync)
-            
+
+            # 2. Synchroniser les livres audio (avec traitement par page si nécessaire)
+            stats['audiobooks_synced'] = self.sync_audiobooks(full_sync=full_sync, use_pagination=False)
+
             # 3. Synchroniser les progressions de lecture
             stats['progress_updated'] = self.sync_reading_progress()
-            
+
+            # 4. Mettre à jour la dernière synchronisation
+            if self.instance_id:
+                instance_crud.update_connection_status(
+                    db=self.db,
+                    instance_id=self.instance_id,
+                    status="active"
+                )
+
         except Exception as e:
             logger.error(f"Erreur lors de la synchronisation: {str(e)}", exc_info=True)
             stats['errors'] += 1
-        
+
+            # Marquer l'instance comme en erreur
+            if self.instance_id:
+                try:
+                    self.instance_service.update_connection_status(
+                        db=self.db,
+                        instance_id=self.instance_id,
+                        status="error",
+                        error=str(e)
+                    )
+                except Exception as update_error:
+                    logger.error(f"Erreur lors de la mise à jour du statut: {update_error}")
+
+        return stats
+
+    def initial_sync(self, batch_size: int = 100) -> Dict[str, int]:
+        """
+        Effectue une synchronisation initiale complète d'une nouvelle instance.
+
+        Args:
+            batch_size: Nombre d'éléments à traiter par lot
+
+        Returns:
+            Statistiques de la synchronisation initiale
+        """
+        stats = {
+            'libraries_synced': 0,
+            'audiobooks_synced': 0,
+            'total_pages': 0,
+            'errors': 0
+        }
+
+        # Vérifier si le client est initialisé
+        if not self.audioshelf_client:
+            logger.error("Client Audiobookshelf non initialisé.")
+            stats['errors'] += 1
+            return stats
+
+        logger.info("Début de la synchronisation initiale complète")
+
+        try:
+            # 1. Synchroniser les bibliothèques d'abord
+            stats['libraries_synced'] = self.sync_libraries()
+
+            # 2. Synchronisation complète par pages
+            audiobook_stats = self.sync_audiobooks_complete(batch_size=batch_size)
+            stats.update(audiobook_stats)
+
+            # 3. Synchroniser les progressions
+            stats['progress_synced'] = self.sync_reading_progress()
+
+            # 4. Marquer la synchronisation comme réussie
+            if stats['errors'] == 0 and self.instance_id:
+                instance_crud.update_connection_status(
+                    db=self.db,
+                    instance_id=self.instance_id,
+                    status="active"
+                )
+
+            logger.info(f"Synchronisation initiale terminée: {stats}")
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la synchronisation initiale: {str(e)}", exc_info=True)
+            stats['errors'] += 1
+
+        return stats
+
+    def sync_audiobooks_complete(self, batch_size: int = 100) -> Dict[str, int]:
+        """
+        Synchronise tous les livres audio par pages pour éviter la surcharge mémoire.
+
+        Args:
+            batch_size: Nombre d'éléments par page
+
+        Returns:
+            Statistiques de synchronisation des livres audio
+        """
+        stats = {
+            'audiobooks_synced': 0,
+            'total_pages': 0,
+            'errors': 0
+        }
+
+        try:
+            # Récupérer les bibliothèques
+            libraries = self.audioshelf_client.get_libraries()
+            logger.info(f"Trouvé {len(libraries)} bibliothèques à synchroniser")
+
+            for library in libraries:
+                library_id = library.get('id')
+                if not library_id:
+                    continue
+
+                logger.info(f"Synchronisation de la bibliothèque: {library.get('name', library_id)}")
+
+                # Synchroniser par pages si l'API le supporte
+                page = 1
+                while True:
+                    try:
+                        # Pour simplifier, on utilise une recherche sans filtre pour tout récupérer
+                        # Dans une vraie implémentation, on pourrait utiliser la pagination si disponible
+                        items = self.audioshelf_client.search_library(library_id, "", limit=batch_size)
+                        page_stats = self._process_audiobook_batch(items, library_id)
+
+                        stats['audiobooks_synced'] += page_stats['processed']
+                        stats['total_pages'] += 1
+
+                        page += 1
+                        if len(items) < batch_size:
+                            # Plus d'éléments à traiter
+                            break
+
+                    except Exception as e:
+                        logger.error(f"Erreur lors du traitement de la page {page} pour la bibliothèque {library_id}: {str(e)}")
+                        stats['errors'] += 1
+                        break
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la synchronisation complète: {str(e)}")
+            stats['errors'] += 1
+
+        return stats
+
+    def _process_audiobook_batch(self, items: List[Dict], library_id: str) -> Dict[str, int]:
+        """
+        Traite un lot d'éléments de livres audio.
+
+        Args:
+            items: Liste des éléments à traiter
+            library_id: ID de la bibliothèque source
+
+        Returns:
+            Statistiques du traitement
+        """
+        stats = {
+            'processed': 0,
+            'updated': 0,
+            'created': 0,
+            'errors': 0
+        }
+
+        for item in items:
+            try:
+                # Vérifier si le livre existe déjà
+                existing = audiobook_crud.get_audiobook_by_external_id(
+                    self.db,
+                    external_id=item.get('id'),
+                    source='audiobookshelf'
+                )
+
+                # Préparer les données
+                audiobook_data = self._map_audiobook_data(item, library_id)
+
+                if existing:
+                    # Mettre à jour le livre existant
+                    audiobook_crud.update_audiobook(
+                        self.db,
+                        db_obj=existing,
+                        obj_in=audiobook_data
+                    )
+                    stats['updated'] += 1
+                else:
+                    # Créer un nouveau livre
+                    from app.schemas.audiobook import AudiobookCreate
+                    audiobook_crud.create_audiobook(
+                        self.db,
+                        obj_in=AudiobookCreate(**audiobook_data)
+                    )
+                    stats['created'] += 1
+
+                stats['processed'] += 1
+
+            except Exception as e:
+                logger.error(f"Erreur lors du traitement du livre {item.get('id')}: {str(e)}")
+                stats['errors'] += 1
+                continue
+
         return stats
     
     def sync_libraries(self) -> int:

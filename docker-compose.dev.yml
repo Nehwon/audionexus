@@ -1,0 +1,127 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: audionexus-backend-dev
+    restart: unless-stopped
+    env_file: .env.development
+    environment:
+      - FLASK_APP=wsgi:app
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FORWARDED_ALLOW_IPS=*
+      - PROXY_ALLOW_IPS=*
+    volumes:
+      - .:/app:cached
+      - ./data/audionexus:/app/data/audionexus:rw
+      - ./logs:/app/logs:rw
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - audionexus-network
+    command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=8000", "--reload"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: mysql:8.0
+    container_name: audionexus-db-dev
+    platform: linux/amd64
+    restart: unless-stopped
+    env_file: .env.development
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_LOG_CONSOLE: 'true'
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+      - ./data/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - audionexus-network
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USER}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: audionexus-redis-dev
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly yes
+      - --protected-mode no
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - audionexus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Service de cache Redis supplémentaire pour développement
+  redis-cache:
+    image: redis:7-alpine
+    container_name: audionexus-redis-cache-dev
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --port 6380
+      - --protected-mode no
+    ports:
+      - "6380:6380"
+    networks:
+      - audionexus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Service de monitoring optionnel pour le développement
+  adminer:
+    image: adminer:latest
+    container_name: audionexus-adminer-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - audionexus-network
+
+networks:
+  audionexus-network:
+    driver: bridge
+
+volumes:
+  mysql_dev_data:
+    name: audionexus_mysql_dev_data
+  redis_dev_data:
+    name: audionexus_redis_dev_data

@@ -1,5 +1,9 @@
 """
 Dépendances FastAPI pour l'application.
+
+NOTE: Ce module a été nettoyé pour utiliser exclusivement get_async_db depuis app.db.
+Les anciennes fonctions redondantes ont été supprimées ou marquées comme dépréciées.
+Utilisez toujours app.db pour les dépendances de base de données.
 """
 from __future__ import annotations
 from typing import Generator, Optional, Union, AsyncGenerator, TYPE_CHECKING, Any
@@ -13,8 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.api.audiobookshelf import AudiobookshelfClient
-from app.db import get_db, get_async_db, AsyncSessionLocal
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.db import get_async_db
+import app.core.security as security
 
 # Import différé pour éviter les imports circulaires
 if TYPE_CHECKING:
@@ -26,33 +30,8 @@ oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
 
-def get_db_session() -> Generator[Session, None, None]:
-    """
-    Fournit une session de base de données synchrone.
-    
-    À utiliser pour la rétrocompatibilité.
-    Préférez l'utilisation directe de `get_db` pour les nouvelles implémentations.
-    """
-    return get_db()
-
-
-async def get_async_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Fournit une session de base de données asynchrone.
-    
-    À utiliser pour les opérations asynchrones avec FastAPI.
-    """
-    db = None
-    try:
-        db = await anext(get_async_db())
-        yield db
-    except Exception as e:
-        if db:
-            await db.rollback()
-        raise e
-    finally:
-        if db:
-            await db.close()
+# NOTE: Cette fonction est désormais dépréciée. Utilisez directement get_async_db() depuis app.db
+# Gardée pour compatibilité temporaire
 
 
 def get_audiobookshelf_client() -> AudiobookshelfClient:
@@ -79,9 +58,42 @@ def get_audiobookshelf_client() -> AudiobookshelfClient:
 
 
 async def get_current_user(
-    db: AsyncSession = Depends(get_async_db), 
     token: str = Depends(oauth2_scheme)
 ) -> 'models.User':
+    """
+    Récupère l'utilisateur actuellement authentifié.
+
+    Args:
+        token: JWT token d'authentification
+
+    Returns:
+        models.User: L'utilisateur authentifié
+
+    Raises:
+        HTTPException: Si l'authentification échoue
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Impossible de valider les identifiants",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = security.verify_token(token)
+        if payload is None:
+            raise credentials_exception
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except (jwt.JWTError, ValidationError):
+        raise credentials_exception
+
+    # Utilisation de la session asynchrone via get_async_db context manager
+    async for db in get_async_db():
+        user = await crud.crud_user.get_user_by_username(db, username=username)
+        if user is None:
+            raise credentials_exception
+        return user
     """
     Récupère l'utilisateur actuellement authentifié.
     

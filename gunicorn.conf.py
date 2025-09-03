@@ -40,12 +40,12 @@ worker_tmp_dir = "/dev/shm"
 # Empêche l'exécution de code arbitraire
 preload_app = True
 
-# Configuration des en-têtes HTTP
-# Pour le support des connexions WebSocket
-forwarded_allow_ips = "*"
-proxy_allow_ips = "*"
+# Configuration des en-têtes HTTP optimisée pour la sécurité
+# Restreindre les IPs autorisées pour les proxies (à configurer selon l'environnement)
+forwarded_allow_ips = os.getenv('FORWARDED_ALLOW_IPS', '127.0.0.1,localhost')
+proxy_allow_ips = os.getenv('PROXY_ALLOW_IPS', '127.0.0.1,localhost')
 secure_scheme_headers = {
     'X-FORWARDED-PROTOCOL': 'ssl',
-    'X-FORWARDED-PROTO': 'https',
+    'X-FORWARDED-PROTOCOL': 'https',
     'X-FORWARDED-SSL': 'on'
 }

@@ -11,22 +11,18 @@ from urllib.parse import urljoin
 
 class AudiobookshelfClient:
     """Client pour interagir avec l'API d'Audiobookshelf."""
-    
-    def __init__(self, base_url: str, username: str, password: str):
-        """Initialise le client avec les informations de connexion.
-        
+
+    def __init__(self, base_url: str, token: str):
+        """Initialise le client avec un token d'authentification existant.
+
         Args:
             base_url: URL de base du serveur Audiobookshelf (ex: 'http://localhost:13378')
-            username: Nom d'utilisateur
-            password: Mot de passe
+            token: Token JWT d'authentification
         """
         self.base_url = base_url.rstrip('/')
         self.api_base = f"{self.base_url}/api"
-        self.token = None
+        self.token = token
         self.user = None
-        
-        # Authentification initiale
-        self._authenticate(username, password)
     
     def _make_request(self, method: str, endpoint: str, **kwargs) -> Dict:
         """Effectue une requête HTTP vers l'API.
@@ -62,17 +58,40 @@ class AudiobookshelfClient:
         except json.JSONDecodeError:
             return {"status": "success", "message": "No content"}
     
-    def _authenticate(self, username: str, password: str) -> None:
+    def authenticate(self, username: str, password: str) -> None:
         """Authentifie l'utilisateur et stocke le token."""
         endpoint = "auth/login"
         data = {
             "username": username,
             "password": password
         }
-        
-        response = self._make_request('post', endpoint, json=data)
-        self.token = response.get('user', {}).get('token')
-        self.user = response.get('user')
+
+        # Fait une requête sans token pour l'authentification
+        url = f"{self.base_url}/api/{endpoint.lstrip('/')}"
+        response = requests.post(url, json=data, timeout=30)
+
+        if response.status_code == 200:
+            response_data = response.json()
+            self.token = response_data.get('user', {}).get('token')
+            self.user = response_data.get('user')
+        else:
+            raise Exception(f"Authentication failed: HTTP {response.status_code}")
+
+    @classmethod
+    def from_credentials(cls, base_url: str, username: str, password: str) -> 'AudiobookshelfClient':
+        """Crée un client en s'authentifiant avec nom d'utilisateur et mot de passe.
+
+        Args:
+            base_url: URL de base du serveur
+            username: Nom d'utilisateur
+            password: Mot de passe
+
+        Returns:
+            Instance du client authentifiée
+        """
+        client = cls(base_url, "")
+        client.authenticate(username, password)
+        return client
     
     # Méthodes pour les bibliothèques
     def get_libraries(self) -> List[Dict]:

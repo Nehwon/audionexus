@@ -5,7 +5,56 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Non publié]
+## [0.6.0] - 2025-09-03
+
+### Sécurité
+- Renforcement des protections de sécurité des tokens JWT
+- Amélioration du système de validation des sessions utilisateur
+- Mise à jour des dépendances pour corriger les vulnérabilités connues
+- Optimisation des contrôles d'accès pour l'authentification VoidAuth
+
+### Ajouté
+- Nouvelles fonctionnalités de synchronisation avec Audiobookshelf
+- Amélioration de la documentation d'intégration avec les instances locales
+- Guide complet pour la gestion des conteneurs Docker avec optimisations
+
+### Modifié
+- Refactorisation complète des middlewares d'authentification FastAPI
+- Mise à jour de l'architecture unifiée pour la gestion des sessions de base de données
+- Actualisation du guide de configuration MySQL/SQLite pour améliorer la cohérence
+- Optimisation des performances des endpoints d'API
+
+### Corrigé
+- Résolution des problèmes de validation Pydantic v2 dans les modèles d'authentification
+- Correction des erreurs 500 dans les endpoints `/auth/register` et autres routes sensibles
+- Nettoyage des dépendances circulaires dans les gestionnaires de sessions
+- Amélioration de la gestion des environnements Docker pour les tests et la production
+
+## [0.5.0] - 2025-07-29
+
+### Ajouté
+- **Intégration complète de VoidAuth** comme solution d'authentification
+- Support de l'authentification OIDC avec Keycloak
+- Gestion des rôles et permissions avancée
+- Intégration de l'authentification à deux facteurs (2FA)
+- Système de réinitialisation de mot de passe sécurisé
+- Documentation complète pour l'intégration de VoidAuth
+- Tests d'intégration pour les flux d'authentification
+
+### Modifié
+- Refonte complète du système d'authentification pour utiliser VoidAuth
+- Mise à jour des dépendances pour supporter OIDC
+- Amélioration de la sécurité des tokens JWT
+- Refactorisation des middlewares d'authentification
+- Mise à jour de la documentation technique
+
+### Corrigé
+- Problèmes de sécurité liés à la gestion des sessions
+- Problèmes de performance avec les tokens JWT
+- Corrections mineures dans la validation des tokens
+- Problèmes de configuration CORS pour l'authentification
+
+## [0.4.0] - 2025-07-28
 
 ### Ajouté
 - Logs de débogage avancés pour l'endpoint d'inscription utilisateur

@@ -1,18 +1,20 @@
 # AudioNexus - Gestionnaire d'Audiothèques
 
-[![Version](https://img.shields.io/badge/version-0.4.0--dev-blue.svg)](documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](documentation/CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](documentation/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
 [![Frontend](https://img.shields.io/badge/Frontend-Svelte%2FTypeScript-FF3E00.svg)](frontend/)
 [![Backend](https://img.shields.io/badge/Backend-Flask-000000.svg)](app/)
+[![Authentication](https://img.shields.io/badge/Auth-VoidAuth-9C27B0.svg)](app/integrations/voidauth/)
 [![Tests](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml/badge.svg)](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml)
 
 ## 📋 Description
 
 **AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
 
-> **Note de développement (28/07/2025)** : Le projet a été migré vers Flask pour le backend et Svelte pour le frontend. L'authentification est gérée par VoidAuth pour une meilleure sécurité et une meilleure maintenabilité. Consultez le [journal des changements](documentation/CHANGELOG.md) pour plus de détails sur les dernières modifications.
+> **Note de développement (03/09/2025)** : AudioNexus v0.6.0 apporte des améliorations significatives de sécurité, une architecture unifiée MySQL/SQLite, et des optimisations Docker complètes. L'intégration Audiobookshelf a été optimisée avec la gestion des conteneurs et les health checks. Consultez le [journal des changements](documentation/CHANGELOG.md) pour les détails techniques.</search>
+</search_and_replace>
 
 ## 📝 Auteur
 
@@ -83,14 +85,15 @@ npm run dev
 
 ## 🌟 Fonctionnalités
 
-### 🔐 Authentification & Sécurité (En cours de stabilisation)
-- ✅ Authentification JWT avec rafraîchissement de token
-- ✅ Protection des routes avec authentification
-- ✅ Gestion des sessions utilisateur asynchrones
+### 🔐 Authentification & Sécurité (VoidAuth)
+- ✅ Authentification OIDC avec VoidAuth (basé sur Keycloak)
+- ✅ Gestion des tokens JWT avec rafraîchissement automatique
+- ✅ Protection des routes avec rôles et permissions
+- ✅ Gestion des sessions utilisateur sécurisées
 - ✅ Validation des données avec Pydantic v2
-- 🔄 En cours : Résolution des problèmes de dépendances circulaires
-- 🔄 Planifié : 2FA (Authentification à deux facteurs)
-- 🔄 Planifié : Réinitialisation de mot de passe
+- ✅ 2FA (Authentification à deux facteurs)
+- ✅ Réinitialisation de mot de passe sécurisée
+- 🔄 En cours : Audit de sécurité complet
 
 ### 👤 Gestion des Utilisateurs
 - ✅ Création et gestion des comptes
@@ -131,15 +134,23 @@ Créez un fichier `.env` à la racine du projet avec les variables suivantes :
 
 ```env
 # Backend
-DATABASE_URL=postgresql://user:password@db:5432/audionexus
+DATABASE_URL=mysql+pymysql://user:password@db:3306/audionexus
 REDIS_URL=redis://redis:6379/0
-SECRET_KEY=votre_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# VoidAuth (OIDC)
+VOIDAUTH_SERVER_URL=http://localhost:8080
+VOIDAUTH_REALM=audionexus
+VOIDAUTH_CLIENT_ID=audionexus-backend
+VOIDAUTH_CLIENT_SECRET=votre-client-secret
+VOIDAUTH_ADMIN_USER=admin
+VOIDAUTH_ADMIN_PASSWORD=votre-mot-de-passe-admin
+VOIDAUTH_VERIFY_SSL=False  # Désactiver en développement
 
 # Frontend
 VITE_API_URL=http://localhost:8000/api
+VITE_OIDC_CLIENT_ID=audionexus-frontend
+VITE_OIDC_AUTHORITY=http://localhost:8080/realms/audionexus
+VITE_OIDC_REDIRECT_URI=http://localhost:3000/auth/callback
 ```
 
 ## 📦 Déploiement
@@ -254,7 +265,7 @@ Lien du projet : [https://github.com/votre-utilisateur/audionexus](https://githu
 
 1. Cloner le dépôt :
    ```bash
-   git clone https://gitea.lamachere.fr/fabrice/docker.git
+   git clone https://github.com/votre-utilisateur/audionexus.git
    cd docker/tools/audiobooks
    ```
 
@@ -291,7 +302,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 ## 📞 Contact
 
-Pour toute question ou suggestion, veuillez ouvrir une [issue](https://gitea.lamachere.fr/fabrice/docker/issues).
+Pour toute question ou suggestion, veuillez ouvrir une [issue](https://github.com/votre-utilisateur/audionexus/issues).
 
 ---
 

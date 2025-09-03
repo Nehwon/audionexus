@@ -73,9 +73,9 @@ class Audiobook(Base):
     # Index
     __table_args__ = (
         Index('ix_audiobooks_library_title', 'library_id', 'title'),
-        Index('ix_audiobooks_author', 'authors', postgresql_using='gin'),
-        Index('ix_audiobooks_genre', 'genres', postgresql_using='gin'),
-        Index('ix_audiobooks_series', 'series', postgresql_using='gin'),
+        Index('ix_audiobooks_author', 'authors'),
+        Index('ix_audiobooks_genre', 'genres'),
+        Index('ix_audiobooks_series', 'series'),
     )
     
     def __repr__(self):

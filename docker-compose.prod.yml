@@ -1,0 +1,152 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: audionexus-backend-prod
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      - FLASK_APP=wsgi:app
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FORWARDED_ALLOW_IPS=nginx,127.0.0.1
+      - PROXY_ALLOW_IPS=nginx,127.0.0.1
+    volumes:
+      - ./data/audionexus:/app/data/audionexus:rw
+      - ./data/logs:/app/logs:rw
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  db:
+    image: mysql:8.0
+    container_name: audionexus-db-prod
+    platform: linux/amd64
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_DATABASE_FILE: /run/secrets/mysql_database
+      MYSQL_USER_FILE: /run/secrets/mysql_user
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_LOG_CONSOLE: 'true'
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-log-file-size=128M
+      - --max-connections=200
+    secrets:
+      - mysql_root_password
+      - mysql_database
+      - mysql_user
+      - mysql_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./data/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$${MYSQL_USER}", "-p$${MYSQL_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: audionexus-redis-prod
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly yes
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+      - --tcp-keepalive 300
+    volumes:
+      - redis_data:/data
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: audionexus-nginx-prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./data/certbot/conf:/etc/letsencrypt:ro
+      - ./data/certbot/www:/var/www/certbot:ro
+      - ./logs/nginx:/var/log/nginx:rw
+    depends_on:
+      - backend
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+
+networks:
+  audionexus-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: audionexus_mysql_prod_data
+  redis_data:
+    name: audionexus_redis_prod_data
+
+secrets:
+  mysql_root_password:
+    environment: "MYSQL_ROOT_PASSWORD"
+  mysql_database:
+    environment: "DB_NAME"
+  mysql_user:
+    environment: "DB_USER"
+  mysql_password:
+    environment: "DB_PASSWORD"

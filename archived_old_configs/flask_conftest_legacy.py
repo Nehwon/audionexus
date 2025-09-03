@@ -18,6 +18,17 @@ class TestConfig:
     JWT_SECRET_KEY = 'test-jwt-secret'
     JWT_ACCESS_TOKEN_EXPIRES = 3600
     MAIL_SUPPRESS_SEND = True  # Désactive l'envoi d'emails pendant les tests
+    
+    # Configuration VoidAuth pour les tests
+    VOIDAUTH_SERVER_URL = "http://localhost:8080"
+    VOIDAUTH_REALM = "master"  # Utiliser le royaume master pour les tests
+    VOIDAUTH_CLIENT_ID = "test-client"
+    VOIDAUTH_CLIENT_SECRET = "test-secret"
+    VOIDAUTH_ADMIN_USER = "admin"
+    VOIDAUTH_ADMIN_PASSWORD = "admin"
+    
+    # Désactiver la vérification SSL pour les tests
+    OIDC_DISABLE_SSL_VERIFICATION = True
 
 
 @pytest.fixture(scope='session')

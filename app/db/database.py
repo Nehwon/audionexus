@@ -29,7 +29,7 @@ def init_engine() -> None:
     from app.config import settings
     
     # Configuration de l'URL de la base de données
-    database_uri = settings.DATABASE_URI
+    database_uri = settings.get_database_uri()
     
     # Détection du type de base de données
     is_sqlite = database_uri.startswith('sqlite')
@@ -39,7 +39,7 @@ def init_engine() -> None:
     engine_kwargs: Dict[str, Any] = {
         'pool_pre_ping': True,
         'pool_recycle': 3600,
-        'echo': settings.DEBUG,  # Afficher les requêtes SQL en mode debug
+        'echo': settings.debug,  # Afficher les requêtes SQL en mode debug
     }
     
     # Configuration spécifique pour les tests (SQLite en mémoire)
@@ -47,7 +47,7 @@ def init_engine() -> None:
         engine_kwargs.update({
             'connect_args': {'check_same_thread': False},
             'poolclass': StaticPool,  # Utiliser un pool statique pour SQLite en mémoire
-            'echo': settings.DEBUG,
+            'echo': settings.debug,
         })
     # Paramètres spécifiques à MySQL
     elif is_mysql:
@@ -99,7 +99,7 @@ def init_engine() -> None:
 # Ne pas initialiser automatiquement pour permettre la configuration des tests
 try:
     from app.config import settings
-    if not settings.TESTING:  # Ne pas initialiser en mode test
+    if not settings.testing:  # Ne pas initialiser en mode test
         init_engine()
 except ImportError:
     # En cas d'erreur d'import, initialiser normalement
