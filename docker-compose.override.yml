@@ -1,0 +1,12 @@
+services:
+  backend:
+    ports:
+      - "8081:8000"
+
+  redis:
+    ports:
+      - "6380:6379"
+
+  db:
+    ports:
+      - "3308:3306"

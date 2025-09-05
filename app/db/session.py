@@ -69,6 +69,7 @@ from .session_manager import (
     get_async_db_session as _get_async_db_session,
     AsyncSessionLocal
 )
+from .database import SessionLocal
 
 # Avertissement de dépréciation
 warnings.warn(

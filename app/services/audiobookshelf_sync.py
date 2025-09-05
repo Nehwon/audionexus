@@ -15,7 +15,7 @@ from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceS
 from app.config import settings
 from app.crud import audiobook as audiobook_crud, audiobookshelf_instance as instance_crud
 from app.db.database import SessionLocal
-from app.models.audiobook import Audiobook, AudiobookProgress
+from app.db.models.audiobook import Audiobook, AudiobookProgress
 from app.schemas.audiobook import AudiobookCreate, AudiobookProgressCreate
 
 # Configuration du logging

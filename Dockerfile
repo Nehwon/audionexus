@@ -26,7 +26,7 @@ COPY --from=dependencies-builder /tmp/venv /tmp/venv
 COPY --from=dependencies-builder /tmp/wheels /tmp/wheels
 ENV PATH="/tmp/venv/bin:$PATH"
 
-# Étape de production ultra-optimisée
+# Étape de production FastAPI optimisée
 FROM python:3.11-alpine AS production
 
 # Installer uniquement les dépendances d'exécution (sans build tools)
@@ -41,20 +41,17 @@ RUN apk add --no-cache --virtual .runtime-deps \
 # Créer un utilisateur non-root pour la sécurité
 RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
 
-# Variables d'environnement optimisées pour les performances
+# Variables d'environnement optimisées pour FastAPI
 ENV PYTHONPATH=/app \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONOPTIMIZE=1 \
-    FLASK_APP=wsgi:app \
-    FLASK_ENV=production \
     PATH="/app/venv/bin:$PATH" \
-    UVICORN_WORKERS=4 \
-    GUNICORN_WORKERS=4 \
-    GUNICORN_WORKER_TIMEOUT=30
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=8000
 
 # Créer les répertoires nécessaires avec les bonnes permissions
-RUN mkdir -p /app/data/{audionexus/uploads,cache,logs} /tmp && \
+RUN mkdir -p /app/data/audionexus/uploads /tmp && \
     chown -R appuser:appuser /app /tmp
 
 # Switcher vers l'utilisateur non-root
@@ -65,18 +62,10 @@ WORKDIR /app
 # Copier l'environnement virtuel optimisé depuis l'étape de compilation
 COPY --from=dependencies-builder --chown=appuser:appuser /tmp/venv /app/venv
 
-# Copier le code source (optimisé pour les couches Docker)
-COPY --chown=appuser:appuser pyproject.toml ./
+# Copier le code source FastAPI
+COPY --chown=appuser:appuser main.py ./
 COPY --chown=appuser:appuser app/ ./app/
-COPY --chown=appuser:appuser wsgi.py gunicorn.conf.py ./
-
-# Copier pyproject.toml pour les métadonnées
 COPY --chown=appuser:appuser pyproject.toml ./
-
-# Copier le code source optimisé pour le cache Docker
-COPY --chown=appuser:appuser app/ ./app/
-COPY --chown=appuser:appuser wsgi.py .
-COPY --chown=appuser:appuser gunicorn.conf.py .
 
 # Healthcheck avancé avec métriques
 HEALTHCHECK --interval=45s --timeout=15s --start-period=10s --retries=3 \
@@ -85,25 +74,17 @@ HEALTHCHECK --interval=45s --timeout=15s --start-period=10s --retries=3 \
 # Exposition optimisée du port
 EXPOSE 8000
 
-# Commande de production avec optimisations de performance
-CMD ["gunicorn", \
-     "--config", "gunicorn.conf.py", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "4", \
-     "--worker-connections", "1000", \
-     "--max-requests", "1000", \
-     "--max-requests-jitter", "50", \
-     "--log-level", "info", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-", \
-     "wsgi:app"]
+# Commande FastAPI avec uvicorn optimisé
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 
 # Étape de développement optimisée pour le hot reload
 FROM development-builder AS development
 
-# Installer les outils de développement avec multi-stage
+# Créer l'utilisateur appuser pour la section development
 USER root
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
+
+# Installer les outils de développement avec multi-stage
 RUN apk add --no-cache git build-base \
     && rm -rf /var/cache/apk/*
 

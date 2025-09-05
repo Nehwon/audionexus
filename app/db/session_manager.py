@@ -55,7 +55,7 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
         pool_class = StaticPool if ":memory:" in database_uri else None
 
         engine_kwargs = {
-            'database_uri': database_uri,
+            'url': database_uri,
             'echo': settings.database.echo,
             'pool_pre_ping': True,
             'pool_recycle': settings.database.pool_recycle,
@@ -69,7 +69,7 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     # Configuration pour MySQL
     elif settings.database.type.value == "mysql":
         engine_kwargs = {
-            'database_uri': database_uri,
+            'url': database_uri,
             'echo': settings.database.echo,
             'pool_pre_ping': True,
             'pool_recycle': settings.database.pool_recycle,
