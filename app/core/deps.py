@@ -94,42 +94,6 @@ async def get_current_user(
         if user is None:
             raise credentials_exception
         return user
-    """
-    Récupère l'utilisateur actuellement authentifié.
-    
-    Args:
-        db: Session de base de données
-        token: JWT token d'authentification
-        
-    Returns:
-        User: L'utilisateur authentifié
-        
-    Raises:
-        HTTPException: Si l'authentification échoue
-    """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Impossible de valider les identifiants",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
-    try:
-        payload = verify_token(token)
-        if payload is None:
-            raise credentials_exception
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except (JWTError, ValidationError):
-        raise credentials_exception
-        
-    # Utilisation de la session asynchrone
-    user = await crud.crud_user.get_user_by_username(db, username=username)
-    if user is None:
-        await db.close()
-        raise credentials_exception
-        
-    return user
 
 
 async def get_current_active_user(

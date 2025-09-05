@@ -1,11 +1,13 @@
 """
 Configuration et gestion de la base de données SQLAlchemy.
 """
+import logging
 from typing import Optional, Dict, Any
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base, Session
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
+from flask_sqlalchemy import SQLAlchemy
 
 # Déclaration de la base pour les modèles SQLAlchemy
 # Cette instance unique de Base sera utilisée dans tout le projet
@@ -89,34 +91,23 @@ def init_engine() -> None:
     # Configuration de la session
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     ScopedSession = scoped_session(SessionLocal)
-    
-    # Import des modèles pour s'assurer qu'ils sont enregistrés avec la Base
-    # L'import doit être fait après la déclaration de Base et l'initialisation du moteur
-    # noqa pour éviter les avertissements sur les imports non utilisés
-    import app.db.models.base  # noqa: F401
 
-# Initialisation différée du moteur
-# Ne pas initialiser automatiquement pour permettre la configuration des tests
-try:
-    from app.config import settings
-    if not settings.testing:  # Ne pas initialiser en mode test
-        init_engine()
-except ImportError:
-    # En cas d'erreur d'import, initialiser normalement
-    init_engine()
+class FlaskDatabase:
+    """Objet de compatibilité Flask pour l'initialisation de la base de données."""
 
-def get_db():
-    """
-    Fournit une session de base de données pour les dépendances FastAPI.
-    
-    Yields:
-        Session: Une session de base de données
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    def init_app(self, app):
+        """
+        Initialise la base de données pour l'application Flask.
+        """
+        with app.app_context():
+            # Créer les tables si elles n'existent pas
+            if not engine:
+                init_engine()
+            Base.metadata.create_all(bind=engine)
+            return app
+
+# Objet pour la compatibilité Flask
+db = FlaskDatabase()
 
 async def init_db():
     """

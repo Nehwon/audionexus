@@ -7,7 +7,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
+from app.db import get_db
 from app.schemas.audiobookshelf_instance import (
     AudiobookshelfInstanceCreate,
     AudiobookshelfInstanceResponse,

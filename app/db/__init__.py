@@ -25,10 +25,12 @@ get_async_db_session = None
 db = None
 # Import de la base de données depuis database.py
 try:
-    from .database import Base, engine, SessionLocal
+    from .database import Base, engine, SessionLocal, init_app
+    db = init_app  # Attribution de la fonction pour la compatibilité Flask
     logger.debug("Import de la base de données synchrone réussi")
 except ImportError as e:
     logger.warning(f"Impossible d'importer la base de données synchrone: {e}")
+    db = None
 
 # Import différé des fonctions asynchrones depuis session_manager.py
 try:
