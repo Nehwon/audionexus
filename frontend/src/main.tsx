@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import { initSentry } from './services/sentry'
+import App from '@/App'
+import { initSentry } from '@/services/sentry'
 import './styles/index.css'
 
 // Initialiser Sentry
