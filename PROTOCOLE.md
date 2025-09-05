@@ -42,22 +42,31 @@
      - `README.md`
      - `TODO.md`
 
-3. **Avant de pousser** :
-   - Mettre à jour la branche `develop` : `git pull origin develop`
-   - Résoudre les éventuels conflits
-   - Exécuter les tests : `pytest` et `npm test`
-   - Vérifier le linter : `pylint`, `mypy`, `eslint`
-   - Mettre à jour `ETAT_DU_PROJET.md` si nécessaire
+2. **À chaque tâche terminée** :
+   - Faire un commit atomique avec un message descriptif
+   - Format du commit : `fix|TÉLÉPHONE ROUGE|(tâche): description précise`
+   - Mettre à jour `TODO.md` en marquant la tâche comme terminée
+   - Exemples :
+     - `fix(TÉLÉPHONE ROUGE): corriger erreurs 422 FastAPI - unifier dépendances`
+     - `fix(TÉLÉPHONE ROUGE): résoudre conflit MySQL vs SQLite - implémenter Strategy Pattern`
+     - `feat(auth): ajouter endpoint /auth/register avec validation VoidAuth`
 
-4. **Revue de code** :
-   - Pousser la branche : `git push -u origin nom-de-la-branche`
-   - Créer une Merge Request (MR) vers `develop`
-   - Assigner au moins un relecteur
-   - Mettre à jour la description de la MR avec les changements effectués
-   - Résoudre les commentaires de la revue
-   - Mettre à jour `ETAT_DU_PROJET.md` avec l'avancement
+4. **Avant de pousser** :
+    - Mettre à jour la branche `develop` : `git pull origin develop`
+    - Résoudre les éventuels conflits
+    - Exécuter les tests : `pytest` et `npm test`
+    - Vérifier le linter : `pylint`, `mypy`, `eslint`
+    - Mettre à jour `ETAT_DU_PROJET.md` si nécessaire
 
-5. **Après validation** :
+5. **Revue de code** :
+    - Pousser la branche : `git push -u origin nom-de-la-branche`
+    - Créer une Merge Request (MR) vers `develop`
+    - Assigner au moins un relecteur
+    - Mettre à jour la description de la MR avec les changements effectués
+    - Résoudre les commentaires de la revue
+    - Mettre à jour `ETAT_DU_PROJET.md` avec l'avancement
+
+6. **Après validation** :
    - Fusionner la branche avec `develop` (via merge commit)
    - Supprimer la branche distante après fusion
    - Mettre à jour `CHANGELOG.md` avec les changements de la version
