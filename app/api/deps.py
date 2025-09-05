@@ -9,7 +9,7 @@ NOTE: Toutes les fonctions utilisent maintenant exclusivement get_async_db depui
 pour éviter les dépendances circulaires. Les anciens alias de compatibilité ont été supprimés.
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, AsyncGenerator
 import logging
 
 from fastapi import Depends, HTTPException, status
@@ -17,6 +17,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from app.config import settings
 import app.core.security as security
@@ -26,6 +27,9 @@ from app.db import get_async_db, AsyncSessionLocal
 if TYPE_CHECKING:
     from app.db.models.base import User
     from app import crud, models
+
+# Configuration du logger
+logger = logging.getLogger(__name__)
 
 # Schéma OAuth2 pour l'authentification par token
 reusable_oauth2 = OAuth2PasswordBearer(

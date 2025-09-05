@@ -7,7 +7,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
+from app.db.session_manager import get_db
 from app.services.audiobookshelf_sync import AudiobookshelfSyncService
 from app.services.audiobookshelf_scheduler import get_sync_manager
 

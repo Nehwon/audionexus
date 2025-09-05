@@ -93,3 +93,39 @@ async def admin_route():
 - Utilisez des secrets forts
 - Activez la vérification email
 - Activez le 2FA
+
+## Compatibilité VoidAuth v4.x
+### Changements depuis v3.x
+- API des tokens légèrement modifiée (mais compatible avec python-keycloak >= 5.x)
+- Améliorations des scopes OpenID Connect
+- Support renforcé des refresh tokens
+- Sécurité SSL renforcée par défaut
+
+### Mise à jour recommandée
+```bash
+pip install --upgrade python-keycloak>=5.7.0
+```
+
+### Fonctionnalités v4.x supportées
+- ✅ Authentification utilisateur (password grant)
+- ✅ Gestion des utilisateurs et rôles
+- ✅ Refresh tokens avec validation
+- ✅ Introspection des tokens
+- ✅ Clients OAuth2 confidentiels
+- ✅ Scopes personnalisés
+- ✅ Multi-factor authentication (MFA)
+
+### Test de compatibilité
+```python
+# Test de connexion basique v4.x
+import keycloak
+from keycloak import KeycloakOpenID
+
+# Initialisation avec nouveaux paramètres v4.x
+keycloak_openid = KeycloakOpenID(
+    server_url="https://your-voidauth-server",
+    client_id="your-client",
+    realm_name="your-realm",
+    client_secret_key="your-secret"
+)
+```

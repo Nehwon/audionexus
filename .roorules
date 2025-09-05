@@ -1,0 +1,28 @@
+# Règles spécifiques pour Roo (Assistant de développement)
+
+Ces règles définissent comment Roo opère dans ce projet pour assurer une qualité et une traçabilité optimales.
+
+## Commits
+- **Messages détaillés obligatoires** : Chaque commit doit contenir une explication détaillée de ≥50 caractères
+- **Structure recommandée** :
+  - Ligne 1 : Résumé court (< 50 caractères)
+  - Ligne 2-3 : Vide
+  - Lignes suivantes : Explication détaillée des changements
+  - Inclure : ajout/correction/modification/suppression/refactorisation/test/documentation
+- **Fréquence** : Commit à la fin de chaque tâche et sous-tâche accomplie
+
+## Code Quality
+- Respecter les standards de code du projet
+- Ajouter des commentaires pour code complexe
+- Utiliser des noms de variables/fonctions explicites
+- Éviter le code mort
+
+## Tâches
+- Décomposer tâches complexes en sous-tâches avec todo list
+- Confirmer et commit le succès de chaque outil avant de passer au suivant
+- Documenter changements significatifs
+
+## Communication
+- Langue principale : Français
+- Réponses directes, techniques et sans bavardage
+- Utiliser des liens cliquables pour fichiers ([`nom.ext`](chemin.ext:ligne))

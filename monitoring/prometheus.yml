@@ -1,0 +1,50 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'audionexus-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+
+  - job_name: 'audionexus-nginx'
+    static_configs:
+      - targets: ['nginx-load-balancer:80']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['db:3306']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # Services de replicas (désactivés par défaut)
+  # - job_name: 'audionexus-backend-replica-1'
+  #   static_configs:
+  #     - targets: ['backend-replica-1:8000']
+  #   scrape_interval: 30s
+  #   metrics_path: '/metrics'
+
+  # - job_name: 'audionexus-backend-replica-2'
+  #   static_configs:
+  #     - targets: ['backend-replica-2:8000']
+  #   scrape_interval: 30s
+  #   metrics_path: '/metrics'

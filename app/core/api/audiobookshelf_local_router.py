@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 
-from app.db.database import get_db
+from app.db.session_manager import get_db
 from app.db.models.audiobook import Audiobook, AudiobookProgress
 from app.schemas.audiobook import AudiobookResponse, AudiobookSummary
 from app.crud import audiobook as audiobook_crud

@@ -47,7 +47,8 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     connect_args = {}
 
     # Configuration pour SQLite
-    if settings.database.type == settings.database.type.__class__.SQLITE:
+    if settings.database.type.value == "sqlite":
+        from app.config import DatabaseType
         connect_args = {"check_same_thread": False}
 
         # Configuration du pool pour SQLite en mémoire (tests)
@@ -66,7 +67,7 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
             engine_kwargs['poolclass'] = StaticPool
 
     # Configuration pour MySQL
-    elif settings.database.type == settings.database.type.__class__.MYSQL:
+    elif settings.database.type.value == "mysql":
         engine_kwargs = {
             'database_uri': database_uri,
             'echo': settings.database.echo,
