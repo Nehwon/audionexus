@@ -16,7 +16,7 @@ from fastapi import Header, Depends
 from sqlalchemy.orm import Session
 from time import time
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 # Stockage temporaire des tokens CSRF (en production, utiliser Redis)
 csrf_tokens = set()

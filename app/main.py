@@ -16,7 +16,6 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import init_database, db, SessionLocal, init_app
 from app.core.api import api_router
-from app.core.api.auth_router import router as auth_router
 from app.core.rate_limit import limiter
 
 # Configuration du cycle de vie de l'application
@@ -131,7 +130,6 @@ from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
 app.include_router(api_router, prefix="/api")
-app.include_router(auth_router)
 
 # Route racine
 @app.get("/", tags=["Root"])
