@@ -1,21 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User, LoginRequest, LoginResponse, RegisterRequest } from '@/types/api'
-import * as authApi from '@/services/authApi'
+import { login as apiLogin, getCurrentUser } from '../services/authApi'
+import { User } from '../types/api'
 
 interface AuthContextType {
   user: User | null
-  login: (credentials: LoginRequest) => Promise<void>
-  register: (userData: RegisterRequest) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
   logout: () => void
-  isLoading: boolean
   isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
@@ -30,40 +29,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    checkAuthStatus()
-  }, [])
-
-  const checkAuthStatus = async () => {
+    // Check if user is already logged in
     const token = localStorage.getItem('access_token')
     if (token) {
-      try {
-        const userData = await authApi.getCurrentUser()
-        setUser(userData)
-      } catch (error) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-      }
-    }
-    setIsLoading(false)
-  }
-
-  const login = async (credentials: LoginRequest) => {
-    setIsLoading(true)
-    try {
-      const response: LoginResponse = await authApi.login(credentials)
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-      const userData = await authApi.getCurrentUser()
-      setUser(userData)
-    } finally {
+      // Validate token and get user info
+      getCurrentUser()
+        .then(user => setUser(user))
+        .catch(() => {
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
+        })
+        .finally(() => setIsLoading(false))
+    } else {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const register = async (userData: RegisterRequest) => {
+  const login = async (username: string, password: string) => {
     setIsLoading(true)
     try {
-      await authApi.register(userData)
+      const response = await apiLogin({ username, password })
+      localStorage.setItem('access_token', response.access_token)
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token)
+      }
+      const userInfo = await getCurrentUser()
+      setUser(userInfo)
+    } catch (error) {
+      console.error('Login failed:', error)
+      throw error
     } finally {
       setIsLoading(false)
     }
@@ -75,14 +69,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null)
   }
 
-  const value: AuthContextType = {
+  const value = {
     user,
     login,
-    register,
     logout,
-    isLoading,
     isAuthenticated: !!user,
+    isLoading
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
 }

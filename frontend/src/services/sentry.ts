@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react'
 
-// @ts-ignore
+// @ts-expect-error - Environment variables are available at runtime
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
-// @ts-ignore
+// @ts-expect-error - Environment variables are available at runtime
 const ENVIRONMENT = import.meta.env.VITE_ENVIRONMENT || 'development'
 
 // Configuration Sentry
@@ -37,7 +37,7 @@ export const initSentry = () => {
 // Service de monitoring simplifié
 export const monitoringService = {
   // Tracking des erreurs utilisateur
-  trackError: (error: Error, context?: Record<string, any>) => {
+  trackError: (error: Error, context?: Record<string, string | number | boolean>) => {
     Sentry.captureException(error, {
       tags: context,
     })
@@ -56,6 +56,15 @@ export const monitoringService = {
   // Tracking de l'utilisation des fonctionnalités
   trackFeatureUsage: (feature: string, _userId?: string) => {
     Sentry.captureMessage(`Feature used: ${feature}`, 'info')
+  },
+
+  // Définir les informations utilisateur
+  setUser: (userId: string, email?: string, username?: string) => {
+    Sentry.setUser({
+      id: userId,
+      email,
+      username,
+    })
   },
 }
 

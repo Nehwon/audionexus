@@ -6,6 +6,7 @@ import { AudioPlayerProvider, useAudioPlayer } from './contexts/AudioPlayerConte
 import { ThemeProvider } from './contexts/ThemeContext'
 import AudioPlayer from './components/AudioPlayer'
 import Layout from './components/Layout'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
 import Instances from './pages/Instances'
 import Sync from './pages/Sync'
@@ -22,14 +23,18 @@ const queryClient = new QueryClient({
 })
 
 function AppContent() {
-  const { tracks, currentTrackIndex, setCurrentTrackIndex, toggleMinimize, isMinimized } = useAudioPlayer()
+  const { tracks, currentTrackIndex, setCurrentTrackIndex, isMinimized, toggleMinimize } = useAudioPlayer()
 
   return (
     <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }>
             <Route index element={<Dashboard />} />
             <Route path="instances" element={<Instances />} />
             <Route path="sync" element={<Sync />} />
@@ -40,8 +45,8 @@ function AppContent() {
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#363636',
-              color: '#fff',
+              background: 'var(--toast-bg, #363636)',
+              color: 'var(--toast-color, #fff)',
             },
           }}
         />
