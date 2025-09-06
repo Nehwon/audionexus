@@ -117,3 +117,7 @@ wsproto==1.2.0
 yarl==1.20.1
 slowapi==0.1.9
 redis==5.2.1
+
+# Dépendances pour le service d'upload d'audiobooks
+patool==4.0.1
+rarfile==4.2

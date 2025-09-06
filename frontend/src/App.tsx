@@ -11,6 +11,7 @@ import Dashboard from '@/pages/Dashboard'
 import Instances from '@/pages/Instances'
 import Sync from '@/pages/Sync'
 import Login from '@/pages/Login'
+import Upload from '@/pages/Upload'
 import './styles/index.css'
 
 const queryClient = new QueryClient({
@@ -38,6 +39,7 @@ function AppContent() {
             <Route index element={<Dashboard />} />
             <Route path="instances" element={<Instances />} />
             <Route path="sync" element={<Sync />} />
+            <Route path="upload" element={<Upload />} />
           </Route>
         </Routes>
         <Toaster
