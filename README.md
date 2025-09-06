@@ -4,7 +4,9 @@
 [![License](https://img.shields.io/badge/license-AGPL%203.0-green.svg)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](documentation/)
 [![Docker](https://img.shields.io/badge/Docker-✓-blue.svg)](docker-compose.yml)
-[![Frontend](https://img.shields.io/badge/Frontend-Svelte%2FTypeScript-FF3E00.svg)](frontend/)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2FTypeScript-61DAFB.svg)](frontend/)
+[![Status Auth](https://img.shields.io/badge/Auth-Bloqué🔴-FF6B6B.svg)](#🚨-État-Actuel-&-Alertes)
+[![Status Dashboard](https://img.shields.io/badge/Dashboard-Bloqué🔴-FF6B6B.svg)](#🚨-État-Actuel-&-Alertes)
 [![Backend](https://img.shields.io/badge/Backend-Flask-000000.svg)](app/)
 [![Authentication](https://img.shields.io/badge/Auth-VoidAuth-9C27B0.svg)](app/integrations/voidauth/)
 [![Tests](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml/badge.svg)](https://github.com/votre-utilisateur/audionexus/actions/workflows/tests.yml)
@@ -12,6 +14,23 @@
 ## 📋 Description
 
 **AudioNexus** est une plateforme complète pour gérer et administrer des collections audio à partir d'une interface unifiée. La solution offre des fonctionnalités avancées de traitement et de gestion des livres audio, avec une attention particulière portée à la sécurité et à l'expérience utilisateur. AudioNexus peut se connecter à des instances Audiobookshelf existantes pour une gestion centralisée.
+
+## 🚨 État Actuel & Alertes
+
+### ⚠️ SITUATION CRITIQUE IDENTIFIER (06/09/2025)
+Après analyse architecturale complète :
+- ✅ **Backend** : Complet et fonctionnel (FastAPI, VoidAuth, Audiobookshelf)
+- ✅ **Frontend** : Présent mais nécessite validation d'intégration
+- ❌ **Connexion** : **Login et accès dashboard bloqués**
+- ❌ **Intégration VoidAuth** : Configuration à vérifier/corriger
+
+### 🎯 OBJECTIFS PRINCIPAUX
+- [ ] **Résoudre problème de login impossible**
+- [ ] **Permettre l'accès au dashboard**
+- [ ] **Valider intégration VoidAuth frontend/backend**
+- [ ] **Tester les flows d'authentification complets**
+
+**Voir [ROADMAP.md](ROADMAP.md) pour le plan détaillé de résolution.**
 
 > **Note de développement (03/09/2025)** : AudioNexus v0.6.0 apporte des améliorations significatives de sécurité, une architecture unifiée MySQL/SQLite, et des optimisations Docker complètes. L'intégration Audiobookshelf a été optimisée avec la gestion des conteneurs et les health checks. Consultez le [journal des changements](documentation/CHANGELOG.md) pour les détails techniques.</search>
 </search_and_replace>

@@ -23,12 +23,26 @@
   - MFA (Authentification à deux facteurs)
 - **Documentation** : [GitHub VoidAuth](https://github.com/voidauth/voidauth)
 
-### Frontend - Svelte + Tailwind CSS
-- **Avantages** : 
-  - Performances optimales
-  - Taille réduite du bundle
-  - Intégration native avec Tailwind
-  - Meilleure expérience développeur
+### ⚠️ **CORRECTION URGENTE : Framework Incorrect dans TODO.md**
+- **DOCUMENTATION ACTUELLE** : Mentionne SvelteKit + Skeleton UI
+- **RÉALITÉ ACTUELLE** : React + TypeScript + Tailwind CSS + Vite
+- **ACTIONS REQUISES** :
+  - [ ] Corriger toutes références SvelteKit dans la documentation
+  - [ ] Aligner documentation avec réalité technique
+  - [ ] Vérifier cohérence des spécifications
+
+### Frontend - React/TypeScript (CORRECT)
+- **Stack Actuelle Confirmée** :
+  - React 18+ avec hooks
+  - TypeScript strict
+  - Tailwind CSS pour styling
+  - Vite pour build et dev
+  - Composants existants à valider
+- **Services API** :
+  - Axios pour appels backend
+  - React Query pour cache/state
+  - AuthContext pour gestion auth
+  - Services séparés par domaine
 
 
 ## Task List CRITIQUES (v0.5.0 - Stabilisation Architecture) 🔴
@@ -103,25 +117,32 @@
 ## RÉSOLUMENT PRÉCÉDEMENT ✅
 
 ### Immédiat (v0.4.0 - Refonte Frontend) - SUJET À REPORT/Post-Migration
-### Frontend (SvelteKit)
-- [ ] **Configuration Initiale**
-  - [ ] Initialiser un nouveau projet SvelteKit avec TypeScript
-  - [ ] Configurer Tailwind CSS et Skeleton UI
-  - [ ] Mettre en place la structure des dossiers
-  - [ ] Configurer le routage de base
+### Frontend (React/TypeScript - EXISTANT ⚠️ À VALIDER)
+- [ ] **AUDIT URGENT** : Vérifier état des composants existants
+  - [ ] Examiner Login.tsx et Dashboard.tsx (architecture présente)
+  - [ ] Valider AuthContext.tsx (OIDC VoidAuth configuré ?)
+  - [ ] Tester services API (authApi.ts, instancesApi.ts)
+  - [ ] Vérifier configuration VoidAuth frontend (`VITE_OIDC_*`)
 
-- [ ] **Authentification (VoidAuth)**
-  - [ ] Intégrer VoidAuth dans le projet
-  - [ ] Configurer les fournisseurs d'authentification
-  - [ ] Personnaliser les templates d'email
-  - [ ] Implémenter les callbacks personnalisés
-  - [ ] Tester les flux d'authentification
-- [ ] **Interface Utilisateur**
-  - [ ] Tableau de bord principal
-  - [ ] Gestion des fichiers/dossiers
-  - [ ] Lecteur audio intégré
-  - [ ] Thème sombre/clair
-  - [ ] Interface responsive
+- [ ] **CORRECTIONS POSSIBLES** (si audit révèle problèmes)
+  - [ ] Réparer intégration VoidAuth OIDC
+  - [ ] Configurer React Router avec guards
+  - [ ] Compléter appels API backend
+  - [ ] Implémenter gestion erreurs authentification
+
+- [ ] **VALIDATION FINALE**
+  - [ ] Tester flow complet : Login → VoidAuth → Dashboard
+  - [ ] Vérifier protections de routes
+  - [ ] Confirmer appels API Audiobookshelf fonctionnels
+---
+
+## ❌ **CORRECTIONS REQUISES URGENTES**
+### État Réel du Projet (06/09/2025)
+- ✅ **Backend** : Complet et fonctionnel FastAPI + VoidAuth
+- ✅ **Frontend** : Présent mais nécessite validation d'intégration
+- ❌ **Connexion** : Login et dashboard bloqués (voir ROADMAP.md)
+- ❌ **Documentation** : Framework incorrect (mentionne SvelteKit au lieu de React)
+- ❌ **Configuration** : VoidAuth frontend/backend à vérifier
 ### Backend (FastAPI)
 - [ ] **Authentification**
   - [x] Système d'authentification JWT
@@ -188,11 +209,45 @@
 
 ## 🚨 PROCHAINES ÉTAPES CRITIQUES (v0.5.0 → Production-Ready)
 
-### 🔥 PHASE 1 - ÉLIMINER LES ERREURS 422/500 (Immédiat - 1-2 semaines)
-1. **🔴 Déboguer erreurs 422 FastAPI** - Gestion DB des dépendances (TÉLÉPHONE ROUGE)
-2. **🔴 Unifier système get_db()** - Éliminer conflits synchrone/asynchrone (ROUGE)
-3. **🔴 Stabiliser authentification** - Corriger erreurs 500/422 VoidAuth (ROUGE)
-4. **🔴 Résoudre conflit MySQL/SQLite** - Strategy Pattern de basculement (ROUGE)
+### 🔴 PHASE 0 - DIAGNOSTIC URGENT (Validation État Réel)
+1. **🔴 AUDITER FRONTEND EXISTANT** - Composants présents mais validation requise
+   - [ ] Examiner Login.tsx, Dashboard.tsx, AuthContext.tsx
+   - [ ] Tester authApi.ts et autres services API
+   - [ ] Vérifier configuration VoidAuth frontend (`VITE_OIDC_*`)
+   - [ ] Audit complet de l'intégration existante
+
+2. **🔴 VALIDER CONFIGURATION VOIDAUTH** - Backend + Frontend alignement
+   - [ ] Tester serveur VoidAuth (port 8080)
+   - [ ] Vérifier connexion API `/auth/login` et `/auth/me`
+   - [ ] Aligner config backend et frontend
+   - [ ] Tester CORS entre les deux
+
+3. **🔴 CORRIGER DOCUMENTS** - Réflections de l'état réel
+   - [ ] Corriger badges README (SvelteKit → React/TypeScript)
+   - [ ] Actualiser TODO.md avec état réel frontend
+   - [ ] Mettre à jour descriptifs fonctionnels
+   - [ ] Documenter problèmes identifiés
+
+### 🟡 PHASE 1 - RÉSOLUTION AUTHENTIFICATION (Si audit révèle problèmes)
+1. **🟡 Corriger intégration VoidAuth** - Flow OIDC complet
+   - [ ] Implémenter flow d'authentification correcte
+   - [ ] Gestion tokens JWT (access + refresh)
+   - [ ] Gestion erreurs et timeout réseau
+   - [ ] Protéger routes frontend
+
+2. **🟡 Réparer appels API backend** - Communication sécurisée
+   - [ ] Configurer Axios avec intercepteurs
+   - [ ] Gérer authentification sur toutes les requêtes
+   - [ ] Gestion erreurs et retry automatique
+   - [ ] Cache intelligent des données
+
+3. **🟡 Finaliser dashboard** - Interface Audiobookshelf
+   - [ ] Connecter APIs instances Audiobookshelf
+   - [ ] Afficher métriques temps réel
+   - [ ] Gestion erreurs utilisateur
+   - [ ] Interface responsive et accessible
+
+### 🟢 PHASE 2 - TESTS ET VALIDATION (Après corrections)
 
 ### 🛡️ PHASE 2 - SÉCURITÉ ENTERPRISE (Après Phase 1 - 2-3 semaines)
 5. **🛡️ Implémenter protections CSRF + headers de sécurité** (ROUGE)
