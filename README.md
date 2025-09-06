@@ -130,26 +130,38 @@ npm run dev
 - ✅ Réinitialisation de mot de passe sécurisée
 - ✅ Protection CSRF complète sur endpoints sensibles
 - ✅ Headers de sécurité (CSP, HSTS, XSS, Secure Cookies)
-- ✅ Rate limiting anti-DoS avec Redis
+- ✅ Rate limiting anti-DoS avec Redis + fallback mémoire
 - ✅ Chiffrement AES-256 des données sensibles
-- ✅ Audit trail pour conformité GDPR/SOX
+- ✅ Audit trail complet pour conformité GDPR/SOX
 - ✅ VoidAuth v4.x intégré avec compatibilité APIs
 
 ### 👤 Gestion des Utilisateurs
-- ✅ Création et gestion des comptes
-- ✅ Rôles et permissions
-- 🔄 En cours : Profils utilisateurs
+- ✅ Création et gestion des comptes utilisateur
+- ✅ Rôles et permissions avec contrôles granulaire
+- ✅ Authentification multi-niveau fonctionnelle
+- 🔄 En cours : Interface avancée profils utilisateurs
 
-### 📊 Tableau de Bord
-- ✅ Vue d'ensemble
-- ✅ Statistiques d'utilisation
-- 🔄 En cours : Widgets personnalisables
+### 📊 Dashboard Administrateur
+- ✅ **Métriques temps réel** - Utilisateurs, livres, stockage
+- ✅ **Graphiques tendances** - Usage sur 30 jours (Recharts)
+- ✅ **Gestion tâches upload** - Progression en temps réel
+- ✅ **État système** - Santé DB, notifications formatées
+- ✅ **Collections connectées** - Vue d'ensemble Audiobookshelf vs Local
+- ✅ **Interface responsive** - Thème sombre/clair automatique
 
-### 📚 Gestion des Bibliothèques
-- ✅ Connexion aux instances Audiobookshelf
-- ✅ Gestion sécurisée des tokens API multi-instances
-- ✅ Synchronisation intelligente des métadonnées
-- 🔄 En cours : Gestion avancée des collections
+### 📚 Gestion des Documents Audio
+- ✅ **Téléversement drag&drop** - Interface intuitive ZIP/RAR/7Z
+- ✅ **Conversion FFmpeg** - Format M4B optimisé automatiquement
+- ✅ **Extraction métadonnées** - ID3 tags extraits et corrigés
+- ✅ **Validation fichiers** - Qualité audio et formats multiple
+- ✅ **Barre progression** - États détaillés pendant traitement
+- ✅ **Gestion erreurs** - Reprise upload et notifications
+
+### 🔗 Intégration Audiobookshelf
+- ✅ Connexion aux instances multi-Audiobookshelf
+- ✅ Gestion sécurisée tokens API chiffrés en DB
+- ✅ Synchronisation bidirectionnelle des métadonnées
+- 🔄 En cours : Gestion multi-instances avancée
 
 ## 🏗️ Architecture Technique
 

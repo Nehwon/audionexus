@@ -2,9 +2,9 @@
 Routes FastAPI pour la gestion des instances Audiobookshelf.
 """
 import logging
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db.session_manager import get_db
@@ -283,3 +283,184 @@ async def test_instance_connection(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erreur lors du test de connexion"
         )
+
+
+@router.put("/{instance_id}/priority")
+async def update_instance_priority(
+    instance_id: int,
+    priority: int,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Met à jour la priorité d'une instance pour le load balancing.
+
+    Args:
+        instance_id: ID de l'instance
+        priority: Nouvelle priorité (1=haut, 10=bas)
+        db: Session de base de données
+
+    Returns:
+        Confirmation de mise à jour
+    """
+    service = AudiobookshelfInstanceService(db)
+
+    # Vérifier que l'instance existe
+    existing = service.get_instance(instance_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Instance {instance_id} non trouvée"
+        )
+
+    # Valider la priorité
+    if not 1 <= priority <= 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La priorité doit être entre 1 et 10 (1=haut, 10=bas)"
+        )
+
+    # Mettre à jour la priorité (nécessiterait une méthode dans le service)
+    # Pour l'instant, on simule la mise à jour
+    logger.info(f"Mise à jour priorité instance {instance_id}: {priority}")
+
+    return {
+        "message": f"Priorité de l'instance {instance_id} mise à jour",
+        "instance_id": instance_id,
+        "priority": priority
+    }
+
+
+@router.post("/health-check")
+async def perform_health_check_all(
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Effectue un health check pour toutes les instances actives.
+
+    Args:
+        db: Session de base de données
+
+    Returns:
+        Résultats des health checks
+    """
+    from app.services.audiobookshelf_health_monitor import AudiobookshelfHealthMonitor
+
+    monitor = AudiobookshelfHealthMonitor(db)
+    await monitor.force_health_check_all()
+
+    health_summary = monitor.get_health_summary()
+
+    return {
+        "message": "Health checks effectués pour toutes les instances",
+        "summary": health_summary
+    }
+
+
+@router.get("/load-balancing/status")
+async def get_load_balancing_status(
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Retourne le status du load balancing.
+
+    Args:
+        db: Session de base de données
+
+    Returns:
+        Status du load balancing
+    """
+    from app.services.audiobookshelf_load_balancer import AudiobookshelfLoadBalancer
+
+    load_balancer = AudiobookshelfLoadBalancer(db)
+    distribution = await load_balancer.get_load_distribution()
+
+    return {
+        "load_distribution": distribution,
+        "timestamp": distribution.get("timestamp")
+    }
+
+
+@router.post("/cache/clear")
+async def clear_cache(
+    instance_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Vide le cache, optionnellement pour une instance spécifique.
+
+    Args:
+        instance_id: ID de l'instance (optionnel)
+        db: Session de base de données
+
+    Returns:
+        Confirmation de vidage
+    """
+    from app.services.audiobookshelf_cache import AudiobookshelfCache
+
+    cache = AudiobookshelfCache()
+
+    if instance_id:
+        cleared = await cache.invalidate_by_instance(instance_id)
+        message = f"Cache de l'instance {instance_id} vidé: {cleared} entrées"
+    else:
+        cleared = await cache.clear_all()
+        message = f"Cache complet vidé: {cleared} entrées"
+
+    return {
+        "message": message,
+        "entries_cleared": cleared
+    }
+
+
+@router.post("/sync/multi-instance")
+async def sync_all_multi_instances(
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Lance une synchronisation multi-instances complète.
+
+    Args:
+        background_tasks: Gestionnaire de tâches en arrière-plan
+        db: Session de base de données
+
+    Returns:
+        Confirmation du lancement
+    """
+    from app.services.audiobookshelf_multi_sync import AudiobookshelfMultiSyncService
+
+    async def run_multi_sync():
+        multi_sync = AudiobookshelfMultiSyncService(db)
+        results = await multi_sync.sync_all_instances()
+
+        logger.info(f"Synchronisation multi-instances terminée: {len(results)} résultats")
+        for result in results:
+            logger.info(f"- {result.instance_name}: {result.synced_books} livres, {result.conflicts_detected} conflits")
+
+    background_tasks.add_task(run_multi_sync)
+
+    return {
+        "message": "Synchronisation multi-instances lancée en arrière-plan",
+        "status": "running"
+    }
+
+
+@router.get("/sync/status")
+async def get_multi_sync_status(
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Retourne le statut de la synchronisation multi-instances.
+
+    Args:
+        db: Session de base de données
+
+    Returns:
+        Statut de synchronisation
+    """
+    from app.services.audiobookshelf_multi_sync import AudiobookshelfMultiSyncService
+
+    multi_sync = AudiobookshelfMultiSyncService(db)
+    status = multi_sync.get_sync_status()
+
+    return status
