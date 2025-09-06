@@ -6,12 +6,12 @@ Ce roadmap détaille la **résolution complète des problèmes de blocs de conne
 
 ## 🎯 État Actuel (06/09/2025)
 
-### ✅ COMPLÉTÉ (Session Téléphone Rouge)
-- [x] **Débogage erreurs 422 FastAPI** - Dépendances unifiées
-- [x] **Unification système get_db()** - Conflits résolus
-- [x] **Stabilisation authentification** - VoidAuth backend OK
-- [x] **Conflit MySQL/SQLite** - Strategy Pattern implémenté
-- [x] **Règle de commit** - Processus documenté
+### ✅ COMPLÉTÉ (Session Téléphone Rouge + Phase 0)
+- [x] **Téléphone Rouge** : Erreurs 422, get_db(), MySQL/SQLite (complet)
+- [x] **Phase 0 diagnostic** : Configurations VoidAuth frontend/backend créées
+- [x] **Backend** : API FastAPI + VoidAuth intégrée opérationnelle
+- [x] **Frontend** : React/TypeScript existant avec configurations ajoutées
+- ⚠️ **Serveur VoidAuth** : Port 8080 non actif (bloque tests fonctionnels)
 
 ### 🔍 DÉCOUVERTE : Frontend Partiellement Présent
 Après la fusion git, découverte que :
