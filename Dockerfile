@@ -1,99 +1,118 @@
-# Étape de construction
-FROM python:3.11-alpine AS builder
+# Étape de compilation des dépendances (optimisé pour cache)
+FROM python:3.11-alpine AS dependencies-builder
 
-# Installer les dépendances de compilation
-RUN apk add --no-cache \
-    build-base \
-    libmagic-dev \
-    curl \
-    && rm -rf /var/cache/apk/*
+# Installer les dépendances système compilées
+RUN apk add --no-cache build-base libmagic curl git \
+    && mkdir -p /tmp/wheels
 
 # Créer un utilisateur pour la construction
 RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
 
-# Changer de propriétaire et travailler dans /app
-RUN mkdir -p /app && chown appuser:appuser /app
-USER appuser
+WORKDIR /tmp/build
 
-WORKDIR /app
+# Copier les exigences avec checksum pour optimiser le cache
+COPY requirements*.txt ./
 
-# Copier d'abord les exigences pour utiliser le cache Docker
-COPY --chown=appuser:appuser requirements*.txt ./
+# Installer les dépendances dans un environnement virtuel
+ENV PATH="/tmp/venv/bin:$PATH"
+RUN python -m venv /tmp/venv \
+    && pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir --only-binary=all -r requirements.txt \
+    && pip wheel --no-cache-dir --wheel-dir=/tmp/wheels -r requirements.txt
 
-# Installer les dépendances Python
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Étape de développement séparée pour hot reload optimisé
+FROM python:3.11-alpine AS development-builder
+COPY --from=dependencies-builder /tmp/venv /tmp/venv
+COPY --from=dependencies-builder /tmp/wheels /tmp/wheels
+ENV PATH="/tmp/venv/bin:$PATH"
 
-# Étape d'exécution optimisée pour production
+# Étape de production FastAPI optimisée
 FROM python:3.11-alpine AS production
 
-# Installer les dépendances système nécessaires
-RUN apk add --no-cache \
+# Installer uniquement les dépendances d'exécution (sans build tools)
+RUN apk add --no-cache --virtual .runtime-deps \
     libmagic \
     ffmpeg \
     curl \
     libgcc \
+    tzdata \
     && rm -rf /var/cache/apk/*
 
 # Créer un utilisateur non-root pour la sécurité
 RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
 
-# Définir PYTHONPATH et autres variables d'environnement essentielles
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV FLASK_APP=wsgi:app
-ENV FLASK_ENV=production
-ENV PATH="/home/appuser/.local/bin:${PATH}"
+# Variables d'environnement optimisées pour FastAPI
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONOPTIMIZE=1 \
+    PATH="/app/venv/bin:$PATH" \
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=8000
 
 # Créer les répertoires nécessaires avec les bonnes permissions
-RUN mkdir -p /app/data/audionexus/uploads /app/data/config /app/logs && \
-    chown -R appuser:appuser /app
+RUN mkdir -p /app/data/audionexus/uploads /tmp && \
+    chown -R appuser:appuser /app /tmp
 
-# Changer pour l'utilisateur non-root
+# Switcher vers l'utilisateur non-root
 USER appuser
 
 WORKDIR /app
 
-# Copier les dépendances Python depuis l'étape de construction
-COPY --from=builder --chown=appuser:appuser /home/appuser/.local /home/appuser/.local
+# Copier l'environnement virtuel optimisé depuis l'étape de compilation
+COPY --from=dependencies-builder --chown=appuser:appuser /tmp/venv /app/venv
 
-# Copier pyproject.toml pour les métadonnées
+# Copier le code source FastAPI
+COPY --chown=appuser:appuser main.py ./
+COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser pyproject.toml ./
 
-# Copier le code source optimisé pour le cache Docker
-COPY --chown=appuser:appuser app/ ./app/
-COPY --chown=appuser:appuser wsgi.py .
-COPY --chown=appuser:appuser gunicorn.conf.py .
+# Healthcheck avancé avec métriques
+HEALTHCHECK --interval=45s --timeout=15s --start-period=10s --retries=3 \
+    CMD ["curl", "-f", "http://localhost:8000/health"] || exit 1
 
-# Healthcheck amélioré
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Exposition du port
+# Exposition optimisée du port
 EXPOSE 8000
 
-# Commande optimisée avec configuration Gunicorn
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]
+# Commande FastAPI avec uvicorn optimisé
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 
-# Étape de développement avec hot reload
-FROM production AS development
+# Étape de développement optimisée pour le hot reload
+FROM development-builder AS development
 
-# Revenir à root pour les installations de développement
+# Créer l'utilisateur appuser pour la section development
 USER root
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
 
-# Installer les outils de développement (git pour pip install git+, etc.)
-RUN apk add --no-cache \
-    git \
-    build-base \
+# Installer les outils de développement avec multi-stage
+RUN apk add --no-cache git build-base \
     && rm -rf /var/cache/apk/*
 
 # Installer les dépendances de développement
-RUN pip install --user --no-cache-dir \
+RUN pip install --no-cache-dir \
     watchdog \
-    pytest-watch
+    pytest-watch \
+    pytest-asyncio \
+    debugpy
 
-# Revenir à l'utilisateur non-root
+# Configurer le répertoire de développement
+RUN mkdir -p /app && chown -R appuser:appuser /app
+
 USER appuser
+WORKDIR /app
 
-# Commande de développement avec hot reload (sera overridé dans docker-compose)
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=8000", "--reload"]
+# Copier le code source pour le développement
+COPY --chown=appuser:appuser . .
+
+# Healthcheck simplifié pour le développement
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=2 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Commande de développement avec debug optimisé
+CMD ["python", "-m", "uvicorn", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--reload", \
+     "--reload-delay", "0.1", \
+     "--log-level", "debug", \
+     "wsgi:app"]

@@ -4,6 +4,7 @@ Inclut le hachage de mot de passe et la gestion des tokens JWT.
 """
 from datetime import datetime, timedelta
 from typing import Optional
+import secrets
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -87,3 +88,28 @@ def verify_token(token: str) -> Optional[TokenData]:
     except JWTError:
         return None
     return token_data
+
+def generate_csrf_token() -> str:
+    """
+    Génère un nouveau token CSRF cryptographiquement sécurisé.
+
+    Returns:
+        str: Token CSRF hexadécimal de 32 caractères
+    """
+    return secrets.token_hex(32)
+
+def verify_csrf_token(received_token: str, expected_token: str) -> bool:
+    """
+    Vérifie qu'un token CSRF reçu correspond au token attendu.
+
+    Args:
+        received_token: Token reçu depuis la requête
+        expected_token: Token attendu (depuis la session)
+
+    Returns:
+        bool: True si les tokens correspondent, False sinon
+    """
+    if not received_token or not expected_token:
+        return False
+
+    return secrets.compare_digest(received_token, expected_token)

@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import init_database, db, SessionLocal, init_app
 from app.core.api import api_router
-from app.core.api.auth_router import router as auth_router
+from app.core.rate_limit import limiter
 
 # Configuration du cycle de vie de l'application
 @asynccontextmanager
@@ -62,12 +62,34 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Middleware pour les headers de sécurité
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Headers de sécurité essentiels
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
+            "font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = (
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        )
+
+        return response
+
 # Middleware pour le logging des requêtes
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Log de la requête entrante
         print(f"Requête reçue: {request.method} {request.url}")
-        
+
         try:
             response = await call_next(request)
             return response
@@ -87,6 +109,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Ajout du middleware de sécurité
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Ajout du middleware de rate limiting
+app.state.limiter = limiter
+
 # Ajout du middleware de logging
 app.add_middleware(LoggingMiddleware)
 
@@ -102,7 +130,6 @@ from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
 app.include_router(api_router, prefix="/api")
-app.include_router(auth_router)
 
 # Route racine
 @app.get("/", tags=["Root"])

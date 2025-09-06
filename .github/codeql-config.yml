@@ -1,0 +1,17 @@
+name: "CodeQL Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - frontend/src
+  - app
+
+paths-ignore:
+  - frontend/node_modules
+  - frontend/dist
+  - node_modules
+  - migrations
+  - tests

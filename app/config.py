@@ -68,6 +68,22 @@ class DatabaseSettings(BaseSettings):
         else:
             raise ValueError(f"Type de base de données non supporté: {self.type}")
 
+class RedisSettings(BaseSettings):
+    """Configuration Redis pour cache et rate limiting."""
+
+    host: str = Field(default="localhost")
+    port: int = Field(default=6379)
+    db: int = Field(default=0)
+    password: Optional[str] = Field(default=None)
+    socket_timeout: Optional[int] = Field(default=None)
+    socket_connect_timeout: Optional[int] = Field(default=None)
+    socket_keepalive: bool = Field(default=False)
+    socket_keepalive_options: Optional[dict] = Field(default=None)
+
+    class Config:
+        env_prefix = "REDIS_"
+        env_nested_delimiter = "__"
+
 class Settings(BaseSettings):
     """Configuration unifiée de l'application."""
 
@@ -82,6 +98,9 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="changez-moi-aussi")
     jwt_algorithm: str = Field(default="HS256")
     access_token_expire_minutes: int = Field(default=10080)  # 7 jours
+
+    # Redis
+    redis: RedisSettings = Field(default_factory=RedisSettings)
 
     # Base de données (configuration imbriquée)
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)

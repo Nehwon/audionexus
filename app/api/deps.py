@@ -17,6 +17,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from app.config import settings
 import app.core.security as security

@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
     container_name: audionexus-backend
     restart: unless-stopped
     env_file: .env
@@ -10,11 +11,12 @@ services:
       - FLASK_APP=wsgi:app
       - FLASK_ENV=production
       - FLASK_DEBUG=0
-    volumes:
-      - .:/app
-      - ./data/audionexus:/app/data/audionexus
-      - ./data/config:/app/config
-      - ./gunicorn.conf.py:/app/gunicorn.conf.py
+    # Volumes commentés pour forcer l'utilisation du mode production
+    # volumes:
+    #   - .:/app
+    #   - ./data/audionexus:/app/data/audionexus
+    #   - ./data/config:/app/config
+    #   - ./gunicorn.conf.py:/app/gunicorn.conf.py
     working_dir: /app
     ports:
       - "8000:8000"

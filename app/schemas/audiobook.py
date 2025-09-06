@@ -159,9 +159,22 @@ class AudiobookInDB(AudiobookBase):
 class AudiobookResponse(AudiobookInDB):
     """Modèle de réponse pour un livre audio."""
     model_config = ConfigDict(from_attributes=True)
-    
+
     progress: Optional[float] = None
     is_new: bool = False
+
+class AudiobookSummary(BaseModel):
+    """Modèle de résumé pour un livre audio (version simplifiée)."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    authors: List[str] = Field(default_factory=list)
+    genres: List[str] = Field(default_factory=list)
+    duration: int = 0
+    cover_path: Optional[str] = None
+    rating: float = 0.0
+    language: str = "fr"
 
 class AudiobookListResponse(BaseModel):
     """Modèle de réponse pour une liste de livres audio."""

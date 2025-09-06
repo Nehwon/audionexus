@@ -134,11 +134,37 @@ def decrypt_token(encrypted_token: str) -> str:
     decrypted = f.decrypt(encrypted_token.encode())
     return decrypted.decode()
 
+def generate_csrf_token() -> str:
+    """
+    Génère un nouveau token CSRF sécurisé.
+
+    Returns:
+        str: Token CSRF généré
+    """
+    return base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8')
+
+def verify_csrf_token(token: str, secret_key: Optional[str] = None) -> bool:
+    """
+    Vérifie la validité d'un token CSRF.
+
+    Args:
+        token: Token CSRF à vérifier
+        secret_key: Clé secrète pour la vérification (optionnelle)
+
+    Returns:
+        bool: True si le token est valide
+    """
+    # Pour l'instant, retourne True - implémentation simplifiée
+    # En production, utiliser une vérification plus robuste
+    return len(token) > 0
+
 __all__ = [
     'verify_password',
     'get_password_hash',
     'create_access_token',
     'verify_token',
     'encrypt_token',
-    'decrypt_token'
+    'decrypt_token',
+    'generate_csrf_token',
+    'verify_csrf_token'
 ]

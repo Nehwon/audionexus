@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession as AsyncDBSession, create_async_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine
-from sqlalchemy.pool import StaticPool
 
 # Configuration du moteur synchrone
 from .database import engine, SessionLocal
@@ -47,35 +46,43 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     # Configuration spécifique selon le type de base de données
     connect_args = {}
 
-    # Configuration unifiée des arguments d'engine
-    engine_kwargs = {
-        'echo': settings.database.echo,
-        'pool_pre_ping': True,
-        'pool_recycle': settings.database.pool_recycle,
-    }
-
-    # Configuration spécifique selon le type de base de données
-    if settings.database.type == settings.database.type.__class__.SQLITE:
-        engine_kwargs.update({
-            'connect_args': {"check_same_thread": False},
-        })
+    # Configuration pour SQLite
+    if settings.database.type.value == "sqlite":
+        from app.config import DatabaseType
+        connect_args = {"check_same_thread": False}
 
         # Configuration du pool pour SQLite en mémoire (tests)
-        if ":memory:" in database_uri:
+        pool_class = StaticPool if ":memory:" in database_uri else None
+
+        engine_kwargs = {
+            'url': database_uri,
+            'echo': settings.database.echo,
+            'pool_pre_ping': True,
+            'pool_recycle': settings.database.pool_recycle,
+            'connect_args': connect_args,
+        }
+
+        if pool_class:
+            from sqlalchemy.pool import StaticPool
             engine_kwargs['poolclass'] = StaticPool
 
     # Configuration pour MySQL
-    elif settings.database.type == settings.database.type.__class__.MYSQL:
-        engine_kwargs.update({
+    elif settings.database.type.value == "mysql":
+        engine_kwargs = {
+            'url': database_uri,
+            'echo': settings.database.echo,
+            'pool_pre_ping': True,
+            'pool_recycle': settings.database.pool_recycle,
             'pool_size': settings.database.pool_size,
             'max_overflow': settings.database.max_overflow,
             'pool_timeout': settings.database.pool_timeout,
-        })
+        }
+
     else:
         raise ValueError(f"Type de base de données non supporté: {settings.database.type}")
 
     # Création du moteur unifié
-    async_engine = create_async_engine(database_uri, **engine_kwargs)
+    async_engine = create_async_engine(**engine_kwargs)
 
     # Configuration de la session factory
     AsyncSessionLocal = async_sessionmaker(

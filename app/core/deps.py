@@ -30,8 +30,6 @@ oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/access-token"
 )
 
-# NOTE: Cette fonction est désormais dépréciée. Utilisez directement get_async_db() depuis app.db
-# Gardée pour compatibilité temporaire
 
 
 def get_audiobookshelf_client() -> AudiobookshelfClient:

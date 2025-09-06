@@ -19,3 +19,6 @@ api_router.include_router(audiobookshelf_router, prefix="/audiobookshelf", tags=
 api_router.include_router(audiobookshelf_instances_router, prefix="", tags=["audiobookshelf-instances"])
 api_router.include_router(audiobookshelf_sync_router, prefix="", tags=["audiobookshelf-sync"])
 api_router.include_router(audiobookshelf_local_router, prefix="", tags=["audiobookshelf-local"])
+
+# Alias pour la compatibilité
+api = api_router

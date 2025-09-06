@@ -34,7 +34,7 @@ def create_app(config_class=Config):
     CORS(app, resources={r"/*": {"origins": app.config.get('CORS_ORIGINS', '*')}})
     
     # Initialisation des extensions
-    db.init_app(app)
+    # db.init_app(app)  # Désactivé - utilisation d'architecture SQLAlchemy pure
     migrate.init_app(app, db)
     jwt.init_app(app)
     api.init_app(app)
@@ -78,16 +78,45 @@ def create_app(config_class=Config):
     
     # Initialisation de la base de données personnalisée
     from .db import init_db
-    init_db(app)
+    init_db()  # Pas d'argument app nécessaire pour l'architecture SQLAlchemy pure
     
-    # Enregistrement des routes API
-    from .core.api import auth as auth_routes
-    from .core.api.audiobookshelf_router import router as audiobookshelf_router
-    
-    # Enregistrement des namespaces
-    from .core.api import api as core_api
-    core_api.add_namespace(auth_routes.api, path='/auth')
-    core_api.add_namespace(audiobookshelf_router, path='/audiobookshelf')
+    # Enregistrement des routes API (géré dans core.api.__init__)
+    # Les routeurs FastAPI sont inclus dans app/core/api/__init__.py
+    from app.core.api import api_router
+    from flask import request
+
+    # Intégration FastAPI avec Flask pour compatibilité
+    from fastapi.middleware.wsgi import WSGIMiddleware
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.middleware.cors import CORSMiddleware
+    from fastapi import FastAPI
+
+    fastapi_app = FastAPI()
+    fastapi_app.include_router(api_router, prefix="/api")
+
+    # Monter FastAPI sur Flask via WSGI middleware
+    @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+    def api_routes(path):
+        """Gestionnaire de routes pour les endpoints FastAPI dans Flask"""
+        from fastapi.testclient import TestClient
+
+        # Debug logging
+        app.logger.info(f"FastAPI route called with path: {path}")
+
+        test_client = TestClient(fastapi_app)
+        try:
+            response = test_client.request(
+                request.method,
+                f'/{path}',
+                data=request.get_data(),
+                headers={k: v for k, v in request.headers.items() if k.lower() != 'host'},
+                cookies=request.cookies
+            )
+            app.logger.info(f"FastAPI response: {response.status_code}")
+            return app.response_class(response.content, response.status_code, response.headers)
+        except Exception as e:
+            app.logger.error(f"FastAPI error: {str(e)}")
+            return app.response_class(b"Internal Server Error", 500)
     
     return app
 

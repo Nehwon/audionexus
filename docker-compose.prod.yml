@@ -1,10 +1,13 @@
 services:
+  # === Application Services avec Load Balancing ===
+
+  # Service backend principal (pour les déploiements single-instance)
   backend:
     build:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: audionexus-backend-prod
+    container_name: audionexus-backend-prod-main
     restart: unless-stopped
     env_file: .env.production
     environment:
@@ -13,6 +16,7 @@ services:
       - FLASK_DEBUG=0
       - FORWARDED_ALLOW_IPS=nginx,127.0.0.1
       - PROXY_ALLOW_IPS=nginx,127.0.0.1
+      - INSTANCE_ID=1
     volumes:
       - ./data/audionexus:/app/data/audionexus:rw
       - ./data/logs:/app/logs:rw
@@ -36,6 +40,129 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    profiles:
+      - single  # Profil pour déploiement mono-instance
+
+  # Réplicas pour le load balancing zero-downtime (activés avec --profile replicas)
+  backend-replica-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: audionexus-backend-replica-1
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      - FLASK_APP=wsgi:app
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FORWARDED_ALLOW_IPS=nginx,127.0.0.1
+      - PROXY_ALLOW_IPS=nginx,127.0.0.1
+      - INSTANCE_ID=2
+      - READ_ONLY_MODE=true  # Mode lecture seule pour les réplicas
+    volumes:
+      - ./data/audionexus:/app/data/audionexus:ro  # Lecture seule
+      - ./data/logs/replicas:/app/logs:rw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      replicas: 2  # Nombre de réplicas
+      update_config:
+        parallelism: 1
+        delay: 30s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    profiles:
+      - replicas  # Activer avec --profile replicas
+
+  backend-replica-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: audionexus-backend-replica-2
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      - FLASK_APP=wsgi:app
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FORWARDED_ALLOW_IPS=nginx,127.0.0.1
+      - PROXY_ALLOW_IPS=nginx,127.0.0.1
+      - INSTANCE_ID=3
+      - READ_ONLY_MODE=true
+    volumes:
+      - ./data/audionexus:/app/data/audionexus:ro
+      - ./data/logs/replicas:/app/logs:rw
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    networks:
+      - audionexus-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+        failure_action: rollback
+        monitor: 30s
+        max_failure_ratio: 0.3
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    profiles:
+      - replicas
 
   db:
     image: mysql:8.0
@@ -56,14 +183,13 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --innodb-log-file-size=128M
       - --max-connections=200
-    secrets:
-      - mysql_root_password
-      - mysql_database
-      - mysql_user
-      - mysql_password
     volumes:
       - mysql_data:/var/lib/mysql
       - ./data/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./data/mysql_root_password.txt:/run/secrets/mysql_root_password:ro
+      - ./data/mysql_database.txt:/run/secrets/mysql_database:ro
+      - ./data/mysql_user.txt:/run/secrets/mysql_user:ro
+      - ./data/mysql_password.txt:/run/secrets/mysql_password:ro
     networks:
       - audionexus-network
     security_opt:
@@ -104,20 +230,21 @@ services:
       timeout: 5s
       retries: 3
 
-  nginx:
+  nginx-load-balancer:
     image: nginx:alpine
-    container_name: audionexus-nginx-prod
+    container_name: audionexus-nginx-lb-prod
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/prod-lb.conf:/etc/nginx/nginx.conf:ro
       - ./data/certbot/conf:/etc/letsencrypt:ro
       - ./data/certbot/www:/var/www/certbot:ro
       - ./logs/nginx:/var/log/nginx:rw
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - audionexus-network
     security_opt:
@@ -130,6 +257,54 @@ services:
     tmpfs:
       - /var/cache/nginx
       - /var/run
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - lb  # Activer avec --profile lb
+
+  # Service de surveillance des métriques
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: audionexus-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--net.http.server-compression.enabled'
+    networks:
+      - audionexus-network
+    profiles:
+      - monitoring
+
+  # Interface de visualisation des métriques
+  grafana:
+    image: grafana/grafana:latest
+    container_name: audionexus-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=change_me_in_production
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - audionexus-network
+    profiles:
+      - monitoring
 
 networks:
   audionexus-network:
@@ -137,9 +312,27 @@ networks:
 
 volumes:
   mysql_data:
-    name: audionexus_mysql_prod_data
   redis_data:
     name: audionexus_redis_prod_data
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data/redis
+  prometheus_data:
+    name: audionexus_prometheus_data
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data/prometheus
+  grafana_data:
+    name: audionexus_grafana_data
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data/grafana
 
 secrets:
   mysql_root_password:

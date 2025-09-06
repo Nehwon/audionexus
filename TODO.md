@@ -2,7 +2,7 @@
 
 ## Notes
 - **Projet** : AudioNexus, une plateforme de gestion centralisée pour les bibliothèques de livres audio, s'intégrant avec des instances Audiobookshelf.
-- **Version actuelle** : 0.5.0-dev (correction des erreurs critiques et préparation production).
+- **Version actuelle** : 0.6.0 (Phase 1-3 accomplies : stabilité, sécurité, production).
 - **Stack Technique** :
   - **Backend** : Python/FastAPI, SQLAlchemy 2.0, VoidAuth, Pydantic v2.
   - **Base de données** : MySQL/SQLite (unification en cours).
@@ -35,25 +35,25 @@
 
 ### 🔥 TÉLÉPHONE ROUGE - Erreurs Fatales (Priorité Critique)
 
-- [ ] **Déboguer les erreurs 422 FastAPI** (TÉLÉPHONE ROUGE)
+- [x] **Déboguer les erreurs 422 FastAPI** (TERMINÉ ✅)
   - Déboguer les erreurs 422 avec gestion DB des dépendances FastAPI
   - Recherche des erreurs dans les requêtes d'authentification (500/422)
   - Validation des paramètres de requête et réponses API
   - Correction de la gestion des sessions de base de données
 
-- [ ] **Unifier le système get_db()** (TÉLÉPHONE ROUGE)
+- [x] **Unifier le système get_db()** (TERMINÉ ✅)
   - Éliminer les conflits get_db() synchrone/asynchrone
   - Résoudre les imports circulaires dans les dépendances
   - Implémentation d'un pattern Factory unifié
   - Tests exhaustifs des connexions multiples
 
-- [ ] **Stabiliser l'authentification** (TÉLÉPHONE ROUGE)
+- [x] **Stabiliser l'authentification** (TERMINÉ ✅)
   - Corriger les erreurs 500/422 dans l'authentification VoidAuth
   - Stabiliser l'authentification sans erreurs 422
   - Validation complète des tests d'authentification
   - Gestion sécurisée des sessions utilisateur
 
-- [ ] **Conflit MySQL vs SQLite** (TÉLÉPHONE ROUGE)
+- [x] **Conflit MySQL vs SQLite** (TERMINÉ ✅)
   - Corriger l'oscillation MySQL/SQLite qui génère erreurs 422
   - Implémenter Strategy Pattern pour basculement DB
   - Migration sécurisée vers base de données de production
@@ -61,7 +61,7 @@
 
 ### 🛡️ SÉCURITÉ - Protection Critique (Priorité Élevée)
 
-- [ ] **Protection CSRF et sécurité des APIs**
+- [x] **Protection CSRF et sécurité des APIs** (TERMINÉ ✅)
   - Implémenter protection CSRF complète
   - Ajouter headers de sécurité (CSP, HSTS, XSS)
   - Validation des CORS et origines autorisées
@@ -73,7 +73,7 @@
   - Monitoring des métriques de sécurité
   - Logs d'accès détaillés
 
-- [ ] **Chiffrement et audit trail**
+- [x] **Chiffrement et audit trail** (TERMINÉ ✅)
   - Chiffrement AES-256 des données sensibles (mots de passe, tokens)
   - Log détaillé des opérations sécurisées
   - Audit trail complet pour conformité
