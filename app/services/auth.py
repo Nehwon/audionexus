@@ -4,6 +4,7 @@ Services d'authentification pour l'application AudioNexus.
 Ce module fournit des fonctions pour gérer l'authentification des utilisateurs,
 la création et la vérification des tokens JWT, et la gestion des mots de passe.
 """
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -20,6 +21,27 @@ from app.exceptions import (
     InvalidTokenError,
     InvalidCredentialsError
 )
+
+logger = logging.getLogger(__name__)
+
+def _get_db_connection():
+    """Helper pour obtenir une connexion DB avec gestion d'erreur."""
+    try:
+        db = SessionLocal()
+        logger.debug("Connexion DB ouverte")
+        return db
+    except Exception as e:
+        logger.error(f"Impossible d'ouvrir la connexion DB: {str(e)}", exc_info=True)
+        raise
+
+def _close_db_connection(db):
+    """Helper pour fermer une connexion DB avec gestion d'erreur."""
+    if db:
+        try:
+            db.close()
+            logger.debug("Connexion DB fermée")
+        except Exception as e:
+            logger.warning(f"Erreur lors de la fermeture DB: {str(e)}")
 
 
 def create_access_token(user_id: int, app=None) -> str:
@@ -99,18 +121,27 @@ def authenticate_user(email: str, password: str) -> User:
         InvalidCredentialsError: Si les identifiants sont incorrects
         UserNotActiveError: Si le compte utilisateur est désactivé
     """
-    db = SessionLocal()
+    logger.debug(f"Tentative d'authentification pour email: {email}")
+    db = _get_db_connection()
     try:
         user = db.query(User).filter(User.email == email).first()
+        logger.debug(f"Utilisateur trouvé: {user is not None}")
+
+        if not user or not user.check_password(password):
+            logger.warning(f"Échec authentification pour {email}: identifiants invalides")
+            raise InvalidCredentialsError("Email ou mot de passe incorrect")
+
+        if not user.is_active:
+            logger.warning(f"Échec authentification pour {email}: compte désactivé")
+            raise UserNotActiveError("Ce compte est désactivé")
+
+        logger.info(f"Authentification réussie pour {email}")
+        return user
+    except Exception as e:
+        logger.error(f"Erreur DB lors de l'authentification pour {email}: {str(e)}", exc_info=True)
+        raise
     finally:
-        db.close()
-    if not user or not user.check_password(password):
-        raise InvalidCredentialsError("Email ou mot de passe incorrect")
-    
-    if not user.is_active:
-        raise UserNotActiveError("Ce compte est désactivé")
-    
-    return user
+        _close_db_connection(db)
 
 
 def register_user(email: str, password: str, **kwargs) -> User:

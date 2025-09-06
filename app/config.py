@@ -40,10 +40,10 @@ class DatabaseSettings(BaseSettings):
     sqlite_path: str = Field(default="./audionexus.db")
 
     # Configuration de connexion
-    pool_size: int = Field(default=5)
-    max_overflow: int = Field(default=10)
+    pool_size: int = Field(default=20)  # Augmenté pour éviter les pénuries de connexions
+    max_overflow: int = Field(default=30)  # Augmenté pour gérer les pics de charge
     pool_timeout: int = Field(default=30)
-    pool_recycle: int = Field(default=3600)
+    pool_recycle: int = Field(default=1800)  # Réduit pour éviter les connexions stagnantes
     echo: bool = Field(default=False)
 
     class Config:

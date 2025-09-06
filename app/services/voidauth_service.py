@@ -1,12 +1,16 @@
 """
 Service pour gérer les opérations d'authentification avec VoidAuth.
 """
+import logging
+import time
 from typing import Dict, Optional, List
 from fastapi import HTTPException, status
 from keycloak import KeycloakAdmin, KeycloakOpenID
 from keycloak.exceptions import KeycloakGetError, KeycloakPostError
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 class VoidAuthService:
     """
@@ -34,14 +38,20 @@ class VoidAuthService:
     def _get_admin_client(self) -> KeycloakAdmin:
         """Initialise et retourne le client administrateur Keycloak."""
         try:
-            return KeycloakAdmin(
+            logger.info(f"Initialisation client administrateur VoidAuth vers {self.server_url}")
+            start_time = time.time()
+            client = KeycloakAdmin(
                 server_url=self.server_url,
                 username=self.admin_username,
                 password=self.admin_password,
                 realm_name="master",  # Le royaume master pour l'admin
                 verify=True
             )
+            elapsed = time.time() - start_time
+            logger.info(".2f")
+            return client
         except Exception as e:
+            logger.error(f"Échec connexion administrateur VoidAuth: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Impossible de se connecter à l'API d'administration VoidAuth: {str(e)}"
@@ -89,29 +99,47 @@ class VoidAuthService:
                 detail=f"Erreur lors de la création de l'utilisateur: {str(e)}"
             )
     
-    async def authenticate_user(self, username: str, password: str) -> Optional[Dict]:
+    async def authenticate_user(self, username: str, password: str, max_retries: int = 3) -> Optional[Dict]:
         """
-        Authentifie un utilisateur avec son nom d'utilisateur et son mot de passe.
-        
+        Authentifie un utilisateur avec retry automatique en cas d'erreur réseau.
+
         Args:
             username: Nom d'utilisateur ou email
             password: Mot de passe
-            
+            max_retries: Nombre maximum de tentatives
+
         Returns:
             Optional[Dict]: Les tokens d'authentification ou None si l'authentification échoue
         """
-        try:
-            # Obtenir les tokens avec le flux de mot de passe
-            tokens = self.oidc_client.token(
-                username=username,
-                password=password,
-                grant_type="password"
-            )
-            return tokens
-            
-        except Exception as e:
-            # L'authentification a échoué
-            return None
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Tentative d'authentification VoidAuth pour {username} (tentative {attempt + 1}/{max_retries})")
+                start_time = time.time()
+
+                # Obtenir les tokens avec le flux de mot de passe
+                tokens = self.oidc_client.token(
+                    username=username,
+                    password=password,
+                    grant_type="password"
+                )
+
+                elapsed = time.time() - start_time
+                logger.info(".2f")
+                return tokens
+
+            except Exception as e:
+                elapsed = time.time() - start_time
+                if attempt < max_retries - 1:
+                    wait_time = min(2 ** attempt, 10)  # Backoff exponentiel max 10s
+                    logger.warning(".2f")
+                    import asyncio
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error(".2f")
+                    break
+
+        # L'authentification a échoué après toutes les tentatives
+        return None
     
     async def get_user_info(self, access_token: str) -> Dict:
         """

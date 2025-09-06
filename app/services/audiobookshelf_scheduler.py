@@ -299,18 +299,15 @@ class SyncTaskManager:
         return self.scheduler.get_sync_status()
 
 
-# Instance globale pour la gestion des tâches
-sync_manager = SyncTaskManager()
-
-
 def get_sync_manager() -> SyncTaskManager:
     """
-    Retourne l'instance globale du gestionnaire de synchronisation.
+    Retourne une nouvelle instance du gestionnaire de synchronisation.
+    Évite la création précoce qui cause des erreurs d'import.
 
     Returns:
         Gestionnaire de synchronisation
     """
-    return sync_manager
+    return SyncTaskManager()
 
 
 __all__ = ["AudiobookshelfSchedulerService", "SyncTaskManager", "get_sync_manager"]

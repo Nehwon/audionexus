@@ -87,14 +87,23 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 # Middleware pour le logging des requêtes
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Log de la requête entrante
-        print(f"Requête reçue: {request.method} {request.url}")
+        logger.info(f"Requête reçue: {request.method} {request.url} - Client: {request.client.host if request.client else 'unknown'}")
 
         try:
+            import time
+            start_time = time.time()
             response = await call_next(request)
+            elapsed = time.time() - start_time
+
+            # Log détaillé de la réponse
+            logger.info(f"Réponse envoyée: {response.status_code} - Durée: {elapsed:.2f}s")
             return response
         except Exception as e:
-            print(f"Erreur lors du traitement de la requête: {str(e)}")
+            logger.error(f"Erreur lors du traitement de la requête {request.method} {request.url}: {str(e)}", exc_info=True)
             return JSONResponse(
                 status_code=500,
                 content={"detail": "Erreur interne du serveur"}
@@ -129,7 +138,7 @@ app.mount(
 from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router, prefix="/api/v1")
 
 # Route racine
 @app.get("/", tags=["Root"])

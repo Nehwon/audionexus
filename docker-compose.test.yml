@@ -1,0 +1,104 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: audionexus-test-28535
+    env_file:
+      - .env.test
+    environment:
+      - FLASK_ENV=test
+      - TESTING=true
+      - COVERAGE=false
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app:cached
+    depends_on:
+      - test-db
+      - redis
+      - voidauth
+    ports:
+      - "8000:8000"
+    networks:
+      - test-network
+
+  test-db:
+    image: mysql:8.0
+    container_name: audionexus-test-db
+    env_file:
+      - .env.test
+    environment:
+      MYSQL_ROOT_PASSWORD: test_password
+      MYSQL_DATABASE: audiobookshelf_test
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test_password
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_LOG_CONSOLE: 'true'
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  voidauth:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: audionexus-test-voidauth
+    env_file:
+      - .env.test
+    environment:
+      KC_DB: dev-mem
+      KC_DB_USERNAME: kcuser
+      KC_DB_PASSWORD: kcpass
+      KC_DB_SCHEMA: public
+      KC_DB_URL_DATABASE: keycloak
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME: localhost
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: test
+      KC_FEATURES: account
+      KC_METRICS_ENABLED: true
+    volumes:
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "8081:8080"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/realms/audionexus || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: audionexus-test-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_test_data:/data
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  mysql_test_data:
+    name: audionexus_mysql_test_data
+  redis_test_data:
+    name: audionexus_redis_test_data

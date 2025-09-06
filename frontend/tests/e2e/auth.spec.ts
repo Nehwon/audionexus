@@ -10,37 +10,11 @@ test.describe('Authentification', () => {
     await expect(page.locator('text=Connexion à AudioNexus')).toBeVisible()
 
     // Remplir le formulaire de connexion
-    await page.fill('input[name="username"]', 'testuser')
-    await page.fill('input[name="password"]', 'testpassword')
+    await page.fill('input[name="username"]', 'admin')
+    await page.fill('input[name="password"]', 'admin')
 
-    // Attendre que l'API soit opérationnelle ou utiliser un mock
-    // Pour cet exemple, on simule une connexion réussie
-    await page.route('/api/auth/login', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          access_token: 'test-token',
-          token_type: 'bearer',
-          refresh_token: 'test-refresh-token'
-        })
-      })
-    })
-
-    await page.route('/api/auth/me', async route => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-          full_name: 'Test User',
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z'
-        })
-      })
-    })
+    // Retirer les mocks pour tester le vrai flow login-backend
+    // Les mocks étaient utilisés pour démonstration
 
     // Cliquer sur le bouton de connexion
     await page.click('button[type="submit"]')
@@ -53,16 +27,16 @@ test.describe('Authentification', () => {
   test('devrait afficher une erreur avec des identifiants invalides', async ({ page }) => {
     await page.goto('/login')
 
-    // Mock d'une réponse d'erreur
-    await page.route('/api/auth/login', async route => {
-      await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          detail: 'Nom d\'utilisateur ou mot de passe incorrect'
-        })
-      })
-    })
+    // Ne pas utiliser de mock - laisser faire l'appel réel pour identifier le problème
+    // await page.route('/api/auth/login', async route => {
+    //   await route.fulfill({
+    //     status: 401,
+    //     contentType: 'application/json',
+    //     body: JSON.stringify({
+    //       detail: 'Nom d\'utilisateur ou mot de passe incorrect'
+    //     })
+    //   })
+    // })
 
     // Remplir avec des mauvais identifiants
     await page.fill('input[name="username"]', 'wronguser')

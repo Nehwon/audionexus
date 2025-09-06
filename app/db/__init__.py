@@ -10,8 +10,10 @@ from typing import Any, Optional
 # Configuration du logger
 logger = logging.getLogger(__name__)
 
-# Variables globales qui seront initialisées
-Base = None
+# Import de la base directe depuis database.py
+from .database import Base
+
+# Variables globales initialisées depuis database.py
 engine = None
 SessionLocal = None
 async_engine = None
@@ -21,12 +23,19 @@ get_async_db = None
 get_db_session = None
 get_async_db_session = None
 
+# Fonction pour synchroniser les variables globales avec database.py
+def _sync_globals():
+    """Synchronise les variables globales avec celles de database.py."""
+    global engine, SessionLocal
+    from . import database
+    engine = database.engine
+    SessionLocal = database.SessionLocal
+
 # Compatibilité avec l'ancienne architecture Flask
 db = None
 # Import de la base de données depuis database.py
 try:
-    from .database import Base, engine, SessionLocal, init_app
-    db = init_app  # Attribution de la fonction pour la compatibilité Flask
+    from .database import Base, engine, SessionLocal, init_engine, db
     logger.debug("Import de la base de données synchrone réussi")
 except ImportError as e:
     logger.warning(f"Impossible d'importer la base de données synchrone: {e}")
@@ -59,6 +68,9 @@ def init_database():
         # Initialisation du moteur synchrone
         init_engine()
 
+        # Synchronisation des variables globales
+        _sync_globals()
+
         # Initialisation du moteur asynchrone
         init_async_engine()
 
@@ -75,6 +87,13 @@ def init_app(app):
     """
     logger.info("⚠️  Fonction init_app appelée (compatibilité Flask) - aucune action")
     return None
+
+# Fonction init_engine compatible pour les tests
+def init_engine():
+    """Initialise le moteur de base de données et synchronise les variables globales."""
+    from .database import init_engine as _init_engine
+    _init_engine()
+    _sync_globals()
 
 # Alias pour la compatibilité
 init_db = init_database
@@ -103,5 +122,6 @@ __all__ = [
     'init_app',  # Compatibilité Flask
     'init_database',
     'init_db',
+    'init_engine',
     'init_async_engine',
 ]

@@ -85,7 +85,7 @@ USER root
 RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
 
 # Installer les outils de développement avec multi-stage
-RUN apk add --no-cache git build-base \
+RUN apk add --no-cache git build-base bash \
     && rm -rf /var/cache/apk/*
 
 # Installer les dépendances de développement

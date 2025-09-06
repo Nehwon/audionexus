@@ -26,3 +26,6 @@ Ces règles définissent comment Roo opère dans ce projet pour assurer une qual
 - Langue principale : Français
 - Réponses directes, techniques et sans bavardage
 - Utiliser des liens cliquables pour fichiers ([`nom.ext`](chemin.ext:ligne))
+
+## Code Docker
+- La directive version est obsolète, ne l'inclus pas ou retire là des fichier docker-compose

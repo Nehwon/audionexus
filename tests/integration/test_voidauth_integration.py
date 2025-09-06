@@ -8,14 +8,24 @@ from sqlalchemy.orm import Session
 
 from app.main import app
 from app.config import settings
-from app.db import Base, engine, get_db
+from app.db import Base, engine, get_db, init_engine
 
-# Utiliser une base de données en mémoire pour les tests
+# Utiliser une base de données en mémoire synchronisée pour les tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 os.environ["TESTING"] = "True"
 
-# Créer les tables de la base de données
-Base.metadata.create_all(bind=engine)
+# Créer les tables de la base de données avec une approche simplifiée
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import sqlite3
+
+# Créer un moteur SQLite directement pour les tests
+test_engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+Base.metadata.create_all(bind=test_engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+# Redéfinir les objets pour les tests
+engine = test_engine
 
 # Client de test
 client = TestClient(app)
@@ -41,12 +51,18 @@ TEST_USER = {
 @pytest.fixture(scope="module")
 def test_user():
     """Crée un utilisateur de test et retourne ses informations."""
+    # Obtenir le token CSRF
+    csrf_response = client.get(f"{settings.API_V1_STR}/auth/csrf-token")
+    assert csrf_response.status_code == 200
+    csrf_token = csrf_response.json()["csrf_token"]
+
     # S'assurer que l'utilisateur n'existe pas déjà
     response = client.post(
         f"{settings.API_V1_STR}/auth/register",
-        json=TEST_USER
+        json=TEST_USER,
+        headers={"X-CSRF-Token": csrf_token}
     )
-    
+
     if response.status_code == 400 and "already exists" in response.json().get("detail", ""):
         # Si l'utilisateur existe déjà, on le supprime
         db = next(override_get_db())
@@ -55,12 +71,15 @@ def test_user():
         if user:
             db.delete(user)
             db.commit()
-        # Puis on le recrée
+        # Puis on le recrée (nouveau token CSRF)
+        csrf_response = client.get(f"{settings.API_V1_STR}/auth/csrf-token")
+        csrf_token = csrf_response.json()["csrf_token"]
         response = client.post(
             f"{settings.API_V1_STR}/auth/register",
-            json=TEST_USER
+            json=TEST_USER,
+            headers={"X-CSRF-Token": csrf_token}
         )
-    
+
     assert response.status_code == 200
     user = response.json()
     user["password"] = TEST_USER["password"]
@@ -74,12 +93,18 @@ def test_register_user():
         "password": "newtestpass123",
         "full_name": "New Test User"
     }
-    
+
+    # Obtenir le token CSRF
+    csrf_response = client.get(f"{settings.API_V1_STR}/auth/csrf-token")
+    assert csrf_response.status_code == 200
+    csrf_token = csrf_response.json()["csrf_token"]
+
     response = client.post(
         f"{settings.API_V1_STR}/auth/register",
-        json=test_user
+        json=test_user,
+        headers={"X-CSRF-Token": csrf_token}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == test_user["username"]
@@ -93,12 +118,17 @@ def test_login(test_user):
         "username": test_user["username"],
         "password": test_user["password"]
     }
-    
+
+    # Obtenir le token CSRF
+    csrf_response = client.get(f"{settings.API_V1_STR}/auth/csrf-token")
+    assert csrf_response.status_code == 200
+    csrf_token = csrf_response.json()["csrf_token"]
+
     response = client.post(
         f"{settings.API_V1_STR}/auth/login",
-        data=login_data
+        data={**login_data, "csrf_token": csrf_token}  # Includer dans les données form
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
