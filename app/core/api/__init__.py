@@ -13,6 +13,7 @@ from .audiobookshelf_instances_router import router as audiobookshelf_instances_
 from .audiobookshelf_sync_router import router as audiobookshelf_sync_router
 from .audiobookshelf_local_router import router as audiobookshelf_local_router
 from .audiobookshelf_upload_router import router as audiobookshelf_upload_router
+from .admin_router import router as admin_router
 
 # Inclusion des routeurs dans le routeur principal
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
@@ -21,6 +22,7 @@ api_router.include_router(audiobookshelf_instances_router, prefix="", tags=["aud
 api_router.include_router(audiobookshelf_sync_router, prefix="", tags=["audiobookshelf-sync"])
 api_router.include_router(audiobookshelf_local_router, prefix="", tags=["audiobookshelf-local"])
 api_router.include_router(audiobookshelf_upload_router, prefix="/upload", tags=["upload"])
+api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 # Alias pour la compatibilité
 api = api_router
