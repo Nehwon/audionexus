@@ -46,8 +46,18 @@ class FFmpegConfig:
     add_chapters: bool = True
     retry_count: int = 3
     retry_delay: float = 2.0
-    timeout: int = 3600  # 1 heure max
-    temp_buffer_size: str = "128M"
+    timeout: int = 600  # 10 minutes max pour processing rapide
+    temp_buffer_size: str = "256M"  # Buffer augmenté pour performance
+    # Optimisations preset pour vitesse
+    preset_fast: bool = True
+    threads: int = 0  # 0 = utiliser tous les cœurs
+    use_faststart: bool = True
+    audio_only: bool = True  # Focuser sur audio
+    # Flags performance
+    disable_subtitle_conversion: bool = True
+    fast_decode: bool = True
+    skip_video: bool = True
+    crf: int = 23  # Qualité/rapidité optimisée
 
 
 @dataclass
@@ -437,37 +447,62 @@ class FFmpegService:
         metadata: AudioMetadata,
         job_id: str
     ) -> Tuple[List[str], List[Path]]:
-        """Construit la commande FFmpeg optimisée."""
-        cmd = [self.ffmpeg_path, "-y", "-i", str(input_file)]
+        """Construit la commande FFmpeg optimisée pour performance max."""
+        cmd = [self.ffmpeg_path, "-y"]
 
-        # Configuration selon qualité
+        # Flags de performance AVANCÉS
+        if config.fast_decode:
+            cmd.extend(["-fflags", "+fastseek+discardcorrupt"])
+        if config.skip_video:
+            cmd.extend(["-vn"])  # Audio only - skip video processing
+        if config.disable_subtitle_conversion:
+            cmd.extend(["-sn"])  # Disable subtitle processing
+
+        cmd.extend(["-i", str(input_file)])
+
+        # Configuration qualité optimisée RAPIDE
         if config.quality == CompressionQuality.LOSSLESS:
-            cmd.extend(["-c:a", "flac", "-compression_level", "12"])
+            cmd.extend(["-c:a", "flac", "-compression_level", "8", "-preset", "fast"])
         elif config.quality == CompressionQuality.HIGH:
-            cmd.extend(["-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart"])
+            cmd.extend([
+                "-c:a", "aac", "-b:a", "256k",
+                "-movflags", "+faststart",
+                "-preset", "ultrafast" if config.preset_fast else "fast"
+            ])
         elif config.quality == CompressionQuality.MEDIUM:
-            cmd.extend(["-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"])
-        else:  # LOW
-            cmd.extend(["-c:a", "aac", "-b:a", "64k", "-movflags", "+faststart"])
+            cmd.extend([
+                "-c:a", "aac", "-b:a", "128k",
+                "-movflags", "+faststart",
+                "-preset", "ultrafast" if config.preset_fast else "fast"
+            ])
+        else:  # LOW - max vitesse
+            cmd.extend([
+                "-c:a", "aac", "-b:a", "64k",
+                "-movflags", "+faststart",
+                "-preset", "ultrafast" if config.preset_fast else "fast"
+            ])
 
         temp_files = []
 
-        # Métadonnées
+        # Métadonnées préservées
         if config.preserve_metadata:
             cmd.extend(await self._build_metadata_args(metadata))
 
-        # Chapitres
+        # Chapitres optimisés
         if config.add_chapters and metadata.chapters:
             chapter_file = await self._create_chapter_file(metadata.chapters, output_file.parent, job_id)
             if chapter_file:
                 cmd.extend(["-i", str(chapter_file), "-map_metadata", "1", "-map_chapters", "1"])
                 temp_files.append(chapter_file)
 
-        # Optimisations buffer et threading
+        # Flags performance OPTIMISÉS
         cmd.extend([
             "-bufsize", config.temp_buffer_size,
-            "-threads", "0",  # utiliser tous les cœurs
-            "-loglevel", "warning",
+            "-threads", str(config.threads),  # Tous cœurs disponibles
+            "-max_muxing_queue_size", "4096",  # Éviter buffer overflow
+            "-avoid_negative_ts", "make_zero",  # Optimisation timing
+            "-loglevel", "warning",  # Réduire logs pour performance
+            "-nostats",  # Désactiver stats périodiques
             str(output_file)
         ])
 
