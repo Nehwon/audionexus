@@ -25,6 +25,7 @@ from .base import (
 )
 
 from .audiobook import Audiobook, AudiobookProgress
+from .search import SearchHistory, SearchSuggestion
 
 # Pour permettre l'importation directe depuis app.db.models
 __all__ = [
@@ -48,6 +49,8 @@ __all__ = [
     'Role',
     'Audiobook',
     'AudiobookProgress',
+    'SearchHistory',
+    'SearchSuggestion',
     'user_roles',
     'book_tags'
 ]

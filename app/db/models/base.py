@@ -48,15 +48,51 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_seen = Column(DateTime, default=datetime.utcnow)
-    
+
+    # Métadonnées étendues
+    phone_number = Column(String(20))
+    bio = Column(Text)
+    avatar_url = Column(String(255))
+    preferred_language = Column(String(10), default='fr')
+    timezone = Column(String(50), default='Europe/Paris')
+    custom_metadata = Column(JSON, default=dict)  # Données personnalisables
+    email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String(255))
+    password_reset_token = Column(String(255))
+    password_reset_expires = Column(DateTime)
+    login_attempts = Column(Integer, default=0)
+    locked_until = Column(DateTime)
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String(255))
+
     # Relations
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     books = relationship('Book', back_populates='owner')
     libraries = relationship('Library', back_populates='owner')
+    audit_logs = relationship('AuditLog', back_populates='user', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f"<User '{self.username}'>"
-    
+
+    def is_account_locked(self) -> bool:
+        """Vérifie si le compte est verrouillé."""
+        if self.locked_until and self.locked_until > datetime.utcnow():
+            return True
+        return False
+
+    def record_login_attempt(self, success: bool = True):
+        """Enregistre une tentative de connexion."""
+        if success:
+            self.login_attempts = 0
+            self.locked_until = None
+        else:
+            self.login_attempts = (self.login_attempts or 0) + 1
+            # Verrouiller le compte après 5 tentatives échouées
+            if self.login_attempts >= 5:
+                from datetime import timedelta
+                self.locked_until = datetime.utcnow() + timedelta(minutes=30)
+        self.last_seen = datetime.utcnow()
+
     def set_password(self, password: str):
         """Définit le mot de passe de l'utilisateur."""
         from app.core.security import get_password_hash
@@ -88,7 +124,17 @@ class User(Base):
             'is_superuser': self.is_superuser,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'last_seen': self.last_seen.isoformat() if self.last_seen else None
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None,
+            'phone_number': self.phone_number,
+            'bio': self.bio,
+            'avatar_url': self.avatar_url,
+            'preferred_language': self.preferred_language,
+            'timezone': self.timezone,
+            'custom_metadata': self.custom_metadata or {},
+            'email_verified': self.email_verified,
+            'two_factor_enabled': self.two_factor_enabled,
+            'login_attempts': self.login_attempts,
+            'locked_until': self.locked_until.isoformat() if self.locked_until else None
         }
     
     @property
@@ -114,13 +160,80 @@ class User(Base):
 class Role(Base):
     """Modèle de rôles pour les utilisateurs."""
     __tablename__ = 'roles'
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, index=True, nullable=False)
     description = Column(String(255))
-    
+
     # Relations
     users = relationship('User', secondary=user_roles, back_populates='roles')
+    permissions = relationship('RolePermission', back_populates='role', cascade='all, delete-orphan')
+
+
+class Permission(Base):
+    """Modèle de permissions granulaire pour le système d'autorisation."""
+    __tablename__ = 'permissions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, index=True, nullable=False)
+    codename = Column(String(100), unique=True, index=True, nullable=False)
+    description = Column(String(255))
+    resource = Column(String(50), nullable=False)  # users, books, settings, etc.
+    action = Column(String(20), nullable=False)  # create, read, update, delete, admin
+
+
+class RolePermission(Base):
+    """Table d'association many-to-many entre rôles et permissions."""
+    __tablename__ = 'role_permissions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
+    permission_id = Column(Integer, ForeignKey('permissions.id'), nullable=False)
+
+    # Relations
+    role = relationship('Role', back_populates='permissions')
+    permission = relationship('Permission')
+
+    # Contrainte d'unicité
+    __table_args__ = (
+        UniqueConstraint('role_id', 'permission_id', name='unique_role_permission'),
+    )
+
+
+class AuditLog(Base):
+    """Modèle pour l'historique des actions utilisateurs."""
+    __tablename__ = 'audit_logs'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    action = Column(String(50), nullable=False)  # create, update, delete, login, etc.
+    resource = Column(String(50), nullable=False)  # users, books, roles, etc.
+    resource_id = Column(String(50))  # ID de la ressource concernée
+    details = Column(JSON, default=dict)  # Données supplémentaires
+    ip_address = Column(String(45))  # Support IPv4 et IPv6
+    user_agent = Column(String(500))
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relations
+    user = relationship('User', back_populates='audit_logs')
+
+    def __repr__(self):
+        return f"<AuditLog user={self.user_id} action={self.action} resource={self.resource}>"
+
+    def to_dict(self) -> dict:
+        """Convertit l'audit log en dictionnaire."""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'action': self.action,
+            'resource': self.resource,
+            'resource_id': self.resource_id,
+            'details': self.details or {},
+            'ip_address': self.ip_address,
+            'user_agent': self.user_agent,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None
+        }
 
 
 class Library(Base):
@@ -204,31 +317,135 @@ class Tag(Base):
 # Modèles Pydantic pour la validation des données
 class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     username: str
     email: EmailStr
     full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    preferred_language: str = "fr"
+    timezone: str = "Europe/Paris"
+    metadata: Optional[dict] = None
+    email_verified: bool = False
+    two_factor_enabled: bool = False
 
 
 class UserCreate(UserBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     password: str
-    
-    # Explicitly include all fields from UserBase
+
+    # Explicitly include required fields from UserBase
     username: str
     email: EmailStr
     full_name: Optional[str] = None
 
 
+class UserUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+    preferred_language: Optional[str] = None
+    timezone: Optional[str] = None
+    metadata: Optional[dict] = None
+    is_active: Optional[bool] = None
+    email_verified: Optional[bool] = None
+
+
 class UserInDB(UserBase):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     is_active: bool
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
+    last_seen: Optional[datetime] = None
+    login_attempts: Optional[int] = None
+    locked_until: Optional[datetime] = None
+
+
+class RoleBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    description: Optional[str] = None
+
+
+class RoleCreate(RoleBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    permission_ids: Optional[List[int]] = None
+
+
+class RoleUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permission_ids: Optional[List[int]] = None
+
+
+class RoleInDB(RoleBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class PermissionBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    codename: str
+    description: Optional[str] = None
+    resource: str
+    action: str
+
+
+class PermissionCreate(PermissionBase):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PermissionUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    codename: Optional[str] = None
+    description: Optional[str] = None
+    resource: Optional[str] = None
+    action: Optional[str] = None
+
+
+class PermissionInDB(PermissionBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class AuditLogBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    action: str
+    resource: str
+    resource_id: Optional[str] = None
+    details: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+
+
+class AuditLogInDB(AuditLogBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    timestamp: datetime
 
 
 class Token(BaseModel):
