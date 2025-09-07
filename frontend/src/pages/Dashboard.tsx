@@ -175,6 +175,88 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Métriques d'upload */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md mb-8">
+        <div className="px-4 py-5 sm:px-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">
+            Téléversements d'Audiobooks
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">
+            Statistiques des uploads et métriques de stockage.
+          </p>
+        </div>
+        <div className="border-t border-gray-200">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+              {/* Total uploadés */}
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 mx-auto rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-blue-600 dark:text-blue-400 text-xl">📚</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {metrics?.uploaded_audiobooks?.total || 0}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total uploadés</p>
+              </div>
+
+              {/* Réussis */}
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900 mx-auto rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-green-600 dark:text-green-400 text-xl">✓</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {metrics?.uploaded_audiobooks?.successful || 0}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Réussis</p>
+              </div>
+
+              {/* En cours */}
+              <div className="text-center">
+                <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 mx-auto rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-yellow-600 dark:text-yellow-400 text-xl">⏳</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {metrics?.uploaded_audiobooks?.processing || 0}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">En cours</p>
+              </div>
+
+              {/* Stockage */}
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 mx-auto rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-purple-600 dark:text-purple-400 text-xl">💾</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {Math.round(metrics?.uploaded_audiobooks?.total_size_gb || 0)}G
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Stockage</p>
+              </div>
+            </div>
+
+            {/* Taux de succès et période */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Taux de succès
+                </h4>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {metrics?.upload_success_rate || 0}%
+                </p>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Uploads récents (24h)
+                </h4>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {metrics?.uploaded_audiobooks?.last_24h || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Liste des instances */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6">
