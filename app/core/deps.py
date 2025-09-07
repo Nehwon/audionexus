@@ -5,25 +5,27 @@ NOTE: Ce module a été nettoyé pour utiliser exclusivement get_async_db depuis
 Les anciennes fonctions redondantes ont été supprimées ou marquées comme dépréciées.
 Utilisez toujours app.db pour les dépendances de base de données.
 """
+
 from __future__ import annotations
-from typing import Generator, Optional, Union, AsyncGenerator, TYPE_CHECKING, Any
 
-from fastapi import Depends, HTTPException, status, Request
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Generator, Optional, Union
+
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
+import app.core.security as security
 from app.config import settings
 from app.core.api.audiobookshelf import AudiobookshelfClient
 from app.db import get_async_db
-import app.core.security as security
 
 # Import différé pour éviter les imports circulaires
 if TYPE_CHECKING:
-    from app.db.models.base import User
     from app import crud, models
+    from app.db.models.base import User
 
 # Schéma OAuth2 pour l'authentification par token
 oauth2_scheme = OAuth2PasswordBearer(
@@ -31,33 +33,30 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-
 def get_audiobookshelf_client() -> AudiobookshelfClient:
     """
     Fournit une instance du client Audiobookshelf.
-    
+
     Returns:
         AudiobookshelfClient: Une instance configurée du client
-        
+
     Raises:
         HTTPException: Si la configuration est manquante
     """
     if not all([settings.ABS_API_URL, settings.ABS_USERNAME, settings.ABS_PASSWORD]):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Configuration Audiobookshelf manquante"
+            detail="Configuration Audiobookshelf manquante",
         )
-    
+
     return AudiobookshelfClient(
         base_url=settings.ABS_API_URL,
         username=settings.ABS_USERNAME,
-        password=settings.ABS_PASSWORD
+        password=settings.ABS_PASSWORD,
     )
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme)
-) -> 'models.User':
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> "models.User":
     """
     Récupère l'utilisateur actuellement authentifié.
 
@@ -95,8 +94,8 @@ async def get_current_user(
 
 
 async def get_current_active_user(
-    current_user: 'models.User' = Depends(get_current_user),
-) -> 'models.User':
+    current_user: "models.User" = Depends(get_current_user),
+) -> "models.User":
     """
     Vérifie que l'utilisateur actuel est actif.
     """
@@ -106,14 +105,13 @@ async def get_current_active_user(
 
 
 async def get_current_active_superuser(
-    current_user: 'models.User' = Depends(get_current_user),
-) -> 'models.User':
+    current_user: "models.User" = Depends(get_current_user),
+) -> "models.User":
     """
     Vérifie que l'utilisateur actuel est un superutilisateur.
     """
     if not crud.crud_user.is_superuser(current_user):
         raise HTTPException(
-            status_code=400, 
-            detail="L'utilisateur n'a pas les privilèges suffisants"
+            status_code=400, detail="L'utilisateur n'a pas les privilèges suffisants"
         )
     return current_user

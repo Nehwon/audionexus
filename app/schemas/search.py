@@ -1,13 +1,16 @@
 """
 Schémas Pydantic pour la gestion des recherches.
 """
+
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Union
+from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field, validator
 
 
 class SearchFilters(BaseModel):
     """Filtres avancés pour la recherche d'audiobooks."""
+
     genres: Optional[List[str]] = None
     authors: Optional[List[str]] = None
     narrators: Optional[List[str]] = None
@@ -26,9 +29,12 @@ class SearchFilters(BaseModel):
 
 class SearchQuery(BaseModel):
     """Requête de recherche."""
+
     q: str = Field(..., min_length=1, max_length=500, description="Terme de recherche")
     filters: Optional[SearchFilters] = None
-    sort_by: Optional[str] = Field("relevance", regex="^(relevance|title|author|duration|rating|date)$")
+    sort_by: Optional[str] = Field(
+        "relevance", regex="^(relevance|title|author|duration|rating|date)$"
+    )
     sort_order: Optional[str] = Field("desc", regex="^(asc|desc)$")
     page: Optional[int] = Field(1, ge=1)
     limit: Optional[int] = Field(20, ge=1, le=100)
@@ -36,6 +42,7 @@ class SearchQuery(BaseModel):
 
 class SearchHistoryBase(BaseModel):
     """Schéma de base pour l'historique des recherches."""
+
     query: str
     filters: Optional[str] = None
     results_count: int = 0
@@ -46,11 +53,13 @@ class SearchHistoryBase(BaseModel):
 
 class SearchHistoryCreate(SearchHistoryBase):
     """Schéma pour créer une entrée d'historique."""
+
     pass
 
 
 class SearchHistory(SearchHistoryBase):
     """Schéma complet pour l'historique des recherches."""
+
     id: int
     user_id: int
     created_at: datetime
@@ -62,12 +71,14 @@ class SearchHistory(SearchHistoryBase):
 
 class SearchSuggestionBase(BaseModel):
     """Schéma de base pour les suggestions de recherche."""
+
     suggestion: str
     category: Optional[str] = None
 
 
 class SearchSuggestion(SearchSuggestionBase):
     """Schéma complet pour les suggestions."""
+
     id: int
     usage_count: int
     created_at: datetime
@@ -80,6 +91,7 @@ class SearchSuggestion(SearchSuggestionBase):
 
 class SearchResult(BaseModel):
     """Résultat individuel de recherche."""
+
     audiobook_id: int
     title: str
     authors: List[str]
@@ -97,6 +109,7 @@ class SearchResult(BaseModel):
 
 class SearchResults(BaseModel):
     """Résultats de recherche complets."""
+
     query: str
     total_count: int
     results: List[SearchResult]
@@ -111,12 +124,14 @@ class SearchResults(BaseModel):
 
 class AutoCompleteRequest(BaseModel):
     """Requête pour l'auto-complétion."""
+
     query: str = Field(..., min_length=1, max_length=100)
     limit: Optional[int] = Field(10, ge=1, le=50)
 
 
 class AutoCompleteResponse(BaseModel):
     """Réponse pour l'auto-complétion."""
+
     query: str
     suggestions: List[Dict[str, Any]]
     total_count: int

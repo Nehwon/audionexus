@@ -1,64 +1,70 @@
 """
 Opérations CRUD pour les utilisateurs.
 """
-from typing import Optional, List
+
 from datetime import datetime
+from typing import List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.security import get_password_hash, verify_password
 from app.db.models.base import User, UserCreate
 
+
 async def get_user(db: AsyncSession, user_id: int) -> Optional[User]:
     """
     Récupère un utilisateur par son ID.
-    
+
     Args:
         db: Session de base de données asynchrone
         user_id: ID de l'utilisateur
-        
+
     Returns:
         User: L'utilisateur trouvé ou None
     """
     result = await db.execute(select(User).filter(User.id == user_id))
     return result.scalars().first()
 
+
 async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
     """
     Récupère un utilisateur par son email.
-    
+
     Args:
         db: Session de base de données asynchrone
         email: Email de l'utilisateur
-        
+
     Returns:
         User: L'utilisateur trouvé ou None
     """
     result = await db.execute(select(User).filter(User.email == email))
     return result.scalars().first()
 
+
 async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
     """
     Récupère un utilisateur par son nom d'utilisateur.
-    
+
     Args:
         db: Session de base de données asynchrone
         username: Nom d'utilisateur
-        
+
     Returns:
         User: L'utilisateur trouvé ou None
     """
     result = await db.execute(select(User).filter(User.username == username))
     return result.scalars().first()
 
+
 async def create_user(db: AsyncSession, user: UserCreate) -> User:
     """
     Crée un nouvel utilisateur.
-    
+
     Args:
         db: Session de base de données asynchrone
         user: Données de l'utilisateur à créer
-        
+
     Returns:
         User: L'utilisateur créé
     """
@@ -67,22 +73,25 @@ async def create_user(db: AsyncSession, user: UserCreate) -> User:
         username=user.username,
         email=user.email,
         hashed_password=hashed_password,
-        full_name=user.full_name
+        full_name=user.full_name,
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
     return db_user
 
-async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
+
+async def authenticate_user(
+    db: AsyncSession, username: str, password: str
+) -> Optional[User]:
     """
     Authentifie un utilisateur avec son nom d'utilisateur et son mot de passe.
-    
+
     Args:
         db: Session de base de données asynchrone
         username: Nom d'utilisateur
         password: Mot de passe en clair
-        
+
     Returns:
         User: L'utilisateur authentifié ou None
     """
@@ -93,7 +102,10 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> O
         return None
     return user
 
-async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100, active_only: bool = True) -> List[User]:
+
+async def get_users(
+    db: AsyncSession, skip: int = 0, limit: int = 100, active_only: bool = True
+) -> List[User]:
     """
     Récupère une liste d'utilisateurs avec pagination.
 
@@ -161,7 +173,9 @@ async def delete_user(db: AsyncSession, user_id: int) -> bool:
     return True
 
 
-async def assign_roles_to_user(db: AsyncSession, user_id: int, role_ids: List[int]) -> Optional[User]:
+async def assign_roles_to_user(
+    db: AsyncSession, user_id: int, role_ids: List[int]
+) -> Optional[User]:
     """
     Assigne des rôles à un utilisateur.
 
@@ -174,6 +188,7 @@ async def assign_roles_to_user(db: AsyncSession, user_id: int, role_ids: List[in
         User: L'utilisateur mis à jour ou None
     """
     from app.db.models.base import Role
+
     user = await get_user(db, user_id)
     if not user:
         return None
@@ -202,12 +217,19 @@ async def get_user_permissions(db: AsyncSession, user_id: int) -> List[dict]:
         List[dict]: Liste des permissions
     """
     from sqlalchemy.orm import joinedload
-    from app.db.models.base import RolePermission, Permission
+
+    from app.db.models.base import Permission, RolePermission
 
     # Récupérer l'utilisateur avec ses rôles et permissions
-    stmt = select(User).options(
-        joinedload(User.roles).joinedload('Role.permissions').joinedload('RolePermission.permission')
-    ).where(User.id == user_id)
+    stmt = (
+        select(User)
+        .options(
+            joinedload(User.roles)
+            .joinedload("Role.permissions")
+            .joinedload("RolePermission.permission")
+        )
+        .where(User.id == user_id)
+    )
 
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()

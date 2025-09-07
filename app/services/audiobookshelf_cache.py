@@ -4,17 +4,19 @@ Système de cache intelligent pour optimiser les appels API Audiobookshelf.
 Ce service met en cache les réponses des API Audiobookshelf avec gestion
 intelligente des TTL, invalidation et optimisation des requêtes.
 """
+
 import asyncio
 import hashlib
 import json
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
-from dataclasses import dataclass
 
 try:
     import redis.asyncio as redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -25,6 +27,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CacheEntry:
     """Entrée de cache avec métadonnées."""
+
     key: str
     data: Any
     created_at: datetime
@@ -88,11 +91,13 @@ class AudiobookshelfCache:
                     if cached_data:
                         # Désérialiser et vérifier l'expiration
                         entry_data = json.loads(cached_data)
-                        created_at = datetime.fromisoformat(entry_data['created_at'])
+                        created_at = datetime.fromisoformat(entry_data["created_at"])
 
-                        if not self._is_expired(created_at, entry_data.get('ttl_seconds', self.default_ttl)):
+                        if not self._is_expired(
+                            created_at, entry_data.get("ttl_seconds", self.default_ttl)
+                        ):
                             await self._increment_hit_count(redis_key)
-                            return entry_data['data']
+                            return entry_data["data"]
 
                         # Supprimer l'entrée expirée
                         await self.redis_client.delete(redis_key)
@@ -111,8 +116,14 @@ class AudiobookshelfCache:
 
         return None
 
-    async def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None,
-                  instance_id: Optional[int] = None, tags: Optional[Set[str]] = None) -> bool:
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl_seconds: Optional[int] = None,
+        instance_id: Optional[int] = None,
+        tags: Optional[Set[str]] = None,
+    ) -> bool:
         """
         Stocke une valeur dans le cache.
 
@@ -134,7 +145,7 @@ class AudiobookshelfCache:
                 created_at=datetime.utcnow(),
                 ttl_seconds=ttl,
                 instance_id=instance_id,
-                tags=tags or set()
+                tags=tags or set(),
             )
 
             # Stocker dans Redis si disponible
@@ -142,18 +153,16 @@ class AudiobookshelfCache:
                 try:
                     redis_key = self._make_redis_key(key, instance_id)
                     entry_data = {
-                        'data': value,
-                        'created_at': entry.created_at.isoformat(),
-                        'ttl_seconds': ttl,
-                        'hits': 0,
-                        'instance_id': instance_id,
-                        'tags': list(tags) if tags else []
+                        "data": value,
+                        "created_at": entry.created_at.isoformat(),
+                        "ttl_seconds": ttl,
+                        "hits": 0,
+                        "instance_id": instance_id,
+                        "tags": list(tags) if tags else [],
                     }
 
                     success = await self.redis_client.setex(
-                        redis_key,
-                        ttl,
-                        json.dumps(entry_data)
+                        redis_key, ttl, json.dumps(entry_data)
                     )
 
                     if success:
@@ -318,7 +327,7 @@ class AudiobookshelfCache:
             "total_hits": total_hits,
             "redis_available": self.redis_client is not None,
             "default_ttl": self.default_ttl,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     def _make_redis_key(self, key: str, instance_id: Optional[int] = None) -> str:
@@ -360,7 +369,9 @@ class AudiobookshelfCache:
         """Crée une clé pour un audiobook."""
         return f"audiobook:{audiobook_id}"
 
-    def make_progress_key(self, instance_id: int, user_id: str, audiobook_id: str) -> str:
+    def make_progress_key(
+        self, instance_id: int, user_id: str, audiobook_id: str
+    ) -> str:
         """Crée une clé pour la progression d'un utilisateur."""
         return f"progress:{user_id}:{audiobook_id}"
 

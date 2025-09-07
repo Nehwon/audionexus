@@ -1,17 +1,21 @@
 """
 Modèles de base de données pour l'audit trail et la conformité enterprise.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, ForeignKey
-from sqlalchemy.orm import relationship
+
 from datetime import datetime
 
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
+
 from app.db.models.base import Base
+
 
 class AuditLog(Base):
     """
     Modèle pour les logs d'audit des opérations de sécurité.
     Conforme aux standards de conformité enterprise (GDPR, SOX, etc.).
     """
+
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -29,12 +33,18 @@ class AuditLog(Base):
     # Données détaillées
     status_code = Column(Integer, nullable=True)
     user_agent = Column(Text, nullable=True)
-    request_data = Column(JSON, nullable=True)  # Données de la requête (chiffrées si sensibles)
-    response_data = Column(JSON, nullable=True)  # Données de la réponse (chiffrées si sensibles)
+    request_data = Column(
+        JSON, nullable=True
+    )  # Données de la requête (chiffrées si sensibles)
+    response_data = Column(
+        JSON, nullable=True
+    )  # Données de la réponse (chiffrées si sensibles)
 
     # Métadonnées
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    duration_ms = Column(Integer, nullable=True)  # Durée de l'opération en millisecondes
+    duration_ms = Column(
+        Integer, nullable=True
+    )  # Durée de l'opération en millisecondes
 
     # Contexte de sécurité
     session_id = Column(String(100), nullable=True)
@@ -43,16 +53,20 @@ class AuditLog(Base):
 
     # Classification
     severity = Column(String(20), default="info")  # info, warning, error, critical
-    compliance_flags = Column(JSON, nullable=True)  # Flags pour conformité: gdpr, hipaa, sox, etc.
+    compliance_flags = Column(
+        JSON, nullable=True
+    )  # Flags pour conformité: gdpr, hipaa, sox, etc.
 
     def __repr__(self):
         return f"<AuditLog(id={self.id}, user={self.username}, action={self.action}, timestamp={self.timestamp})>"
+
 
 class ComplianceLog(Base):
     """
     Logs spécifiques pour les exigences de conformité.
     Utile pour les audits réglementaires.
     """
+
     __tablename__ = "compliance_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -64,11 +78,15 @@ class ComplianceLog(Base):
 
     # Classification du risque
     risk_level = Column(String(20), default="low")  # low, medium, high, critical
-    data_classification = Column(String(50), nullable=True)  # public, internal, confidential, restricted
+    data_classification = Column(
+        String(50), nullable=True
+    )  # public, internal, confidential, restricted
 
     # Mesures de conformité
     encryption_used = Column(String(50), nullable=True)  # aes256, rsa, none
-    access_control = Column(String(100), nullable=True)  # role_based, attribute_based, etc.
+    access_control = Column(
+        String(100), nullable=True
+    )  # role_based, attribute_based, etc.
 
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
@@ -78,15 +96,19 @@ class ComplianceLog(Base):
     def __repr__(self):
         return f"<ComplianceLog(id={self.id}, regulation={self.regulation}, risk_level={self.risk_level})>"
 
+
 class SecurityEvent(Base):
     """
     Événements de sécurité critiques nécessitant une attention immédiate.
     """
+
     __tablename__ = "security_events"
 
     id = Column(Integer, primary_key=True, index=True)
 
-    event_type = Column(String(100), nullable=False)  # brute_force, ddos, suspicious_activity, etc.
+    event_type = Column(
+        String(100), nullable=False
+    )  # brute_force, ddos, suspicious_activity, etc.
     severity = Column(String(20), nullable=False)  # low, medium, high, critical
 
     description = Column(Text, nullable=False)

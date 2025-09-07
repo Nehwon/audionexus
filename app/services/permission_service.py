@@ -1,13 +1,22 @@
 """
 Service de gestion des permissions avec système d'autorisation granulaire.
 """
-from typing import List, Optional, Dict, Any
+
+import logging
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-import logging
 
-from app.db.models.base import Permission, Role, RolePermission, User
-from app.db.models.base import PermissionCreate, PermissionUpdate, RoleCreate
+from app.db.models.base import (
+    Permission,
+    PermissionCreate,
+    PermissionUpdate,
+    Role,
+    RoleCreate,
+    RolePermission,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +40,9 @@ class PermissionService:
         # Vérifier si la permission existe déjà
         existing = await self.get_permission_by_codename(permission_data.codename)
         if existing:
-            raise ValueError(f" Permission avec codename '{permission_data.codename}' existe déjà")
+            raise ValueError(
+                f" Permission avec codename '{permission_data.codename}' existe déjà"
+            )
 
         permission = Permission(**permission_data.model_dump())
         self.db.add(permission)
@@ -71,7 +82,9 @@ class PermissionService:
         )
         return result.scalars().all()
 
-    async def update_permission(self, permission_id: int, permission_data: PermissionUpdate) -> Optional[Permission]:
+    async def update_permission(
+        self, permission_id: int, permission_data: PermissionUpdate
+    ) -> Optional[Permission]:
         """
         Met à jour une permission.
 
@@ -164,12 +177,12 @@ class PermissionService:
         Returns:
             Role ou None
         """
-        result = await self.db.execute(
-            select(Role).where(Role.name == name)
-        )
+        result = await self.db.execute(select(Role).where(Role.name == name))
         return result.scalar_one_or_none()
 
-    async def assign_permissions_to_role(self, role_id: int, permission_ids: List[int]) -> Optional[Role]:
+    async def assign_permissions_to_role(
+        self, role_id: int, permission_ids: List[int]
+    ) -> Optional[Role]:
         """
         Assigne des permissions à un rôle.
 
@@ -180,9 +193,7 @@ class PermissionService:
         Returns:
             Role mis à jour ou None
         """
-        result = await self.db.execute(
-            select(Role).where(Role.id == role_id)
-        )
+        result = await self.db.execute(select(Role).where(Role.id == role_id))
         role = result.scalar_one_or_none()
 
         if not role:
@@ -207,7 +218,9 @@ class PermissionService:
         await self.db.refresh(role)
         return role
 
-    async def check_user_permission(self, user_id: int, permission_codename: str) -> bool:
+    async def check_user_permission(
+        self, user_id: int, permission_codename: str
+    ) -> bool:
         """
         Vérifie si un utilisateur a une permission spécifique.
 
@@ -221,9 +234,9 @@ class PermissionService:
         from sqlalchemy.orm import joinedload
 
         result = await self.db.execute(
-            select(User).options(
-                joinedload(User.roles).joinedload(Role.permissions)
-            ).where(User.id == user_id)
+            select(User)
+            .options(joinedload(User.roles).joinedload(Role.permissions))
+            .where(User.id == user_id)
         )
         user = result.scalar_one_or_none()
 
@@ -255,9 +268,9 @@ class PermissionService:
         from sqlalchemy.orm import joinedload
 
         result = await self.db.execute(
-            select(User).options(
-                joinedload(User.roles).joinedload(Role.permissions)
-            ).where(User.id == user_id)
+            select(User)
+            .options(joinedload(User.roles).joinedload(Role.permissions))
+            .where(User.id == user_id)
         )
         user = result.scalar_one_or_none()
 
@@ -300,26 +313,103 @@ class PermissionService:
 # Permissions par défaut à créer lors de l'initialisation
 DEFAULT_PERMISSIONS = [
     # Utilisateurs
-    {'name': 'Voir utilisateurs', 'codename': 'users.view', 'resource': 'users', 'action': 'view'},
-    {'name': 'Créer utilisateurs', 'codename': 'users.create', 'resource': 'users', 'action': 'create'},
-    {'name': 'Modifier utilisateurs', 'codename': 'users.update', 'resource': 'users', 'action': 'update'},
-    {'name': 'Supprimer utilisateurs', 'codename': 'users.delete', 'resource': 'users', 'action': 'delete'},
-    {'name': 'Assigner rôles', 'codename': 'users.assign_roles', 'resource': 'users', 'action': 'assign_roles'},
-    {'name': 'Changer mot de passe', 'codename': 'users.change_password', 'resource': 'users', 'action': 'change_password'},
-
+    {
+        "name": "Voir utilisateurs",
+        "codename": "users.view",
+        "resource": "users",
+        "action": "view",
+    },
+    {
+        "name": "Créer utilisateurs",
+        "codename": "users.create",
+        "resource": "users",
+        "action": "create",
+    },
+    {
+        "name": "Modifier utilisateurs",
+        "codename": "users.update",
+        "resource": "users",
+        "action": "update",
+    },
+    {
+        "name": "Supprimer utilisateurs",
+        "codename": "users.delete",
+        "resource": "users",
+        "action": "delete",
+    },
+    {
+        "name": "Assigner rôles",
+        "codename": "users.assign_roles",
+        "resource": "users",
+        "action": "assign_roles",
+    },
+    {
+        "name": "Changer mot de passe",
+        "codename": "users.change_password",
+        "resource": "users",
+        "action": "change_password",
+    },
     # Livres
-    {'name': 'Voir livres', 'codename': 'books.view', 'resource': 'books', 'action': 'view'},
-    {'name': 'Créer livres', 'codename': 'books.create', 'resource': 'books', 'action': 'create'},
-    {'name': 'Modifier livres', 'codename': 'books.update', 'resource': 'books', 'action': 'update'},
-    {'name': 'Supprimer livres', 'codename': 'books.delete', 'resource': 'books', 'action': 'delete'},
-
+    {
+        "name": "Voir livres",
+        "codename": "books.view",
+        "resource": "books",
+        "action": "view",
+    },
+    {
+        "name": "Créer livres",
+        "codename": "books.create",
+        "resource": "books",
+        "action": "create",
+    },
+    {
+        "name": "Modifier livres",
+        "codename": "books.update",
+        "resource": "books",
+        "action": "update",
+    },
+    {
+        "name": "Supprimer livres",
+        "codename": "books.delete",
+        "resource": "books",
+        "action": "delete",
+    },
     # Bibliothèques
-    {'name': 'Voir bibliothèques', 'codename': 'libraries.view', 'resource': 'libraries', 'action': 'view'},
-    {'name': 'Créer bibliothèques', 'codename': 'libraries.create', 'resource': 'libraries', 'action': 'create'},
-    {'name': 'Modifier bibliothèques', 'codename': 'libraries.update', 'resource': 'libraries', 'action': 'update'},
-    {'name': 'Supprimer bibliothèques', 'codename': 'libraries.delete', 'resource': 'libraries', 'action': 'delete'},
-
+    {
+        "name": "Voir bibliothèques",
+        "codename": "libraries.view",
+        "resource": "libraries",
+        "action": "view",
+    },
+    {
+        "name": "Créer bibliothèques",
+        "codename": "libraries.create",
+        "resource": "libraries",
+        "action": "create",
+    },
+    {
+        "name": "Modifier bibliothèques",
+        "codename": "libraries.update",
+        "resource": "libraries",
+        "action": "update",
+    },
+    {
+        "name": "Supprimer bibliothèques",
+        "codename": "libraries.delete",
+        "resource": "libraries",
+        "action": "delete",
+    },
     # Administration
-    {'name': 'Administration système', 'codename': 'admin.system', 'resource': 'admin', 'action': 'admin'},
-    {'name': 'Voir logs audit', 'codename': 'audit.view', 'resource': 'audit', 'action': 'view'},
+    {
+        "name": "Administration système",
+        "codename": "admin.system",
+        "resource": "admin",
+        "action": "admin",
+    },
+    {
+        "name": "Voir logs audit",
+        "codename": "audit.view",
+        "resource": "audit",
+        "action": "view",
+    },
 ]

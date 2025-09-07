@@ -4,19 +4,20 @@ Service de load balancing intelligent pour les instances Audiobookshelf.
 Ce service distribue intelligemment les requêtes entre plusieurs instances
 en fonction de leur santé, charge actuelle et priorité configurée.
 """
+
 import asyncio
 import logging
 import random
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
-from app.db.session import SessionLocal
 from app.db.models.audiobookshelf_instance import AudiobookshelfInstance
+from app.db.session import SessionLocal
+from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LoadBalancerMetrics:
     """Métriques de load balancing pour une instance."""
+
     instance_id: int
     active_requests: int
     total_requests: int
@@ -46,10 +48,12 @@ class AudiobookshelfLoadBalancer:
 
     def __del__(self):
         """Ferme la session de base de données."""
-        if hasattr(self, 'db') and self.db:
+        if hasattr(self, "db") and self.db:
             self.db.close()
 
-    async def get_best_instance(self, operation_type: str = "read") -> Optional[AudiobookshelfInstance]:
+    async def get_best_instance(
+        self, operation_type: str = "read"
+    ) -> Optional[AudiobookshelfInstance]:
         """
         Sélectionne la meilleure instance disponible pour une opération.
 
@@ -64,7 +68,9 @@ class AudiobookshelfLoadBalancer:
 
             candidates = self._get_eligible_instances(operation_type)
             if not candidates:
-                logger.warning(f"Aucune instance éligible trouvée pour {operation_type}")
+                logger.warning(
+                    f"Aucune instance éligible trouvée pour {operation_type}"
+                )
                 return None
 
             scored_candidates = []
@@ -80,10 +86,14 @@ class AudiobookshelfLoadBalancer:
             # Mettre à jour les métriques
             await self._update_metrics_on_selection(selected_instance.id)
 
-            logger.debug(f"Instance sélectionnée pour {operation_type}: {selected_instance.name} (score: {scored_candidates[0][1]:.3f})")
+            logger.debug(
+                f"Instance sélectionnée pour {operation_type}: {selected_instance.name} (score: {scored_candidates[0][1]:.3f})"
+            )
             return selected_instance
 
-    def _get_eligible_instances(self, operation_type: str) -> List[AudiobookshelfInstance]:
+    def _get_eligible_instances(
+        self, operation_type: str
+    ) -> List[AudiobookshelfInstance]:
         """
         Récupère les instances éligibles pour une opération donnée.
 
@@ -93,7 +103,9 @@ class AudiobookshelfLoadBalancer:
         Returns:
             Liste des instances éligibles
         """
-        all_instances = self.instance_service.get_instances(only_active=True, only_sync_enabled=True)
+        all_instances = self.instance_service.get_instances(
+            only_active=True, only_sync_enabled=True
+        )
 
         eligible = []
         for instance in all_instances:
@@ -102,7 +114,9 @@ class AudiobookshelfLoadBalancer:
 
         return eligible
 
-    def _is_instance_eligible(self, instance: AudiobookshelfInstance, operation_type: str) -> bool:
+    def _is_instance_eligible(
+        self, instance: AudiobookshelfInstance, operation_type: str
+    ) -> bool:
         """
         Vérifie si une instance est éligible pour une opération.
 
@@ -123,7 +137,9 @@ class AudiobookshelfLoadBalancer:
 
         # Vérification des health checks récents
         if instance.health_check_timestamp:
-            health_age = (datetime.utcnow() - instance.health_check_timestamp).total_seconds()
+            health_age = (
+                datetime.utcnow() - instance.health_check_timestamp
+            ).total_seconds()
             if health_age > 300:  # 5 minutes
                 return False
 
@@ -145,7 +161,9 @@ class AudiobookshelfLoadBalancer:
 
         return True
 
-    def _calculate_instance_score(self, instance: AudiobookshelfInstance, operation_type: str) -> float:
+    def _calculate_instance_score(
+        self, instance: AudiobookshelfInstance, operation_type: str
+    ) -> float:
         """
         Calcule un score pour une instance basé sur divers critères.
 
@@ -188,7 +206,9 @@ class AudiobookshelfLoadBalancer:
             return 1.0  # Pas de métriques = considéré comme libre
 
         # Score basé sur les requêtes actives (inversé)
-        active_penalty = min(metrics.active_requests / 5.0, 1.0)  # Pénalité max à 5 requêtes actives
+        active_penalty = min(
+            metrics.active_requests / 5.0, 1.0
+        )  # Pénalité max à 5 requêtes actives
         return 1.0 - active_penalty
 
     def _calculate_performance_score(self, instance: AudiobookshelfInstance) -> float:
@@ -226,7 +246,7 @@ class AudiobookshelfLoadBalancer:
                 error_rate=0.0,
                 avg_response_time=0,
                 last_used=datetime.utcnow(),
-                score=0.0
+                score=0.0,
             )
 
         metrics = self._metrics[instance_id]
@@ -248,12 +268,14 @@ class AudiobookshelfLoadBalancer:
                     error_rate=0.0,
                     avg_response_time=0,
                     last_used=datetime.utcnow(),
-                    score=0.0
+                    score=0.0,
                 )
 
             self._metrics[instance_id].active_requests += 1
 
-    async def record_request_end(self, instance_id: int, response_time_ms: int, success: bool):
+    async def record_request_end(
+        self, instance_id: int, response_time_ms: int, success: bool
+    ):
         """
         Enregistre la fin d'une requête pour une instance.
 
@@ -274,7 +296,9 @@ class AudiobookshelfLoadBalancer:
             if metrics.avg_response_time == 0:
                 metrics.avg_response_time = response_time_ms
             else:
-                metrics.avg_response_time = (metrics.avg_response_time + response_time_ms) / 2
+                metrics.avg_response_time = (
+                    metrics.avg_response_time + response_time_ms
+                ) / 2
 
             # Mise à jour du taux d'erreur
             if not success:
@@ -328,14 +352,15 @@ class AudiobookshelfLoadBalancer:
                     "total_requests": metrics.total_requests,
                     "error_rate": metrics.error_rate,
                     "avg_response_time": metrics.avg_response_time,
-                    "load_percentage": (metrics.active_requests / max(total_active, 1)) * 100
+                    "load_percentage": (metrics.active_requests / max(total_active, 1))
+                    * 100,
                 }
 
         return {
             "total_active_requests": total_active,
             "total_requests": total_requests,
             "instances": instance_stats,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     async def force_refresh_health_checks(self):
@@ -350,6 +375,8 @@ class AudiobookshelfLoadBalancer:
                 result = self.instance_service.test_connection(instance.id)
                 logger.debug(f"Health check pour {instance.name}: {result}")
             except Exception as e:
-                logger.error(f"Erreur lors du health check de {instance.name}: {str(e)}")
+                logger.error(
+                    f"Erreur lors du health check de {instance.name}: {str(e)}"
+                )
 
         logger.info("Rafraîchissement des health checks terminé")

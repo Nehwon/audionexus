@@ -2,13 +2,17 @@
 Module de chiffrement AES-256 pour les données sensibles.
 Utilise le module cryptography pour le chiffrement et déchiffrement.
 """
-import os
+
 import base64
+import os
+
 from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
+
 from app.config import settings
+
 
 # Clé maître dérivée du secret_key de l'application
 def _get_encryption_key() -> bytes:
@@ -19,20 +23,22 @@ def _get_encryption_key() -> bytes:
         bytes: Clé de chiffrement AES-256
     """
     password = settings.secret_key.encode()
-    salt = b'AudioNexus_salt_2024'  # Sel fixe pour la cohérence
+    salt = b"AudioNexus_salt_2024"  # Sel fixe pour la cohérence
 
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,  # 256 bits pour AES-256
         salt=salt,
         iterations=100000,
-        backend=default_backend()
+        backend=default_backend(),
     )
 
     return base64.urlsafe_b64encode(kdf.derive(password))
 
+
 # Instance Fernet pour le chiffrement
 _fernet = Fernet(_get_encryption_key())
+
 
 def encrypt_data(plain_data: str) -> str:
     """
@@ -49,6 +55,7 @@ def encrypt_data(plain_data: str) -> str:
 
     encrypted = _fernet.encrypt(plain_data.encode())
     return encrypted.decode()
+
 
 def decrypt_data(encrypted_data: str) -> str:
     """
@@ -72,6 +79,7 @@ def decrypt_data(encrypted_data: str) -> str:
     except Exception as e:
         raise Exception(f"Impossible de déchiffrer les données: {str(e)}")
 
+
 def encrypt_session_data(session_data: dict) -> dict:
     """
     Chiffre les données de session sensibles.
@@ -82,16 +90,19 @@ def encrypt_session_data(session_data: dict) -> dict:
     Returns:
         dict: Données chiffrées
     """
-    sensitive_fields = ['password', 'token', 'secret', 'key', 'credentials']
+    sensitive_fields = ["password", "token", "secret", "key", "credentials"]
 
     encrypted_data = {}
     for key, value in session_data.items():
-        if any(field in key.lower() for field in sensitive_fields) and isinstance(value, str):
+        if any(field in key.lower() for field in sensitive_fields) and isinstance(
+            value, str
+        ):
             encrypted_data[key] = encrypt_data(value)
         else:
             encrypted_data[key] = value
 
     return encrypted_data
+
 
 def decrypt_session_data(session_data: dict) -> dict:
     """
@@ -105,7 +116,7 @@ def decrypt_session_data(session_data: dict) -> dict:
     """
     decrypted_data = {}
     for key, value in session_data.items():
-        if isinstance(value, str) and value.startswith('gAAAAA'):  # Format Fernet
+        if isinstance(value, str) and value.startswith("gAAAAA"):  # Format Fernet
             try:
                 decrypted_data[key] = decrypt_data(value)
             except:

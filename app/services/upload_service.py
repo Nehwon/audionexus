@@ -2,7 +2,10 @@
 Service de traitement des uploads d'audiobooks.
 Gère la validation, extraction, conversion et traitement des métadonnées.
 """
+
 import asyncio
+import hashlib
+import json
 import logging
 import os
 import re
@@ -10,29 +13,28 @@ import shutil
 import subprocess
 import tempfile
 import uuid
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict
-import hashlib
-import json
-
-from mutagen import File as MutagenFile
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, TRCK, TCON
 import zipfile
-import rarfile
-import patoolib
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy.orm import Session
+import patoolib
+import rarfile
+from mutagen import File as MutagenFile
+from mutagen.id3 import ID3, TALB, TCON, TDRC, TIT2, TPE1, TRCK
 from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class UploadTask:
     """Représente une tâche d'upload en cours ou terminée."""
+
     task_id: str
     user_id: int
     status: str  # 'processing', 'completed', 'failed', 'cancelled'
@@ -46,9 +48,11 @@ class UploadTask:
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
+
 @dataclass
 class AudioMetadata:
     """Métadonnées extraites d'un fichier audio."""
+
     title: Optional[str] = None
     artist: Optional[str] = None
     album: Optional[str] = None
@@ -60,34 +64,48 @@ class AudioMetadata:
     format: Optional[str] = None
     chapters: Optional[List[Dict[str, Any]]] = None
 
+
 class UploadValidationError(ValidationError):
     """Erreur spécifique à la validation d'upload."""
+
     pass
+
 
 class ExtractionError(ValidationError):
     """Erreur lors de l'extraction d'archive."""
+
     pass
+
 
 class ProcessingError(ValidationError):
     """Erreur générale lors du traitement."""
+
     pass
+
 
 class UploadService:
     """Service principal pour la gestion des uploads d'audiobooks."""
 
     # Formats audio supportés
     SUPPORTED_AUDIO_FORMATS = {
-        '.mp3', '.m4a', '.m4b', '.aac', '.flac', '.ogg', '.wma', '.wav'
+        ".mp3",
+        ".m4a",
+        ".m4b",
+        ".aac",
+        ".flac",
+        ".ogg",
+        ".wma",
+        ".wav",
     }
 
     # Formats d'archive supportés
-    SUPPORTED_ARCHIVE_FORMATS = {
-        '.zip', '.rar', '.7z', '.tar.gz', '.tar.bz2'
-    }
+    SUPPORTED_ARCHIVE_FORMATS = {".zip", ".rar", ".7z", ".tar.gz", ".tar.bz2"}
 
     def __init__(self):
         """Initialise le service d'upload."""
-        self.temp_dir = Path(settings.TEMP_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
+        self.temp_dir = (
+            Path(settings.TEMP_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
+        )
         self.temp_dir.mkdir(exist_ok=True)
 
         # Cache des tâches en mémoire (pour développement)
@@ -95,8 +113,8 @@ class UploadService:
         self._task_lock = asyncio.Lock()
 
         # Configuration FFmpeg
-        self.ffmpeg_path = shutil.which('ffmpeg') or 'ffmpeg'
-        self.ffprobe_path = shutil.which('ffprobe') or 'ffprobe'
+        self.ffmpeg_path = shutil.which("ffmpeg") or "ffmpeg"
+        self.ffprobe_path = shutil.which("ffprobe") or "ffprobe"
 
     async def validate_upload(self, file: UploadFile) -> None:
         """
@@ -110,7 +128,7 @@ class UploadService:
         """
         # Vérification de la taille (max 500MB)
         max_size = 500 * 1024 * 1024  # 500MB
-        if hasattr(file, 'size') and file.size > max_size:
+        if hasattr(file, "size") and file.size > max_size:
             raise UploadValidationError(
                 f"Fichier trop volumineux (max: 500MB, actuel: {file.size / (1024*1024):.1f}MB)"
             )
@@ -128,8 +146,12 @@ class UploadService:
             )
 
         # Vérification du type MIME
-        content_type = getattr(file, 'content_type', '')
-        allowed_mimes = ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed']
+        content_type = getattr(file, "content_type", "")
+        allowed_mimes = [
+            "application/zip",
+            "application/x-rar-compressed",
+            "application/x-7z-compressed",
+        ]
         if content_type and content_type not in allowed_mimes:
             # Log mais ne pas bloquer - certains clients envoient des types génériques
             logger.warning(f"Type MIME inattendu: {content_type}")
@@ -151,7 +173,7 @@ class UploadService:
         temp_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            with open(temp_path, 'wb') as buffer:
+            with open(temp_path, "wb") as buffer:
                 content = await file.read()
                 buffer.write(content)
 
@@ -163,11 +185,7 @@ class UploadService:
             raise ProcessingError(f"Erreur de sauvegarde du fichier: {str(e)}")
 
     async def process_audiobook_archive(
-        self,
-        task_id: str,
-        upload_path: Path,
-        user_id: int,
-        db: Session
+        self, task_id: str, upload_path: Path, user_id: int, db: Session
     ) -> None:
         """
         Traite automatiquement une archive d'audiobook.
@@ -185,7 +203,7 @@ class UploadService:
             filename=upload_path.name,
             file_size=upload_path.stat().st_size,
             upload_path=str(upload_path),
-            current_step="extraction"
+            current_step="extraction",
         )
 
         async with self._task_lock:
@@ -217,7 +235,9 @@ class UploadService:
             # Étape 4: Conversion vers M4B (si nécessaire)
             logger.info(f"[{task_id}] Conversion M4B")
             task.current_step = "conversion"
-            converted_files = await self._convert_to_m4b(audio_files, extract_dir, task_id)
+            converted_files = await self._convert_to_m4b(
+                audio_files, extract_dir, task_id
+            )
             task.progress = 90.0
             await self._update_task_status(task_id, task)
 
@@ -241,7 +261,9 @@ class UploadService:
             await self._cleanup_task_files(task_id)
             raise
 
-    async def get_task_status(self, task_id: str, user_id: int) -> Optional[Dict[str, Any]]:
+    async def get_task_status(
+        self, task_id: str, user_id: int
+    ) -> Optional[Dict[str, Any]]:
         """
         Récupère le statut d'une tâche.
 
@@ -292,7 +314,7 @@ class UploadService:
         if not task or task.user_id != user_id:
             return False
 
-        if task.status not in ['processing']:
+        if task.status not in ["processing"]:
             return False
 
         task.status = "cancelled"
@@ -303,10 +325,7 @@ class UploadService:
         return True
 
     async def retry_processing_task(
-        self,
-        task_id: str,
-        user_id: int,
-        db: Session
+        self, task_id: str, user_id: int, db: Session
     ) -> None:
         """
         Relance une tâche échouée.
@@ -348,11 +367,11 @@ class UploadService:
         try:
             file_ext = archive_path.suffix.lower()
 
-            if file_ext == '.zip':
-                with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+            if file_ext == ".zip":
+                with zipfile.ZipFile(archive_path, "r") as zip_ref:
                     zip_ref.extractall(extract_dir)
-            elif file_ext == '.rar':
-                with rarfile.RarFile(archive_path, 'r') as rar_ref:
+            elif file_ext == ".rar":
+                with rarfile.RarFile(archive_path, "r") as rar_ref:
                     rar_ref.extractall(extract_dir)
             else:
                 # Utiliser patoolib pour les autres formats
@@ -362,7 +381,9 @@ class UploadService:
             if not any(extract_dir.iterdir()):
                 raise ExtractionError("Archive vide ou corrompue")
 
-            logger.info(f"Archive extraite: {len(list(extract_dir.rglob('*')))} fichiers")
+            logger.info(
+                f"Archive extraite: {len(list(extract_dir.rglob('*')))} fichiers"
+            )
             return extract_dir
 
         except Exception as e:
@@ -385,12 +406,19 @@ class UploadService:
         """
         audio_files = []
 
-        for file_path in extract_dir.rglob('*'):
-            if file_path.is_file() and file_path.suffix.lower() in self.SUPPORTED_AUDIO_FORMATS:
+        for file_path in extract_dir.rglob("*"):
+            if (
+                file_path.is_file()
+                and file_path.suffix.lower() in self.SUPPORTED_AUDIO_FORMATS
+            ):
                 # Validation basique du fichier audio
                 try:
                     audio = MutagenFile(file_path)
-                    if audio is not None and hasattr(audio, 'info') and audio.info.length > 0:
+                    if (
+                        audio is not None
+                        and hasattr(audio, "info")
+                        and audio.info.length > 0
+                    ):
                         audio_files.append(file_path)
                 except Exception as e:
                     logger.warning(f"Fichier audio invalide ignoré: {file_path} - {e}")
@@ -404,7 +432,9 @@ class UploadService:
         logger.info(f"{len(audio_files)} fichiers audio validés")
         return audio_files
 
-    async def _extract_metadata_from_files(self, audio_files: List[Path]) -> AudioMetadata:
+    async def _extract_metadata_from_files(
+        self, audio_files: List[Path]
+    ) -> AudioMetadata:
         """
         Extrait les métadonnées des fichiers audio.
 
@@ -427,21 +457,27 @@ class UploadService:
                 file_metadata = AudioMetadata()
                 file_metadata.format = file_path.suffix.lower()[1:]  # Remove dot
 
-                if hasattr(audio, 'info'):
+                if hasattr(audio, "info"):
                     file_metadata.duration = audio.info.length
-                    file_metadata.bitrate = getattr(audio.info, 'bitrate', None)
+                    file_metadata.bitrate = getattr(audio.info, "bitrate", None)
 
                 # Métadonnées ID3 spécifiques
-                if hasattr(audio, 'tags') and audio.tags:
+                if hasattr(audio, "tags") and audio.tags:
                     tags = audio.tags
 
-                    if hasattr(tags, 'get'):
-                        file_metadata.title = self._extract_id3_text(tags, 'TIT2')
-                        file_metadata.artist = self._extract_id3_text(tags, 'TPE1', 'TPE2')
-                        file_metadata.album = self._extract_id3_text(tags, 'TALB')
-                        file_metadata.year = self._extract_id3_text(tags, 'TDRC', 'TYER')
-                        file_metadata.track_number = self._extract_id3_text(tags, 'TRCK')
-                        file_metadata.genre = self._extract_id3_text(tags, 'TCON')
+                    if hasattr(tags, "get"):
+                        file_metadata.title = self._extract_id3_text(tags, "TIT2")
+                        file_metadata.artist = self._extract_id3_text(
+                            tags, "TPE1", "TPE2"
+                        )
+                        file_metadata.album = self._extract_id3_text(tags, "TALB")
+                        file_metadata.year = self._extract_id3_text(
+                            tags, "TDRC", "TYER"
+                        )
+                        file_metadata.track_number = self._extract_id3_text(
+                            tags, "TRCK"
+                        )
+                        file_metadata.genre = self._extract_id3_text(tags, "TCON")
 
                 metadata_list.append(file_metadata)
 
@@ -456,13 +492,19 @@ class UploadService:
                     setattr(consolidated, field, value)
 
         # Compter le nombre de fichiers
-        consolidated.chapters = [{"title": f"Chapitre {i+1}", "start": i * 600}  # 10 min par fichier
-                               for i in range(len(audio_files))]
+        consolidated.chapters = [
+            {"title": f"Chapitre {i+1}", "start": i * 600}  # 10 min par fichier
+            for i in range(len(audio_files))
+        ]
 
-        logger.info(f"Métadonnées extraites: {consolidated.title} - {consolidated.artist}")
+        logger.info(
+            f"Métadonnées extraites: {consolidated.title} - {consolidated.artist}"
+        )
         return consolidated
 
-    async def _convert_to_m4b(self, audio_files: List[Path], output_dir: Path, task_id: str) -> List[Path]:
+    async def _convert_to_m4b(
+        self, audio_files: List[Path], output_dir: Path, task_id: str
+    ) -> List[Path]:
         """
         Convertit les fichiers audio vers le format M4B.
 
@@ -477,7 +519,7 @@ class UploadService:
         converted_files = []
 
         # Si un seul fichier MP3, convertir directement
-        if len(audio_files) == 1 and audio_files[0].suffix.lower() == '.mp3':
+        if len(audio_files) == 1 and audio_files[0].suffix.lower() == ".mp3":
             output_file = output_dir / f"{task_id}.m4b"
             await self._convert_single_file(audio_files[0], output_file)
             converted_files.append(output_file)
@@ -489,20 +531,28 @@ class UploadService:
             # Créer fichier de liste pour FFmpeg
             file_list = []
             for i, audio_file in enumerate(audio_files):
-                if audio_file.suffix.lower() != '.m4b':
+                if audio_file.suffix.lower() != ".m4b":
                     temp_converted = output_dir / f"temp_{i}.m4a"
                     await self._convert_single_file(audio_file, temp_converted)
                     file_list.append(f"file '{temp_converted.absolute()}'")
                 else:
                     file_list.append(f"file '{audio_file.absolute()}'")
 
-            with open(concat_file, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(file_list))
+            with open(concat_file, "w", encoding="utf-8") as f:
+                f.write("\n".join(file_list))
 
             # Concaténer avec FFmpeg
             cmd = [
-                self.ffmpeg_path, '-f', 'concat', '-safe', '0',
-                '-i', str(concat_file), '-c', 'copy', str(output_file)
+                self.ffmpeg_path,
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(concat_file),
+                "-c",
+                "copy",
+                str(output_file),
             ]
 
             result = await asyncio.create_subprocess_exec(
@@ -528,10 +578,16 @@ class UploadService:
             output_file: Fichier de destination
         """
         cmd = [
-            self.ffmpeg_path, '-i', str(input_file),
-            '-c:a', 'aac', '-b:a', '128k',
-            '-movflags', '+faststart',
-            str(output_file)
+            self.ffmpeg_path,
+            "-i",
+            str(input_file),
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            "-movflags",
+            "+faststart",
+            str(output_file),
         ]
 
         result = await asyncio.create_subprocess_exec(
@@ -557,7 +613,7 @@ class UploadService:
         for key in tag_keys:
             try:
                 tag = tags.get(key)
-                if tag and hasattr(tag, 'text'):
+                if tag and hasattr(tag, "text"):
                     text = tag.text
                     if isinstance(text, list):
                         return text[0] if text else None
@@ -598,7 +654,9 @@ class UploadService:
         except Exception as e:
             logger.error(f"Erreur nettoyage {task_id}: {e}")
 
-    async def _update_metadata_file(self, file_path: Path, metadata: AudioMetadata) -> None:
+    async def _update_metadata_file(
+        self, file_path: Path, metadata: AudioMetadata
+    ) -> None:
         """
         Met à jour les métadonnées d'un fichier audio.
 
@@ -614,22 +672,22 @@ class UploadService:
 
             # Mise à jour des métadonnées de base
             if metadata.title:
-                audio['title'] = metadata.title
+                audio["title"] = metadata.title
             if metadata.artist:
-                audio['artist'] = metadata.artist
+                audio["artist"] = metadata.artist
             if metadata.album:
-                audio['album'] = metadata.album
+                audio["album"] = metadata.album
             if metadata.year:
-                audio['year'] = metadata.year
+                audio["year"] = metadata.year
             if metadata.track_number:
-                audio['tracknumber'] = metadata.track_number
+                audio["tracknumber"] = metadata.track_number
             if metadata.genre:
-                audio['genre'] = metadata.genre
+                audio["genre"] = metadata.genre
 
             audio.save()
 
             # Pour ID3, mise à jour spécifique si nécessaire
-            if file_path.suffix.lower() in ['.mp3']:
+            if file_path.suffix.lower() in [".mp3"]:
                 try:
                     id3 = ID3(file_path)
 

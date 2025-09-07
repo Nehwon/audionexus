@@ -1,23 +1,34 @@
 """
 Router FastAPI pour la gestion complète des utilisateurs, rôles et permissions.
 """
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
+import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.auth import get_current_active_user, get_current_user
 from app.core.database import get_db
-from app.core.auth import get_current_user, get_current_active_user
-from app.services.user_service import UserService
-from app.services.permission_service import PermissionService
-from app.db.models.base import (
-    User, Role, Permission, AuditLog,
-    UserCreate, UserUpdate, UserInDB, RoleCreate, PermissionCreate,
-    UserBase, RoleBase, PermissionBase
-)
 from app.crud.crud_user import get_users
+from app.db.models.base import (
+    AuditLog,
+    Permission,
+    PermissionBase,
+    PermissionCreate,
+    Role,
+    RoleBase,
+    RoleCreate,
+    User,
+    UserBase,
+    UserCreate,
+    UserInDB,
+    UserUpdate,
+)
+from app.services.permission_service import PermissionService
+from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +46,20 @@ async def require_permission(permission_codename: str):
     Raises:
         HTTPException: Si l'utilisateur n'a pas la permission
     """
+
     def permission_checker(
         current_user: User = Depends(get_current_active_user),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
     ):
         permission_service = PermissionService(db)
-        has_perm = await permission_service.check_user_permission(current_user.id, permission_codename)
+        has_perm = await permission_service.check_user_permission(
+            current_user.id, permission_codename
+        )
 
         if not has_perm:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission denied: {permission_codename}"
+                detail=f"Permission denied: {permission_codename}",
             )
 
         return current_user
@@ -58,7 +72,7 @@ async def require_permission(permission_codename: str):
 async def create_user(
     user: UserCreate,
     current_user: User = Depends(require_permission("users.create")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Crée un nouvel utilisateur.
@@ -78,7 +92,9 @@ async def create_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Erreur lors de la création d'utilisateur: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erreur interne")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erreur interne"
+        )
 
 
 @router.get("/", response_model=List[UserInDB])
@@ -87,7 +103,7 @@ async def get_users_list(
     limit: int = Query(100, ge=1, le=1000),
     active_only: bool = Query(True),
     current_user: User = Depends(require_permission("users.view")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère la liste des utilisateurs avec pagination.
@@ -108,7 +124,7 @@ async def get_users_list(
 @router.get("/me", response_model=Dict[str, Any])
 async def get_current_user_profile(
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère le profil de l'utilisateur actuel avec ses permissions.
@@ -123,7 +139,9 @@ async def get_current_user_profile(
     profile = await user_service.get_user_with_permissions(current_user.id)
 
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return profile
 
@@ -132,7 +150,7 @@ async def get_current_user_profile(
 async def get_user(
     user_id: int,
     current_user: User = Depends(require_permission("users.view")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère un utilisateur par son ID.
@@ -145,10 +163,13 @@ async def get_user(
         Utilisateur demandé
     """
     from app.crud.crud_user import get_user as get_user_crud
+
     user = await get_user_crud(db, user_id)
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return UserInDB.model_validate(user)
 
@@ -158,7 +179,7 @@ async def update_user(
     user_id: int,
     user_update: UserUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Met à jour un utilisateur.
@@ -174,18 +195,26 @@ async def update_user(
     # Vérifier les permissions (utilisateur peut se modifier lui-même, ou admin)
     permission_service = PermissionService(db)
     can_edit = (
-        current_user.id == user_id or
-        await permission_service.check_user_permission(current_user.id, "users.update")
+        current_user.id == user_id
+        or await permission_service.check_user_permission(
+            current_user.id, "users.update"
+        )
     )
 
     if not can_edit:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     user_service = UserService(db)
-    updated_user = await user_service.update_user_profile(user_id, user_update, current_user.id)
+    updated_user = await user_service.update_user_profile(
+        user_id, user_update, current_user.id
+    )
 
     if not updated_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return UserInDB.model_validate(updated_user)
 
@@ -194,7 +223,7 @@ async def update_user(
 async def delete_user(
     user_id: int,
     current_user: User = Depends(require_permission("users.delete")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Supprime un utilisateur (soft delete).
@@ -208,15 +237,16 @@ async def delete_user(
     """
     if current_user.id == user_id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete yourself"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself"
         )
 
     user_service = UserService(db)
     success = await user_service.delete_user(user_id, current_user.id)
 
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
 
 @router.post("/{user_id}/roles", response_model=UserInDB)
@@ -224,7 +254,7 @@ async def assign_user_roles(
     user_id: int,
     role_ids: List[int],
     current_user: User = Depends(require_permission("users.assign_roles")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Assigne des rôles à un utilisateur.
@@ -241,7 +271,9 @@ async def assign_user_roles(
     updated_user = await user_service.assign_roles(user_id, role_ids, current_user.id)
 
     if not updated_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return UserInDB.model_validate(updated_user)
 
@@ -251,7 +283,7 @@ async def change_user_password(
     user_id: int,
     new_password: str,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Change le mot de passe d'un utilisateur.
@@ -267,28 +299,36 @@ async def change_user_password(
     # Vérifier les permissions
     permission_service = PermissionService(db)
     can_change = (
-        current_user.id == user_id or
-        await permission_service.check_user_permission(current_user.id, "users.change_password")
+        current_user.id == user_id
+        or await permission_service.check_user_permission(
+            current_user.id, "users.change_password"
+        )
     )
 
     if not can_change:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+        )
 
     user_service = UserService(db)
     success = await user_service.change_password(user_id, new_password, current_user.id)
 
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return {"message": "Password changed successfully"}
 
 
 # Routes pour les rôles
-@router.post("/roles/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/roles/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED
+)
 async def create_role(
     role: RoleCreate,
     current_user: User = Depends(require_permission("users.assign_roles")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Crée un nouveau rôle.
@@ -309,7 +349,7 @@ async def create_role(
 
         return {
             "role": RoleBase.model_validate(created_role),
-            "permissions": permissions
+            "permissions": permissions,
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -318,7 +358,7 @@ async def create_role(
 @router.get("/roles/", response_model=List[Dict[str, Any]])
 async def get_roles(
     current_user: User = Depends(require_permission("users.view")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère tous les rôles avec leurs permissions.
@@ -329,22 +369,22 @@ async def get_roles(
     Returns:
         Liste des rôles avec permissions
     """
-    from sqlalchemy.orm import joinedload
     from sqlalchemy.future import select
+    from sqlalchemy.orm import joinedload
 
-    result = await db.execute(
-        select(Role).options(joinedload(Role.permissions))
-    )
+    result = await db.execute(select(Role).options(joinedload(Role.permissions)))
     roles = result.unique().scalars().all()
 
     roles_data = []
     for role in roles:
         permissions = [perm.codename for perm in role.permissions]
-        roles_data.append({
-            "role": RoleBase.model_validate(role),
-            "permissions": permissions,
-            "user_count": len(role.users)
-        })
+        roles_data.append(
+            {
+                "role": RoleBase.model_validate(role),
+                "permissions": permissions,
+                "user_count": len(role.users),
+            }
+        )
 
     return roles_data
 
@@ -354,7 +394,7 @@ async def assign_role_permissions(
     role_id: int,
     permission_ids: List[int],
     current_user: User = Depends(require_permission("users.assign_roles")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Assigne des permissions à un rôle.
@@ -368,20 +408,26 @@ async def assign_role_permissions(
         Rôle mis à jour
     """
     permission_service = PermissionService(db)
-    updated_role = await permission_service.assign_permissions_to_role(role_id, permission_ids)
+    updated_role = await permission_service.assign_permissions_to_role(
+        role_id, permission_ids
+    )
 
     if not updated_role:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
+        )
 
     return {"message": "Permissions assigned successfully"}
 
 
 # Routes pour les permissions
-@router.post("/permissions/", response_model=PermissionBase, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/permissions/", response_model=PermissionBase, status_code=status.HTTP_201_CREATED
+)
 async def create_permission(
     permission: PermissionCreate,
     current_user: User = Depends(require_permission("admin.system")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Crée une nouvelle permission.
@@ -405,7 +451,7 @@ async def create_permission(
 async def get_permissions(
     resource: Optional[str] = None,
     current_user: User = Depends(require_permission("users.view")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère toutes les permissions, optionnellement filtrées par ressource.
@@ -438,7 +484,7 @@ async def get_audit_logs(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=500),
     current_user: User = Depends(require_permission("audit.view")),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère les logs d'audit avec filtres optionnels.
@@ -476,7 +522,7 @@ async def get_audit_logs(
 async def check_user_permission(
     permission_codename: str,
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Vérifie si l'utilisateur actuel a une permission spécifique.
@@ -489,19 +535,21 @@ async def check_user_permission(
         Résultat du test de permission
     """
     permission_service = PermissionService(db)
-    has_permission = await permission_service.check_user_permission(current_user.id, permission_codename)
+    has_permission = await permission_service.check_user_permission(
+        current_user.id, permission_codename
+    )
 
     return {
         "permission": permission_codename,
         "has_permission": has_permission,
-        "user_id": current_user.id
+        "user_id": current_user.id,
     }
 
 
 @router.get("/my-permissions")
 async def get_my_permissions(
     current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Récupère les permissions de l'utilisateur actuel.
@@ -518,7 +566,7 @@ async def get_my_permissions(
     return {
         "user_id": current_user.id,
         "permissions": permissions,
-        "is_superuser": current_user.is_superuser
+        "is_superuser": current_user.is_superuser,
     }
 
 

@@ -2,22 +2,27 @@
 Pattern Strategy pour la gestion des différentes bases de données.
 Permet le basculement transparent entre MySQL et SQLite selon la configuration.
 """
+
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
 from sqlalchemy.engine import Engine
+from sqlalchemy.pool import StaticPool
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class DatabaseStrategy(ABC):
     """Interface abstraite pour les stratégies de base de données."""
 
     @abstractmethod
-    def get_connection_params(self, database_uri: str, base_params: Dict[str, Any]) -> Dict[str, Any]:
+    def get_connection_params(
+        self, database_uri: str, base_params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Retourne les paramètres de connexion spécifiques à la base de données."""
         pass
 
@@ -30,52 +35,60 @@ class DatabaseStrategy(ABC):
 class SQLiteStrategy(DatabaseStrategy):
     """Stratégie pour les bases de données SQLite."""
 
-    def get_connection_params(self, database_uri: str, base_params: Dict[str, Any]) -> Dict[str, Any]:
+    def get_connection_params(
+        self, database_uri: str, base_params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Retourne les paramètres de connexion pour SQLite."""
         params = base_params.copy()
-        params.update({
-            'connect_args': {'check_same_thread': False},
-        })
+        params.update(
+            {
+                "connect_args": {"check_same_thread": False},
+            }
+        )
 
         # Pour les tests en mémoire ou les bases de données temporaires
-        if ':memory:' in database_uri or database_uri.endswith('.db'):
-            params['poolclass'] = StaticPool
+        if ":memory:" in database_uri or database_uri.endswith(".db"):
+            params["poolclass"] = StaticPool
 
         return params
 
     def get_engine_kwargs(self, database_uri: str) -> Dict[str, Any]:
         """Retourne les paramètres pour SQLite."""
         return {
-            'pool_pre_ping': True,
-            'pool_recycle': 3600,
-            'echo': settings.debug if hasattr(settings, 'debug') else False,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+            "echo": settings.debug if hasattr(settings, "debug") else False,
         }
 
 
 class MySQLStrategy(DatabaseStrategy):
     """Stratégie pour les bases de données MySQL."""
 
-    def get_connection_params(self, database_uri: str, base_params: Dict[str, Any]) -> Dict[str, Any]:
+    def get_connection_params(
+        self, database_uri: str, base_params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Retourne les paramètres de connexion pour MySQL."""
         params = base_params.copy()
-        params.update({
-            'pool_size': getattr(settings.database, 'pool_size', 5),
-            'max_overflow': getattr(settings.database, 'max_overflow', 10),
-            'pool_timeout': getattr(settings.database, 'pool_timeout', 30),
-            'pool_recycle': 3600,
-            'connect_args': {
-                'connect_timeout': 10,
-                'charset': 'utf8mb4',
+        params.update(
+            {
+                "pool_size": getattr(settings.database, "pool_size", 5),
+                "max_overflow": getattr(settings.database, "max_overflow", 10),
+                "pool_timeout": getattr(settings.database, "pool_timeout", 30),
+                "pool_recycle": 3600,
+                "connect_args": {
+                    "connect_timeout": 10,
+                    "charset": "utf8mb4",
+                },
             }
-        })
+        )
         return params
 
     def get_engine_kwargs(self, database_uri: str) -> Dict[str, Any]:
         """Retourne les paramètres pour MySQL."""
         return {
-            'pool_pre_ping': True,
-            'pool_recycle': 3600,
-            'echo': settings.debug if hasattr(settings, 'debug') else False,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+            "echo": settings.debug if hasattr(settings, "debug") else False,
         }
 
 
@@ -83,8 +96,8 @@ class DatabaseStrategyFactory:
     """Factory pour créer les stratégies de base de données."""
 
     _strategies = {
-        'sqlite': SQLiteStrategy,
-        'mysql': MySQLStrategy,
+        "sqlite": SQLiteStrategy,
+        "mysql": MySQLStrategy,
     }
 
     @classmethod
@@ -101,12 +114,14 @@ class DatabaseStrategyFactory:
         Raises:
             ValueError: Si le type de base de données n'est pas supporté
         """
-        if database_uri.startswith('sqlite'):
-            return cls._strategies['sqlite']()
-        elif 'mysql' in database_uri:
-            return cls._strategies['mysql']()
+        if database_uri.startswith("sqlite"):
+            return cls._strategies["sqlite"]()
+        elif "mysql" in database_uri:
+            return cls._strategies["mysql"]()
         else:
-            raise ValueError(f"Type de base de données non supporté pour l'URI: {database_uri}")
+            raise ValueError(
+                f"Type de base de données non supporté pour l'URI: {database_uri}"
+            )
 
 
 class UnifiedDatabaseManager:
@@ -136,7 +151,9 @@ class UnifiedDatabaseManager:
 
         # Obtenir les paramètres de base et spécifiques
         base_params = self._strategy.get_engine_kwargs(database_uri)
-        connection_params = self._strategy.get_connection_params(database_uri, base_params)
+        connection_params = self._strategy.get_connection_params(
+            database_uri, base_params
+        )
 
         # Créer le moteur
         self._engine = create_engine(database_uri, **connection_params)

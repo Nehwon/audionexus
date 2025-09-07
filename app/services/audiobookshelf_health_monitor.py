@@ -4,19 +4,20 @@ Service de monitoring de santé pour les instances Audiobookshelf.
 Ce service surveille la santé des instances connectées, effectue des health checks
 automatiques et collecte des métriques détaillées pour le monitoring.
 """
+
 import asyncio
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
 from app.core.api.audiobookshelf import AudiobookshelfClient
-from app.db.session import SessionLocal
 from app.db.models.audiobookshelf_instance import AudiobookshelfInstance
+from app.db.session import SessionLocal
+from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class HealthMetrics:
     """Métriques de santé d'une instance."""
+
     instance_id: int
     instance_name: str
     status: str
@@ -40,6 +42,7 @@ class HealthMetrics:
 @dataclass
 class SystemHealth:
     """État de santé global du système."""
+
     total_instances: int
     healthy_instances: int
     unhealthy_instances: int
@@ -64,7 +67,7 @@ class AudiobookshelfHealthMonitor:
 
     def __del__(self):
         """Ferme la session de base de données."""
-        if hasattr(self, 'db') and self.db:
+        if hasattr(self, "db") and self.db:
             self.db.close()
 
     async def start_monitoring(self):
@@ -75,7 +78,9 @@ class AudiobookshelfHealthMonitor:
 
         self._running = True
         self._task = asyncio.create_task(self._monitoring_loop())
-        logger.info(f"Monitoring de santé démarré avec intervalle de {self.check_interval}s")
+        logger.info(
+            f"Monitoring de santé démarré avec intervalle de {self.check_interval}s"
+        )
 
     async def stop_monitoring(self):
         """Arrête le monitoring automatique."""
@@ -105,7 +110,9 @@ class AudiobookshelfHealthMonitor:
 
             except Exception as e:
                 logger.error(f"Erreur dans la boucle de monitoring: {str(e)}")
-                await asyncio.sleep(min(self.check_interval, 30))  # Retry plus rapide en cas d'erreur
+                await asyncio.sleep(
+                    min(self.check_interval, 30)
+                )  # Retry plus rapide en cas d'erreur
 
     async def _perform_health_checks(self):
         """Effectue les health checks pour toutes les instances."""
@@ -120,7 +127,9 @@ class AudiobookshelfHealthMonitor:
                 await self._update_instance_health_in_db(instance.id, metrics)
 
             except Exception as e:
-                logger.error(f"Erreur lors du health check de {instance.name}: {str(e)}")
+                logger.error(
+                    f"Erreur lors du health check de {instance.name}: {str(e)}"
+                )
                 # Créer des métriques d'erreur
                 error_metrics = HealthMetrics(
                     instance_id=instance.id,
@@ -128,13 +137,21 @@ class AudiobookshelfHealthMonitor:
                     status="error",
                     response_time_ms=0,
                     last_check=datetime.utcnow(),
-                    consecutive_failures=getattr(self._metrics.get(instance.id), 'consecutive_failures', 0) + 1,
-                    total_checks=getattr(self._metrics.get(instance.id), 'total_checks', 0) + 1,
-                    uptime_percentage=0.0
+                    consecutive_failures=getattr(
+                        self._metrics.get(instance.id), "consecutive_failures", 0
+                    )
+                    + 1,
+                    total_checks=getattr(
+                        self._metrics.get(instance.id), "total_checks", 0
+                    )
+                    + 1,
+                    uptime_percentage=0.0,
                 )
                 self._metrics[instance.id] = error_metrics
 
-    async def _check_instance_health(self, instance: AudiobookshelfInstance) -> HealthMetrics:
+    async def _check_instance_health(
+        self, instance: AudiobookshelfInstance
+    ) -> HealthMetrics:
         """
         Effectue un health check complet pour une instance.
 
@@ -168,10 +185,14 @@ class AudiobookshelfHealthMonitor:
             # Récupérer les métriques existantes
             existing_metrics = self._metrics.get(instance.id)
             consecutive_failures = 0 if existing_metrics else 0
-            total_checks = (existing_metrics.total_checks + 1) if existing_metrics else 1
+            total_checks = (
+                (existing_metrics.total_checks + 1) if existing_metrics else 1
+            )
 
             # Calculer le pourcentage de disponibilité
-            uptime_percentage = self._calculate_uptime_percentage(instance.id, True, total_checks)
+            uptime_percentage = self._calculate_uptime_percentage(
+                instance.id, True, total_checks
+            )
 
             return HealthMetrics(
                 instance_id=instance.id,
@@ -184,7 +205,7 @@ class AudiobookshelfHealthMonitor:
                 uptime_percentage=uptime_percentage,
                 version=instance.version,
                 libraries_count=libraries_count,
-                audiobooks_count=0  # À calculer si nécessaire
+                audiobooks_count=0,  # À calculer si nécessaire
             )
 
         except Exception as e:
@@ -192,10 +213,16 @@ class AudiobookshelfHealthMonitor:
 
             # Récupérer les métriques existantes
             existing_metrics = self._metrics.get(instance.id)
-            consecutive_failures = (existing_metrics.consecutive_failures + 1) if existing_metrics else 1
-            total_checks = (existing_metrics.total_checks + 1) if existing_metrics else 1
+            consecutive_failures = (
+                (existing_metrics.consecutive_failures + 1) if existing_metrics else 1
+            )
+            total_checks = (
+                (existing_metrics.total_checks + 1) if existing_metrics else 1
+            )
 
-            uptime_percentage = self._calculate_uptime_percentage(instance.id, False, total_checks)
+            uptime_percentage = self._calculate_uptime_percentage(
+                instance.id, False, total_checks
+            )
 
             return HealthMetrics(
                 instance_id=instance.id,
@@ -205,10 +232,12 @@ class AudiobookshelfHealthMonitor:
                 last_check=datetime.utcnow(),
                 consecutive_failures=consecutive_failures,
                 total_checks=total_checks,
-                uptime_percentage=uptime_percentage
+                uptime_percentage=uptime_percentage,
             )
 
-    def _calculate_uptime_percentage(self, instance_id: int, success: bool, total_checks: int) -> float:
+    def _calculate_uptime_percentage(
+        self, instance_id: int, success: bool, total_checks: int
+    ) -> float:
         """
         Calcule le pourcentage de disponibilité basé sur les checks passés.
 
@@ -230,10 +259,14 @@ class AudiobookshelfHealthMonitor:
             return 100.0 if success else 0.0
 
         # Calcul simple basé sur la tendance
-        success_rate = (base_uptime.total_checks - base_uptime.consecutive_failures) / base_uptime.total_checks
+        success_rate = (
+            base_uptime.total_checks - base_uptime.consecutive_failures
+        ) / base_uptime.total_checks
         return success_rate * 100.0
 
-    async def _update_instance_health_in_db(self, instance_id: int, metrics: HealthMetrics):
+    async def _update_instance_health_in_db(
+        self, instance_id: int, metrics: HealthMetrics
+    ):
         """
         Met à jour les métriques de santé dans la base de données.
 
@@ -247,7 +280,11 @@ class AudiobookshelfHealthMonitor:
                 db=self.db,
                 instance_id=instance_id,
                 status=metrics.status,
-                error=f"Response time: {metrics.response_time_ms}ms" if metrics.status == "unhealthy" else None
+                error=(
+                    f"Response time: {metrics.response_time_ms}ms"
+                    if metrics.status == "unhealthy"
+                    else None
+                ),
             )
 
             # Mettre à jour les compteurs spécifiques
@@ -258,7 +295,9 @@ class AudiobookshelfHealthMonitor:
                 pass
 
         except Exception as e:
-            logger.error(f"Erreur lors de la mise à jour DB pour l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors de la mise à jour DB pour l'instance {instance_id}: {str(e)}"
+            )
 
     async def _update_system_health(self):
         """Met à jour l'état de santé global du système."""
@@ -267,13 +306,20 @@ class AudiobookshelfHealthMonitor:
 
         total_instances = len(self._metrics)
         healthy_count = sum(1 for m in self._metrics.values() if m.status == "healthy")
-        unhealthy_count = sum(1 for m in self._metrics.values() if m.status == "unhealthy")
+        unhealthy_count = sum(
+            1 for m in self._metrics.values() if m.status == "unhealthy"
+        )
 
         # Considérer dégradé si santé < 70%
-        degraded_count = sum(1 for m in self._metrics.values()
-                           if m.status == "healthy" and m.uptime_percentage < 70.0)
+        degraded_count = sum(
+            1
+            for m in self._metrics.values()
+            if m.status == "healthy" and m.uptime_percentage < 70.0
+        )
 
-        avg_response_time = sum(m.response_time_ms for m in self._metrics.values()) / max(total_instances, 1)
+        avg_response_time = sum(
+            m.response_time_ms for m in self._metrics.values()
+        ) / max(total_instances, 1)
 
         # Calculer la disponibilité globale pondérée
         total_weighted_uptime = sum(m.uptime_percentage for m in self._metrics.values())
@@ -286,7 +332,7 @@ class AudiobookshelfHealthMonitor:
             degraded_instances=degraded_count,
             average_response_time=avg_response_time,
             overall_uptime_percentage=overall_uptime,
-            last_updated=datetime.utcnow()
+            last_updated=datetime.utcnow(),
         )
 
     def get_instance_health(self, instance_id: int) -> Optional[HealthMetrics]:
@@ -337,7 +383,7 @@ class AudiobookshelfHealthMonitor:
             return {
                 "status": "unknown",
                 "message": "Aucune donnée de santé disponible",
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         # Déterminer le statut global
@@ -362,8 +408,8 @@ class AudiobookshelfHealthMonitor:
                     "status": metrics.status,
                     "response_time_ms": metrics.response_time_ms,
                     "uptime_percentage": metrics.uptime_percentage,
-                    "consecutive_failures": metrics.consecutive_failures
+                    "consecutive_failures": metrics.consecutive_failures,
                 }
                 for metrics in self._metrics.values()
-            }
+            },
         }

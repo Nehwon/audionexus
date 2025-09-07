@@ -1,15 +1,16 @@
 """
 Service pour la gestion des instances Audiobookshelf et de leurs tokens.
 """
+
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
 from sqlalchemy.orm import Session
 
-from app.core.security import encrypt_token, decrypt_token
+from app.core.security import decrypt_token, encrypt_token
 from app.db.models.audiobookshelf_instance import AudiobookshelfInstance
 from app.db.session import SessionLocal
 
@@ -23,15 +24,11 @@ class AudiobookshelfInstanceService:
         self.db = db or SessionLocal()
 
     def __del__(self):
-        if hasattr(self, 'db') and self.db:
+        if hasattr(self, "db") and self.db:
             self.db.close()
 
     def create_instance(
-        self,
-        name: str,
-        base_url: str,
-        username: str,
-        password: str
+        self, name: str, base_url: str, username: str, password: str
     ) -> Optional[AudiobookshelfInstance]:
         """
         Crée une nouvelle instance Audiobookshelf avec authentification.
@@ -61,7 +58,7 @@ class AudiobookshelfInstanceService:
             # Créer l'instance en base
             db_instance = AudiobookshelfInstance(
                 name=name,
-                base_url=base_url.rstrip('/'),  # Supprimer le '/' final si présent
+                base_url=base_url.rstrip("/"),  # Supprimer le '/' final si présent
                 api_token=encrypted_token,
                 username=username,
                 version=version,
@@ -69,7 +66,7 @@ class AudiobookshelfInstanceService:
                 is_active=True,
                 last_sync=None,
                 last_error=None,
-                last_error_at=None
+                last_error_at=None,
             )
 
             self.db.add(db_instance)
@@ -116,7 +113,7 @@ class AudiobookshelfInstanceService:
         instance_id: int,
         name: Optional[str] = None,
         base_url: Optional[str] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> bool:
         """
         Met à jour une instance existante.
@@ -140,7 +137,7 @@ class AudiobookshelfInstanceService:
                 instance.name = name
                 updated = True
             if base_url is not None:
-                instance.base_url = base_url.rstrip('/')
+                instance.base_url = base_url.rstrip("/")
                 updated = True
             if is_active is not None:
                 instance.is_active = is_active
@@ -154,7 +151,9 @@ class AudiobookshelfInstanceService:
             return True
 
         except Exception as e:
-            logger.error(f"Erreur lors de la mise à jour de l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors de la mise à jour de l'instance {instance_id}: {str(e)}"
+            )
             self.db.rollback()
             return False
 
@@ -180,7 +179,9 @@ class AudiobookshelfInstanceService:
             return True
 
         except Exception as e:
-            logger.error(f"Erreur lors de la suppression de l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors de la suppression de l'instance {instance_id}: {str(e)}"
+            )
             self.db.rollback()
             return False
 
@@ -204,13 +205,19 @@ class AudiobookshelfInstanceService:
             old_token = decrypt_token(instance.api_token)
             instance.base_url, instance.username, old_token
 
-            new_token = self._authenticate_instance(instance.base_url, instance.username, new_password)
+            new_token = self._authenticate_instance(
+                instance.base_url, instance.username, new_password
+            )
             if not new_token:
-                logger.error(f"Impossible de renouveler le token pour l'instance {instance_id}")
+                logger.error(
+                    f"Impossible de renouveler le token pour l'instance {instance_id}"
+                )
                 return False
 
             # Tester la validité et mettre à jour
-            version, status = self._test_instance_connection(instance.base_url, new_token, instance.username)
+            version, status = self._test_instance_connection(
+                instance.base_url, new_token, instance.username
+            )
 
             # Chiffrer le nouveau token
             encrypted_token = encrypt_token(new_token)
@@ -227,7 +234,9 @@ class AudiobookshelfInstanceService:
             return True
 
         except Exception as e:
-            logger.error(f"Erreur lors de la rotation du token de l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors de la rotation du token de l'instance {instance_id}: {str(e)}"
+            )
             self.db.rollback()
             return False
 
@@ -250,7 +259,9 @@ class AudiobookshelfInstanceService:
             token = decrypt_token(instance.api_token)
 
             # Tester la connexion
-            version, status = self._test_instance_connection(instance.base_url, token, instance.username)
+            version, status = self._test_instance_connection(
+                instance.base_url, token, instance.username
+            )
 
             # Mettre à jour l'instance
             instance.version = version
@@ -270,11 +281,15 @@ class AudiobookshelfInstanceService:
                 "success": status == "active",
                 "version": version,
                 "status": status,
-                "last_sync": instance.last_sync.isoformat() if instance.last_sync else None
+                "last_sync": (
+                    instance.last_sync.isoformat() if instance.last_sync else None
+                ),
             }
 
         except Exception as e:
-            logger.error(f"Erreur lors du test de connexion de l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors du test de connexion de l'instance {instance_id}: {str(e)}"
+            )
 
             # Mettre à jour avec l'erreur
             instance.status = "error"
@@ -301,10 +316,14 @@ class AudiobookshelfInstanceService:
         try:
             return decrypt_token(instance.api_token)
         except Exception as e:
-            logger.error(f"Erreur lors du déchiffrement du token de l'instance {instance_id}: {str(e)}")
+            logger.error(
+                f"Erreur lors du déchiffrement du token de l'instance {instance_id}: {str(e)}"
+            )
             return None
 
-    def _authenticate_instance(self, base_url: str, username: str, password: str) -> Optional[str]:
+    def _authenticate_instance(
+        self, base_url: str, username: str, password: str
+    ) -> Optional[str]:
         """
         Authentifie auprès d'une instance Audiobookshelf et retourne le token.
 
@@ -322,7 +341,7 @@ class AudiobookshelfInstanceService:
                 auth_url,
                 json={"username": username, "password": password},
                 timeout=30,
-                verify=True  # Vérification SSL
+                verify=True,  # Vérification SSL
             )
 
             if response.status_code == 200:
@@ -336,7 +355,9 @@ class AudiobookshelfInstanceService:
             logger.error(f"Erreur lors de l'authentification à {base_url}: {str(e)}")
             return None
 
-    def _test_instance_connection(self, base_url: str, token: str, username: str) -> tuple:
+    def _test_instance_connection(
+        self, base_url: str, token: str, username: str
+    ) -> tuple:
         """
         Teste la connexion à une instance et retourne version et statut.
 
@@ -370,7 +391,9 @@ class AudiobookshelfInstanceService:
             logger.error(f"Erreur générale lors du test de connexion: {str(e)}")
             return None, "unknown_error"
 
-    def _get_instance_version(self, base_url: str, headers: Dict[str, str]) -> Optional[str]:
+    def _get_instance_version(
+        self, base_url: str, headers: Dict[str, str]
+    ) -> Optional[str]:
         """
         Récupère la version de l'instance Audiobookshelf.
 
@@ -384,7 +407,9 @@ class AudiobookshelfInstanceService:
         try:
             # Certains endpoints peuvent retourner la version
             status_url = urljoin(base_url + "/", "api/status")
-            response = requests.get(status_url, headers=headers, timeout=10, verify=True)
+            response = requests.get(
+                status_url, headers=headers, timeout=10, verify=True
+            )
 
             if response.status_code == 200:
                 data = response.json()

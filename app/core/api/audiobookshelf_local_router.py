@@ -2,18 +2,19 @@
 Routes FastAPI pour accéder aux données Audiobookshelf synchronisées localement.
 Ces routes offrent une recherche et filtrage rapides sur les données locales.
 """
+
 import logging
-from typing import List, Optional, Dict, Any, Set
+from typing import Any, Dict, List, Optional, Set
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
 
-from app.db.session_manager import get_db
-from app.db.models.audiobook import Audiobook, AudiobookProgress
-from app.schemas.audiobook import AudiobookResponse, AudiobookSummary
 from app.crud import audiobook as audiobook_crud
+from app.db.models.audiobook import Audiobook, AudiobookProgress
 from app.db.models.base import User
+from app.db.session_manager import get_db
+from app.schemas.audiobook import AudiobookResponse, AudiobookSummary
 
 logger = logging.getLogger(__name__)
 
@@ -24,20 +25,39 @@ router = APIRouter(prefix="/audiobookshelf/local", tags=["audiobookshelf-local"]
 async def get_audiobooks(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
-    limit: int = Query(20, ge=1, le=100, description="Nombre maximum d'éléments à retourner"),
-    search: Optional[str] = Query(None, description="Recherche dans titre, auteurs, description"),
+    limit: int = Query(
+        20, ge=1, le=100, description="Nombre maximum d'éléments à retourner"
+    ),
+    search: Optional[str] = Query(
+        None, description="Recherche dans titre, auteurs, description"
+    ),
     author: Optional[str] = Query(None, description="Filtrer par auteur"),
     genre: Optional[str] = Query(None, description="Filtrer par genre"),
     series: Optional[str] = Query(None, description="Filtrer par série"),
-    language: Optional[str] = Query(None, description="Filtrer par langue (ex: fr, en)"),
-    min_rating: Optional[float] = Query(None, ge=0, le=5, description="Note minimum (0-5)"),
-    max_rating: Optional[float] = Query(None, ge=0, le=5, description="Note maximum (0-5)"),
-    library_id: Optional[str] = Query(None, description="Filtrer par ID de bibliothèque source"),
-    is_finished: Optional[bool] = Query(None, description="Filtrer par statut de lecture"),
-    explicit_only: Optional[bool] = Query(None, description="Afficher uniquement les livres explicites"),
-    sort_by: str = Query("title", description="Critère de tri (title, created_at, updated_at, rating, duration)"),
+    language: Optional[str] = Query(
+        None, description="Filtrer par langue (ex: fr, en)"
+    ),
+    min_rating: Optional[float] = Query(
+        None, ge=0, le=5, description="Note minimum (0-5)"
+    ),
+    max_rating: Optional[float] = Query(
+        None, ge=0, le=5, description="Note maximum (0-5)"
+    ),
+    library_id: Optional[str] = Query(
+        None, description="Filtrer par ID de bibliothèque source"
+    ),
+    is_finished: Optional[bool] = Query(
+        None, description="Filtrer par statut de lecture"
+    ),
+    explicit_only: Optional[bool] = Query(
+        None, description="Afficher uniquement les livres explicites"
+    ),
+    sort_by: str = Query(
+        "title",
+        description="Critère de tri (title, created_at, updated_at, rating, duration)",
+    ),
     sort_desc: bool = Query(False, description="Tri décroissant"),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Liste les livres audio synchronisés localement avec filtres avancés.
@@ -71,17 +91,17 @@ async def get_audiobooks(
             sort_by=sort_by,
             sort_desc=sort_desc,
             filters={
-                'search': search,
-                'author': author,
-                'genre': genre,
-                'series': series,
-                'language': language,
-                'min_rating': min_rating,
-                'max_rating': max_rating,
-                'library_id': library_id,
-                'is_finished': is_finished,
-                'explicit_only': explicit_only
-            }
+                "search": search,
+                "author": author,
+                "genre": genre,
+                "series": series,
+                "language": language,
+                "min_rating": min_rating,
+                "max_rating": max_rating,
+                "library_id": library_id,
+                "is_finished": is_finished,
+                "explicit_only": explicit_only,
+            },
         )
 
         return audiobooks
@@ -90,7 +110,7 @@ async def get_audiobooks(
         logger.error(f"Erreur lors de la récupération des livres audio: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la récupération des livres audio"
+            detail="Erreur lors de la récupération des livres audio",
         )
 
 
@@ -98,7 +118,7 @@ async def get_audiobooks(
 async def get_audiobook_by_id(
     audiobook_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère les détails d'un livre audio spécifique.
@@ -114,7 +134,7 @@ async def get_audiobook_by_id(
     if not audiobook:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Livre audio {audiobook_id} non trouvé"
+            detail=f"Livre audio {audiobook_id} non trouvé",
         )
 
     return audiobook
@@ -124,7 +144,7 @@ async def get_audiobook_by_id(
 async def get_audiobook_progress(
     audiobook_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère la progression de lecture pour un livre audio.
@@ -142,7 +162,7 @@ async def get_audiobook_progress(
     if not audiobook:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Livre audio {audiobook_id} non trouvé"
+            detail=f"Livre audio {audiobook_id} non trouvé",
         )
 
     # Placeholder - en réalité, on utiliserait le vrai système de progression
@@ -151,14 +171,14 @@ async def get_audiobook_progress(
         "progress": 0.0,
         "current_time": 0,
         "is_finished": False,
-        "last_played": None
+        "last_played": None,
     }
 
 
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_audiobooks_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère les statistiques de la bibliothèque locale.
@@ -170,22 +190,29 @@ async def get_audiobooks_stats(
         total_count = db.query(func.count(Audiobook.id)).scalar() or 0
 
         # Statistiques par genre
-        genre_stats = db.query(
-            func.json_extract(Audiobook.genres, '$[0]'),
-            func.count(Audiobook.id)
-        ).group_by(func.json_extract(Audiobook.genres, '$[0]')).all()
+        genre_stats = (
+            db.query(
+                func.json_extract(Audiobook.genres, "$[0]"), func.count(Audiobook.id)
+            )
+            .group_by(func.json_extract(Audiobook.genres, "$[0]"))
+            .all()
+        )
 
         # Statistiques par auteur
-        author_stats = db.query(
-            func.json_extract(Audiobook.authors, '$[0]'),
-            func.count(Audiobook.id)
-        ).group_by(func.json_extract(Audiobook.authors, '$[0]')).all()
+        author_stats = (
+            db.query(
+                func.json_extract(Audiobook.authors, "$[0]"), func.count(Audiobook.id)
+            )
+            .group_by(func.json_extract(Audiobook.authors, "$[0]"))
+            .all()
+        )
 
         # Statistiques par langue
-        language_stats = db.query(
-            Audiobook.language,
-            func.count(Audiobook.id)
-        ).group_by(Audiobook.language).all()
+        language_stats = (
+            db.query(Audiobook.language, func.count(Audiobook.id))
+            .group_by(Audiobook.language)
+            .all()
+        )
 
         # Durée totale
         total_duration = db.query(func.sum(Audiobook.duration)).scalar() or 0
@@ -193,24 +220,30 @@ async def get_audiobooks_stats(
         return {
             "total_books": total_count,
             "total_duration_seconds": total_duration,
-            "total_duration_hours": round(total_duration / 3600, 1) if total_duration else 0,
+            "total_duration_hours": (
+                round(total_duration / 3600, 1) if total_duration else 0
+            ),
             "genres": {genre or "Non classé": count for genre, count in genre_stats},
-            "authors": {author or "Auteur inconnu": count for author, count in author_stats},
-            "languages": {lang or "Langue inconnue": count for lang, count in language_stats}
+            "authors": {
+                author or "Auteur inconnu": count for author, count in author_stats
+            },
+            "languages": {
+                lang or "Langue inconnue": count for lang, count in language_stats
+            },
         }
 
     except Exception as e:
         logger.error(f"Erreur lors du calcul des statistiques: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors du calcul des statistiques"
+            detail="Erreur lors du calcul des statistiques",
         )
 
 
 @router.get("/genres", response_model=List[str])
 async def get_genres(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère la liste de tous les genres disponibles.
@@ -237,7 +270,7 @@ async def get_genres(
 @router.get("/authors", response_model=List[str])
 async def get_authors(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère la liste de tous les auteurs disponibles.
@@ -263,7 +296,7 @@ async def get_authors(
 @router.get("/series", response_model=List[str])
 async def get_series(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_db)  # Placeholder for auth
+    current_user: User = Depends(get_db),  # Placeholder for auth
 ):
     """
     Récupère la liste de toutes les séries disponibles.
@@ -278,8 +311,8 @@ async def get_series(
         for series_list in result:
             if series_list[0]:  # series est une liste JSON
                 for series in series_list[0]:
-                    if isinstance(series, dict) and 'name' in series:
-                        unique_series.add(series['name'])
+                    if isinstance(series, dict) and "name" in series:
+                        unique_series.add(series["name"])
 
         return sorted(list(unique_series))
 

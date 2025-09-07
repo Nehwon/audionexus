@@ -1,30 +1,44 @@
 """
 Modèles SQLAlchemy pour la gestion des instances Audiobookshelf.
 """
+
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Index
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String, Text
 
 from app.db.database import Base
 
 
 class AudiobookshelfInstance(Base):
     """Modèle pour une instance Audiobookshelf configurée."""
+
     __tablename__ = "audiobookshelf_instances"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False, index=True)  # Nom descriptif de l'instance
-    base_url = Column(String(512), nullable=False, index=True)  # URL de base de l'instance
+    name = Column(
+        String(255), nullable=False, index=True
+    )  # Nom descriptif de l'instance
+    base_url = Column(
+        String(512), nullable=False, index=True
+    )  # URL de base de l'instance
     api_token = Column(Text, nullable=False)  # Token API chiffré
-    username = Column(String(255), nullable=False)  # Nom d'utilisateur pour cette instance
+    username = Column(
+        String(255), nullable=False
+    )  # Nom d'utilisateur pour cette instance
 
     # Statut et configuration
     is_active = Column(Boolean, default=True, nullable=False, index=True)
-    sync_enabled = Column(Boolean, default=True, nullable=False, index=True)  # Instance éligible à la synchronisation
-    priority = Column(Integer, default=1, nullable=False)  # Priorité pour le load balancing (1=haut, 10=bas)
+    sync_enabled = Column(
+        Boolean, default=True, nullable=False, index=True
+    )  # Instance éligible à la synchronisation
+    priority = Column(
+        Integer, default=1, nullable=False
+    )  # Priorité pour le load balancing (1=haut, 10=bas)
     version = Column(String(50), nullable=True)  # Version de l'instance
-    status = Column(String(20), default="unknown")  # Statut de connexion: active, error, unknown
+    status = Column(
+        String(20), default="unknown"
+    )  # Statut de connexion: active, error, unknown
 
     # Métriques de performance et santé
     response_time_ms = Column(Integer, default=0)  # Temps de réponse moyen en ms
@@ -38,16 +52,18 @@ class AudiobookshelfInstance(Base):
 
     # Métadonnées système
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     # Index pour les performances
     __table_args__ = (
-        Index('ix_audiobookshelf_instances_active', 'is_active'),
-        Index('ix_audiobookshelf_instances_sync_enabled', 'sync_enabled'),
-        Index('ix_audiobookshelf_instances_priority', 'priority'),
-        Index('ix_audiobookshelf_instances_url', 'base_url'),
-        Index('ix_audiobookshelf_instances_status', 'status'),
-        Index('ix_audiobookshelf_instances_health', 'health_check_timestamp'),
+        Index("ix_audiobookshelf_instances_active", "is_active"),
+        Index("ix_audiobookshelf_instances_sync_enabled", "sync_enabled"),
+        Index("ix_audiobookshelf_instances_priority", "priority"),
+        Index("ix_audiobookshelf_instances_url", "base_url"),
+        Index("ix_audiobookshelf_instances_status", "status"),
+        Index("ix_audiobookshelf_instances_health", "health_check_timestamp"),
     )
 
     def __repr__(self):
@@ -73,10 +89,10 @@ class AudiobookshelfInstance(Base):
         # Retry après délai de base avec backoff pour erreurs temporaires
         if self.status == "error":
             base_delay = 300  # 5 minutes
-            return elapsed.total_seconds() > (base_delay * (2 ** backoff_multiplier))
+            return elapsed.total_seconds() > (base_delay * (2**backoff_multiplier))
         elif self.status == "critical_error":
             base_delay = 1800  # 30 minutes
-            return elapsed.total_seconds() > (base_delay * (2 ** backoff_multiplier))
+            return elapsed.total_seconds() > (base_delay * (2**backoff_multiplier))
 
         return True
 
@@ -109,7 +125,9 @@ class AudiobookshelfInstance(Base):
 
         # Pénalité pour les health checks vieux (> 10min = pénalité)
         if self.health_check_timestamp:
-            health_age = (datetime.utcnow() - self.health_check_timestamp).total_seconds()
+            health_age = (
+                datetime.utcnow() - self.health_check_timestamp
+            ).total_seconds()
             if health_age > 600:  # 10 minutes
                 age_penalty = min(health_age / 3600 * 0.1, 0.2)  # Max 0.2 pour 2h
                 score -= age_penalty

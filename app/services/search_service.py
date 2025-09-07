@@ -1,19 +1,32 @@
 """
 Service de recherche avancée multi-collection pour audiobooks.
 """
+
+import difflib
 import json
 import time
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional, Tuple
-from sqlalchemy import or_, and_, func, text, desc, asc
+from typing import Any, Dict, List, Optional, Tuple
+
+from sqlalchemy import and_, asc, desc, func, or_, text
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
-import difflib
 
-from app.db.models import Audiobook, AudiobookshelfInstance, SearchHistory, SearchSuggestion
+from app.db.models import (
+    Audiobook,
+    AudiobookshelfInstance,
+    SearchHistory,
+    SearchSuggestion,
+)
 from app.schemas.search import (
-    SearchQuery, SearchFilters, SearchResults, SearchResult,
-    SearchHistory as SearchHistorySchema, AutoCompleteResponse
+    AutoCompleteResponse,
+    SearchFilters,
+)
+from app.schemas.search import SearchHistory as SearchHistorySchema
+from app.schemas.search import (
+    SearchQuery,
+    SearchResult,
+    SearchResults,
 )
 
 
@@ -73,7 +86,7 @@ class SearchService:
             limit=query.limit,
             has_more=(query.page * query.limit) < total_count,
             execution_time_ms=execution_time,
-            instances_searched=instances_searched
+            instances_searched=instances_searched,
         )
 
     def _validate_search_query(self, query: SearchQuery) -> None:
@@ -97,17 +110,23 @@ class SearchService:
             search_vector_parts.append(f"setweight(to_tsvector('french', title), 'A')")
 
             # Auteurs (poids B)
-            search_vector_parts.append("setweight(to_tsvector('french', array_to_string(authors, ' ')), 'B')")
+            search_vector_parts.append(
+                "setweight(to_tsvector('french', array_to_string(authors, ' ')), 'B')"
+            )
 
             # Narrateurs (poids C)
-            search_vector_parts.append("setweight(to_tsvector('french', array_to_string(narrators, ' ')), 'C')")
+            search_vector_parts.append(
+                "setweight(to_tsvector('french', array_to_string(narrators, ' ')), 'C')"
+            )
 
             # Description (poids D)
-            search_vector_parts.append("setweight(to_tsvector('french', COALESCE(description, '')), 'D')")
+            search_vector_parts.append(
+                "setweight(to_tsvector('french', COALESCE(description, '')), 'D')"
+            )
 
             # Recherche full-text combinée
             combined_vector = f"({' || '.join(search_vector_parts)})"
-            search_query = func.plainto_tsquery('french', query.q)
+            search_query = func.plainto_tsquery("french", query.q)
             search_conditions.append(f"{combined_vector} @@ {search_query}")
 
         # Construction du SELECT avec calcul de score
@@ -123,7 +142,7 @@ class SearchService:
             "a.publish_year",
             "a.cover_path",
             "i.name as instance_name",
-            "i.id as instance_id"
+            "i.id as instance_id",
         ]
 
         # Ajout du score de pertinence si recherche textuelle
@@ -240,7 +259,7 @@ class SearchService:
             "author": "a.authors[1]",  # Premier auteur
             "duration": "a.duration",
             "rating": "a.rating",
-            "date": "a.publish_year"
+            "date": "a.publish_year",
         }
 
         column = sort_column_map.get(query.sort_by, "score")
@@ -252,7 +271,9 @@ class SearchService:
         else:
             return f"ORDER BY {column} {direction}"
 
-    def _process_search_results(self, raw_results: List, query: SearchQuery) -> Tuple[List[SearchResult], int]:
+    def _process_search_results(
+        self, raw_results: List, query: SearchQuery
+    ) -> Tuple[List[SearchResult], int]:
         """Traite les résultats bruts de la recherche."""
         results = []
 
@@ -270,13 +291,17 @@ class SearchService:
                 instance_name=row.instance_name,
                 instance_id=row.instance_id,
                 cover_path=row.cover_path,
-                score=getattr(row, 'score', 0.0)
+                score=getattr(row, "score", 0.0),
             )
             results.append(result)
 
         # Pour l'instant, on ne retourne que les résultats de la page
         # TODO: Implémenter un comptage total plus efficace
-        total_count = len(results) * query.page if len(results) == query.limit else (query.page - 1) * query.limit + len(results)
+        total_count = (
+            len(results) * query.page
+            if len(results) == query.limit
+            else (query.page - 1) * query.limit + len(results)
+        )
 
         return results, total_count
 
@@ -286,20 +311,24 @@ class SearchService:
             return []
 
         # Recherche des termes similaires dans l'historique
-        similar_queries = self.db.query(SearchHistory.query)\
-            .filter(SearchHistory.query.ilike(f"%{query}%"))\
-            .distinct()\
-            .limit(5)\
+        similar_queries = (
+            self.db.query(SearchHistory.query)
+            .filter(SearchHistory.query.ilike(f"%{query}%"))
+            .distinct()
+            .limit(5)
             .all()
+        )
 
         suggestions = [q.query for q in similar_queries if q.query != query]
 
         # Recherche dans les suggestions populaires
-        popular_suggestions = self.db.query(SearchSuggestion.suggestion)\
-            .filter(SearchSuggestion.suggestion.ilike(f"%{query}%"))\
-            .order_by(SearchSuggestion.usage_count.desc())\
-            .limit(3)\
+        popular_suggestions = (
+            self.db.query(SearchSuggestion.suggestion)
+            .filter(SearchSuggestion.suggestion.ilike(f"%{query}%"))
+            .order_by(SearchSuggestion.usage_count.desc())
+            .limit(3)
             .all()
+        )
 
         popular = [s.suggestion for s in popular_suggestions]
 
@@ -317,19 +346,25 @@ class SearchService:
                 continue
 
             # Recherche de termes similaires dans les titres et auteurs
-            similar_titles = self.db.query(Audiobook.title)\
-                .filter(Audiobook.title.ilike(f"%{word}%"))\
-                .distinct()\
-                .limit(3)\
+            similar_titles = (
+                self.db.query(Audiobook.title)
+                .filter(Audiobook.title.ilike(f"%{word}%"))
+                .distinct()
+                .limit(3)
                 .all()
+            )
 
-            similar_authors = self.db.query(func.unnest(Audiobook.authors))\
-                .filter(func.unnest(Audiobook.authors).ilike(f"%{word}%"))\
-                .distinct()\
-                .limit(3)\
+            similar_authors = (
+                self.db.query(func.unnest(Audiobook.authors))
+                .filter(func.unnest(Audiobook.authors).ilike(f"%{word}%"))
+                .distinct()
+                .limit(3)
                 .all()
+            )
 
-            candidates = [t.title for t in similar_titles] + [a[0] for a in similar_authors]
+            candidates = [t.title for t in similar_titles] + [
+                a[0] for a in similar_authors
+            ]
             candidates = list(set(candidates))
 
             if candidates:
@@ -352,7 +387,9 @@ class SearchService:
         instances = query.all()
         return [i.name for i in instances]
 
-    def _save_search_history(self, query: SearchQuery, user_id: int, results_count: int, execution_time: int) -> None:
+    def _save_search_history(
+        self, query: SearchQuery, user_id: int, results_count: int, execution_time: int
+    ) -> None:
         """Enregistre la recherche dans l'historique."""
         filters_json = json.dumps(query.filters.dict() if query.filters else {})
 
@@ -361,79 +398,87 @@ class SearchService:
             query=query.q,
             filters=filters_json,
             results_count=results_count,
-            execution_time_ms=execution_time
+            execution_time_ms=execution_time,
         )
 
         self.db.add(history_entry)
         self.db.commit()
 
-    def get_search_history(self, user_id: int, limit: int = 20) -> List[SearchHistorySchema]:
+    def get_search_history(
+        self, user_id: int, limit: int = 20
+    ) -> List[SearchHistorySchema]:
         """Récupère l'historique des recherches d'un utilisateur."""
-        history_entries = self.db.query(SearchHistory)\
-            .filter(SearchHistory.user_id == user_id)\
-            .order_by(SearchHistory.last_used_at.desc())\
-            .limit(limit)\
+        history_entries = (
+            self.db.query(SearchHistory)
+            .filter(SearchHistory.user_id == user_id)
+            .order_by(SearchHistory.last_used_at.desc())
+            .limit(limit)
             .all()
+        )
 
         return [SearchHistorySchema.from_orm(entry) for entry in history_entries]
 
-    def get_autocomplete_suggestions(self, query: str, limit: int = 10) -> AutoCompleteResponse:
+    def get_autocomplete_suggestions(
+        self, query: str, limit: int = 10
+    ) -> AutoCompleteResponse:
         """Génère des suggestions d'auto-complétion."""
         if len(query) < 2:
             return AutoCompleteResponse(query=query, suggestions=[], total_count=0)
 
         # Recherche dans les titres
-        title_suggestions = self.db.query(
-            Audiobook.title.label('suggestion'),
-            func.count(Audiobook.id).label('count'),
-            func.literal('title').label('type')
-        )\
-        .filter(Audiobook.title.ilike(f"{query}%"))\
-        .group_by(Audiobook.title)\
-        .order_by(func.count(Audiobook.id).desc())\
-        .limit(limit // 3)\
-        .all()
+        title_suggestions = (
+            self.db.query(
+                Audiobook.title.label("suggestion"),
+                func.count(Audiobook.id).label("count"),
+                func.literal("title").label("type"),
+            )
+            .filter(Audiobook.title.ilike(f"{query}%"))
+            .group_by(Audiobook.title)
+            .order_by(func.count(Audiobook.id).desc())
+            .limit(limit // 3)
+            .all()
+        )
 
         # Recherche dans les auteurs
-        author_suggestions = self.db.query(
-            func.unnest(Audiobook.authors).label('suggestion'),
-            func.count(func.unnest(Audiobook.authors)).label('count'),
-            func.literal('author').label('type')
-        )\
-        .filter(func.unnest(Audiobook.authors).ilike(f"{query}%"))\
-        .group_by(func.unnest(Audiobook.authors))\
-        .order_by(func.count(func.unnest(Audiobook.authors)).desc())\
-        .limit(limit // 3)\
-        .all()
+        author_suggestions = (
+            self.db.query(
+                func.unnest(Audiobook.authors).label("suggestion"),
+                func.count(func.unnest(Audiobook.authors)).label("count"),
+                func.literal("author").label("type"),
+            )
+            .filter(func.unnest(Audiobook.authors).ilike(f"{query}%"))
+            .group_by(func.unnest(Audiobook.authors))
+            .order_by(func.count(func.unnest(Audiobook.authors)).desc())
+            .limit(limit // 3)
+            .all()
+        )
 
         # Recherche dans les genres
-        genre_suggestions = self.db.query(
-            func.unnest(Audiobook.genres).label('suggestion'),
-            func.count(func.unnest(Audiobook.genres)).label('count'),
-            func.literal('genre').label('type')
-        )\
-        .filter(func.unnest(Audiobook.genres).ilike(f"{query}%"))\
-        .group_by(func.unnest(Audiobook.genres))\
-        .order_by(func.count(func.unnest(Audiobook.genres)).desc())\
-        .limit(limit // 3)\
-        .all()
+        genre_suggestions = (
+            self.db.query(
+                func.unnest(Audiobook.genres).label("suggestion"),
+                func.count(func.unnest(Audiobook.genres)).label("count"),
+                func.literal("genre").label("type"),
+            )
+            .filter(func.unnest(Audiobook.genres).ilike(f"{query}%"))
+            .group_by(func.unnest(Audiobook.genres))
+            .order_by(func.count(func.unnest(Audiobook.genres)).desc())
+            .limit(limit // 3)
+            .all()
+        )
 
         # Combinaison des résultats
         all_suggestions = title_suggestions + author_suggestions + genre_suggestions
         suggestions = []
 
         for sugg in all_suggestions:
-            suggestions.append({
-                "text": sugg.suggestion,
-                "type": sugg.type,
-                "count": sugg.count
-            })
+            suggestions.append(
+                {"text": sugg.suggestion, "type": sugg.type, "count": sugg.count}
+            )
 
         # Tri par nombre d'occurrences
-        suggestions.sort(key=lambda x: x['count'], reverse=True)
+        suggestions.sort(key=lambda x: x["count"], reverse=True)
 
         return AutoCompleteResponse(
-            query=query,
-            suggestions=suggestions[:limit],
-            total_count=len(suggestions)
+            query=query, suggestions=suggestions[:limit], total_count=len(suggestions)
         )

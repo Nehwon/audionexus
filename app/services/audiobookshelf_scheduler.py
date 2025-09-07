@@ -1,6 +1,7 @@
 """
 Service de planification pour la synchronisation automatique avec Audiobookshelf.
 """
+
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -8,10 +9,10 @@ from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.session import SessionLocal
 from app.db.models.audiobookshelf_instance import AudiobookshelfInstance
-from app.services.audiobookshelf_sync import AudiobookshelfSyncService
+from app.db.session import SessionLocal
 from app.services.audiobookshelf_instance_service import AudiobookshelfInstanceService
+from app.services.audiobookshelf_sync import AudiobookshelfSyncService
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class AudiobookshelfSchedulerService:
         self._task = None
 
     def __del__(self):
-        if hasattr(self, 'db') and self.db:
+        if hasattr(self, "db") and self.db:
             self.db.close()
 
     async def start_scheduler(self) -> None:
@@ -95,38 +96,52 @@ class AudiobookshelfSchedulerService:
                 if not self._should_sync_instance(instance):
                     continue
 
-                logger.info(f"Synchronisation de l'instance {instance.name} (ID: {instance.id})")
+                logger.info(
+                    f"Synchronisation de l'instance {instance.name} (ID: {instance.id})"
+                )
 
                 # Effectuer la synchronisation
                 if self.sync_service.set_instance(instance.id):
                     result = self.sync_service.sync_all(full_sync=False)
-                    sync_results.append({
-                        'instance_id': instance.id,
-                        'name': instance.name,
-                        'success': result['errors'] == 0,
-                        'stats': result
-                    })
+                    sync_results.append(
+                        {
+                            "instance_id": instance.id,
+                            "name": instance.name,
+                            "success": result["errors"] == 0,
+                            "stats": result,
+                        }
+                    )
 
-                    if result['errors'] > 0:
-                        logger.warning(f"Synchronisation partiellement échouée pour {instance.name}: {result}")
+                    if result["errors"] > 0:
+                        logger.warning(
+                            f"Synchronisation partiellement échouée pour {instance.name}: {result}"
+                        )
 
                 else:
-                    logger.error(f"Impossible d'initialiser le client pour l'instance {instance.name}")
-                    sync_results.append({
-                        'instance_id': instance.id,
-                        'name': instance.name,
-                        'success': False,
-                        'error': 'Client initialization failed'
-                    })
+                    logger.error(
+                        f"Impossible d'initialiser le client pour l'instance {instance.name}"
+                    )
+                    sync_results.append(
+                        {
+                            "instance_id": instance.id,
+                            "name": instance.name,
+                            "success": False,
+                            "error": "Client initialization failed",
+                        }
+                    )
 
             except Exception as e:
-                logger.error(f"Erreur lors de la synchronisation de l'instance {instance.name}: {str(e)}")
-                sync_results.append({
-                    'instance_id': instance.id,
-                    'name': instance.name,
-                    'success': False,
-                    'error': str(e)
-                })
+                logger.error(
+                    f"Erreur lors de la synchronisation de l'instance {instance.name}: {str(e)}"
+                )
+                sync_results.append(
+                    {
+                        "instance_id": instance.id,
+                        "name": instance.name,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
 
         self._log_sync_results(sync_results)
         logger.info("Fin des synchronisations planifiées")
@@ -171,21 +186,12 @@ class AudiobookshelfSchedulerService:
         try:
             if self.sync_service.set_instance(instance_id):
                 result = self.sync_service.sync_all(full_sync=False)
-                return {
-                    'success': result['errors'] == 0,
-                    'stats': result
-                }
+                return {"success": result["errors"] == 0, "stats": result}
             else:
-                return {
-                    'success': False,
-                    'error': 'Failed to initialize client'
-                }
+                return {"success": False, "error": "Failed to initialize client"}
         except Exception as e:
             logger.error(f"Erreur lors de la synchronisation immédiate: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     async def full_sync_instance(self, instance_id: int) -> Dict:
         """
@@ -200,21 +206,12 @@ class AudiobookshelfSchedulerService:
         try:
             if self.sync_service.set_instance(instance_id):
                 result = self.sync_service.sync_all(full_sync=True)
-                return {
-                    'success': result['errors'] == 0,
-                    'stats': result
-                }
+                return {"success": result["errors"] == 0, "stats": result}
             else:
-                return {
-                    'success': False,
-                    'error': 'Failed to initialize client'
-                }
+                return {"success": False, "error": "Failed to initialize client"}
         except Exception as e:
             logger.error(f"Erreur lors de la synchronisation complète: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _log_sync_results(self, results: List[Dict]) -> None:
         """
@@ -223,17 +220,19 @@ class AudiobookshelfSchedulerService:
         Args:
             results: Liste des résultats
         """
-        successful = len([r for r in results if r.get('success', False)])
+        successful = len([r for r in results if r.get("success", False)])
         total = len(results)
 
         if total > 0:
             success_rate = (successful / total) * 100
-            logger.info(f"Synchronisation terminée: {successful}/{total} réussies ({success_rate:.1f}%)")
+            logger.info(
+                f"Synchronisation terminée: {successful}/{total} réussies ({success_rate:.1f}%)"
+            )
 
             # Log détaillé des échecs
-            failures = [r for r in results if not r.get('success', False)]
+            failures = [r for r in results if not r.get("success", False)]
             for failure in failures:
-                error = failure.get('error', 'Unknown error')
+                error = failure.get("error", "Unknown error")
                 logger.warning(f"Échec pour {failure.get('name', 'Unknown')}: {error}")
 
     def get_sync_status(self) -> Dict:
@@ -246,14 +245,15 @@ class AudiobookshelfSchedulerService:
         instances = self.instance_service.get_instances()
 
         return {
-            'scheduler_running': self._running,
-            'total_instances': len(instances),
-            'active_instances': len([i for i in instances if i.is_active]),
-            'instances_with_errors': len([i for i in instances if i.status in ['error', 'critical_error']]),
-            'instances_needing_sync': len([
-                i for i in instances
-                if i.is_active and self._should_sync_instance(i)
-            ])
+            "scheduler_running": self._running,
+            "total_instances": len(instances),
+            "active_instances": len([i for i in instances if i.is_active]),
+            "instances_with_errors": len(
+                [i for i in instances if i.status in ["error", "critical_error"]]
+            ),
+            "instances_needing_sync": len(
+                [i for i in instances if i.is_active and self._should_sync_instance(i)]
+            ),
         }
 
 

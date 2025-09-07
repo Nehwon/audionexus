@@ -2,13 +2,16 @@
 Service d'audit trail pour la conformité enterprise.
 Gère la journalisation des opérations sécurisées et des événements de conformité.
 """
+
 import asyncio
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, Optional
+
 from sqlalchemy.orm import Session
 
 from app.core.encryption import encrypt_data
 from app.db.models.audit import AuditLog, ComplianceLog, SecurityEvent
+
 
 class AuditService:
     """
@@ -32,7 +35,7 @@ class AuditService:
         csrf_token_used: Optional[str] = None,
         duration_ms: Optional[int] = None,
         severity: str = "info",
-        compliance_flags: Optional[Dict[str, Any]] = None
+        compliance_flags: Optional[Dict[str, Any]] = None,
     ) -> AuditLog:
         """
         Log un événement de sécurité dans l'audit trail.
@@ -61,10 +64,12 @@ class AuditService:
         # Chiffrement des données sensibles
         encrypted_request = None
         if request_data:
-            sensitive_fields = ['password', 'token', 'secret', 'key']
+            sensitive_fields = ["password", "token", "secret", "key"]
             encrypted_request = {}
             for key, value in request_data.items():
-                if any(field in key.lower() for field in sensitive_fields) and isinstance(value, str):
+                if any(
+                    field in key.lower() for field in sensitive_fields
+                ) and isinstance(value, str):
                     encrypted_request[key] = encrypt_data(value)
                 else:
                     encrypted_request[key] = value
@@ -73,7 +78,9 @@ class AuditService:
         if response_data:
             encrypted_response = {}
             for key, value in response_data.items():
-                if isinstance(value, str) and any(field in key.lower() for field in ['token', 'secret', 'key']):
+                if isinstance(value, str) and any(
+                    field in key.lower() for field in ["token", "secret", "key"]
+                ):
                     encrypted_response[key] = encrypt_data(value)
                 else:
                     encrypted_response[key] = value
@@ -94,7 +101,7 @@ class AuditService:
             csrf_token_used=csrf_token_used,
             duration_ms=duration_ms,
             severity=severity,
-            compliance_flags=compliance_flags
+            compliance_flags=compliance_flags,
         )
 
         db.add(audit_log)
@@ -112,7 +119,7 @@ class AuditService:
         audit_log_id: Optional[int] = None,
         data_classification: Optional[str] = None,
         encryption_used: Optional[str] = None,
-        access_control: Optional[str] = None
+        access_control: Optional[str] = None,
     ) -> ComplianceLog:
         """
         Log un événement spécifique à la conformité réglementaire.
@@ -137,7 +144,7 @@ class AuditService:
             risk_level=risk_level,
             data_classification=data_classification,
             encryption_used=encryption_used,
-            access_control=access_control
+            access_control=access_control,
         )
 
         db.add(compliance_log)
@@ -155,7 +162,7 @@ class AuditService:
         ip_address: Optional[str] = None,
         user_id: Optional[str] = None,
         username: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> SecurityEvent:
         """
         Log un événement de sécurité critique nécessitant attention.
@@ -180,7 +187,7 @@ class AuditService:
             ip_address=ip_address,
             user_id=user_id,
             username=username,
-            details=details
+            details=details,
         )
 
         db.add(security_event)
@@ -207,7 +214,7 @@ class AuditService:
             "ccpa": False,
             "hipaa": False,
             "sox": False,
-            "pci_dss": False
+            "pci_dss": False,
         }
 
         # Authentification - GDPR et SOX
@@ -225,6 +232,7 @@ class AuditService:
             flags["hipaa"] = True
 
         return flags
+
 
 # Instance globale du service d'audit
 audit_service = AuditService()

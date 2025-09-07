@@ -2,6 +2,7 @@
 Module de sécurité pour l'application.
 Contient les utilitaires d'authentification et de sécurité.
 """
+
 import base64
 import os
 from datetime import datetime, timedelta
@@ -16,6 +17,7 @@ from app.config import settings
 # Configuration pour le hachage de mot de passe
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Vérifie si le mot de passe en clair correspond au hachage stocké.
@@ -29,6 +31,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password: str) -> str:
     """
     Génère un hachage sécurisé du mot de passe.
@@ -40,6 +43,7 @@ def get_password_hash(password: str) -> str:
         str: Mot de passe haché
     """
     return pwd_context.hash(password)
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -59,13 +63,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
 
-def verify_token(token: str) -> Optional['TokenData']:
+
+def verify_token(token: str) -> Optional["TokenData"]:
     """
     Vérifie et décode un token JWT.
 
@@ -78,9 +81,7 @@ def verify_token(token: str) -> Optional['TokenData']:
     credentials_exception = JWTError("Impossible de valider les identifiants")
     try:
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         username: str = payload.get("sub")
         if username is None:
@@ -91,6 +92,7 @@ def verify_token(token: str) -> Optional['TokenData']:
     except JWTError:
         return None
 
+
 def get_encryption_key() -> bytes:
     """
     Génère ou retourne la clé de chiffrement pour les données sensibles.
@@ -98,13 +100,16 @@ def get_encryption_key() -> bytes:
     Returns:
         bytes: Clé de chiffrement Fernet
     """
-    if hasattr(settings, 'ENCRYPTION_KEY') and settings.ENCRYPTION_KEY:
+    if hasattr(settings, "ENCRYPTION_KEY") and settings.ENCRYPTION_KEY:
         key = base64.urlsafe_b64decode(settings.ENCRYPTION_KEY)
     else:
         # Générer une clé par défaut si non configurée
-        key = base64.urlsafe_b64decode(b"WGxRQlBRNG1vTnQzSENyRHE4WG93VFBhWlVwNzRtWkk=")  # Default key for development
+        key = base64.urlsafe_b64decode(
+            b"WGxRQlBRNG1vTnQzSENyRHE4WG93VFBhWlVwNzRtWkk="
+        )  # Default key for development
 
     return key
+
 
 def encrypt_token(token: str) -> str:
     """
@@ -120,6 +125,7 @@ def encrypt_token(token: str) -> str:
     encrypted = f.encrypt(token.encode())
     return encrypted.decode()
 
+
 def decrypt_token(encrypted_token: str) -> str:
     """
     Déchiffre un token depuis la base de données.
@@ -134,6 +140,7 @@ def decrypt_token(encrypted_token: str) -> str:
     decrypted = f.decrypt(encrypted_token.encode())
     return decrypted.decode()
 
+
 def generate_csrf_token() -> str:
     """
     Génère un nouveau token CSRF sécurisé.
@@ -141,7 +148,8 @@ def generate_csrf_token() -> str:
     Returns:
         str: Token CSRF généré
     """
-    return base64.urlsafe_b64encode(os.urandom(32)).decode('utf-8')
+    return base64.urlsafe_b64encode(os.urandom(32)).decode("utf-8")
+
 
 def verify_csrf_token(token: str, secret_key: Optional[str] = None) -> bool:
     """
@@ -158,13 +166,14 @@ def verify_csrf_token(token: str, secret_key: Optional[str] = None) -> bool:
     # En production, utiliser une vérification plus robuste
     return len(token) > 0
 
+
 __all__ = [
-    'verify_password',
-    'get_password_hash',
-    'create_access_token',
-    'verify_token',
-    'encrypt_token',
-    'decrypt_token',
-    'generate_csrf_token',
-    'verify_csrf_token'
+    "verify_password",
+    "get_password_hash",
+    "create_access_token",
+    "verify_token",
+    "encrypt_token",
+    "decrypt_token",
+    "generate_csrf_token",
+    "verify_csrf_token",
 ]

@@ -1,24 +1,27 @@
 """
 Gestion unifiée des sessions de base de données pour les modes synchrone et asynchrone.
 """
+
 import logging
 import os
-from typing import Generator, AsyncGenerator, Union, Optional
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
+from typing import AsyncGenerator, Generator, Optional, Union
 
 # Configuration du logger
 logger = logging.getLogger(__name__)
 
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncSession as AsyncDBSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession as AsyncDBSession, create_async_engine
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncEngine
 
 # Configuration du moteur synchrone
-from .database import engine, SessionLocal
+from .database import SessionLocal, engine
 
 # Variables globales qui seront initialisées par init_async_engine()
 async_engine: Optional[AsyncEngine] = None
 AsyncSessionLocal = None
+
 
 def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     """
@@ -34,14 +37,18 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     if async_engine is not None and not force:
         return
 
-    from app.config import settings  # Import différé pour permettre la configuration des tests
+    from app.config import (  # Import différé pour permettre la configuration des tests
+        settings,
+    )
 
     # Utiliser l'URI fournie ou celle des paramètres unifiés
     if database_uri is None:
         database_uri = settings.get_database_uri()
 
     logger.info(f"Initialisation du moteur asynchrone avec l'URI: {database_uri}")
-    logger.info(f"Environnement: {settings.environment.value}, Testing: {settings.testing}")
+    logger.info(
+        f"Environnement: {settings.environment.value}, Testing: {settings.testing}"
+    )
 
     # Configuration spécifique selon le type de base de données
     connect_args = {}
@@ -49,37 +56,41 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
     # Configuration pour SQLite
     if settings.database.type.value == "sqlite":
         from app.config import DatabaseType
+
         connect_args = {"check_same_thread": False}
 
         # Configuration du pool pour SQLite en mémoire (tests)
         pool_class = StaticPool if ":memory:" in database_uri else None
 
         engine_kwargs = {
-            'url': database_uri,
-            'echo': settings.database.echo,
-            'pool_pre_ping': True,
-            'pool_recycle': settings.database.pool_recycle,
-            'connect_args': connect_args,
+            "url": database_uri,
+            "echo": settings.database.echo,
+            "pool_pre_ping": True,
+            "pool_recycle": settings.database.pool_recycle,
+            "connect_args": connect_args,
         }
 
         if pool_class:
             from sqlalchemy.pool import StaticPool
-            engine_kwargs['poolclass'] = StaticPool
+
+            engine_kwargs["poolclass"] = StaticPool
 
     # Configuration pour MySQL
     elif settings.database.type.value == "mysql":
         engine_kwargs = {
-            'url': database_uri,
-            'echo': settings.database.echo,
-            'pool_pre_ping': True,
-            'pool_recycle': settings.database.pool_recycle,
-            'pool_size': settings.database.pool_size,
-            'max_overflow': settings.database.max_overflow,
-            'pool_timeout': settings.database.pool_timeout,
+            "url": database_uri,
+            "echo": settings.database.echo,
+            "pool_pre_ping": True,
+            "pool_recycle": settings.database.pool_recycle,
+            "pool_size": settings.database.pool_size,
+            "max_overflow": settings.database.max_overflow,
+            "pool_timeout": settings.database.pool_timeout,
         }
 
     else:
-        raise ValueError(f"Type de base de données non supporté: {settings.database.type}")
+        raise ValueError(
+            f"Type de base de données non supporté: {settings.database.type}"
+        )
 
     # Création du moteur unifié
     async_engine = create_async_engine(**engine_kwargs)
@@ -90,14 +101,18 @@ def init_async_engine(database_uri: str = None, force: bool = False) -> None:
         autoflush=False,
         bind=async_engine,
         class_=AsyncDBSession,
-        expire_on_commit=False
+        expire_on_commit=False,
     )
 
-    logger.info(f"Moteur asynchrone initialisé avec succès pour {settings.database.type.value}")
+    logger.info(
+        f"Moteur asynchrone initialisé avec succès pour {settings.database.type.value}"
+    )
+
 
 # Initialisation différée du moteur
 # On ne l'initialise plus automatiquement au chargement du module
 # pour permettre une configuration personnalisée dans les tests
+
 
 def get_db() -> Generator[Session, None, None]:
     """
@@ -113,11 +128,12 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
     """
     Fournit une session de base de données synchrone en tant que gestionnaire de contexte.
-    
+
     À utiliser dans du code synchrone avec `with get_db_session() as db:`.
     """
     db = SessionLocal()
@@ -130,11 +146,12 @@ def get_db_session() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+
 @asynccontextmanager
 async def get_async_db_session() -> AsyncGenerator[AsyncDBSession, None]:
     """
     Fournit une session de base de données asynchrone en tant que gestionnaire de contexte.
-    
+
     À utiliser dans du code asynchrone avec `async with get_async_db_session() as db:`.
     """
     async with AsyncSessionLocal() as session:
@@ -144,6 +161,7 @@ async def get_async_db_session() -> AsyncGenerator[AsyncDBSession, None]:
         except Exception:
             await session.rollback()
             raise
+
 
 # FONCTION CANONIQUE UNIQUE pour les sessions ASYNC
 # Toutes les autres définitions de get_async_db() doivent être supprimées
@@ -156,8 +174,10 @@ async def get_async_db() -> AsyncGenerator[AsyncDBSession, None]:
     IMPORTANT: Cette est la seule et unique définition officielle de get_async_db()
     """
     if AsyncSessionLocal is None:
-        raise RuntimeError("Le moteur asynchrone n'a pas été initialisé. Appelez init_async_engine() d'abord.")
-        
+        raise RuntimeError(
+            "Le moteur asynchrone n'a pas été initialisé. Appelez init_async_engine() d'abord."
+        )
+
     async with AsyncSessionLocal() as db:
         try:
             yield db

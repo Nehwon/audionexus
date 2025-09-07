@@ -4,6 +4,7 @@ Package pour la gestion de la base de données.
 Ce module fournit une interface unifiée pour l'accès à la base de données
 avec support pour FastAPI et SQLAlchemy 2.0 asynchrone.
 """
+
 import logging
 from typing import Any, Optional
 
@@ -23,19 +24,23 @@ get_async_db = None
 get_db_session = None
 get_async_db_session = None
 
+
 # Fonction pour synchroniser les variables globales avec database.py
 def _sync_globals():
     """Synchronise les variables globales avec celles de database.py."""
     global engine, SessionLocal
     from . import database
+
     engine = database.engine
     SessionLocal = database.SessionLocal
+
 
 # Compatibilité avec l'ancienne architecture Flask
 db = None
 # Import de la base de données depuis database.py
 try:
-    from .database import Base, engine, SessionLocal, init_engine, db
+    from .database import Base, SessionLocal, db, engine, init_engine
+
     logger.debug("Import de la base de données synchrone réussi")
 except ImportError as e:
     logger.warning(f"Impossible d'importer la base de données synchrone: {e}")
@@ -44,17 +49,19 @@ except ImportError as e:
 # Import différé des fonctions asynchrones depuis session_manager.py
 try:
     from .session_manager import (
-        get_db,
-        get_db_session,
-        get_async_db,
-        get_async_db_session,
         AsyncSessionLocal,
         async_engine,
-        init_async_engine
+        get_async_db,
+        get_async_db_session,
+        get_db,
+        get_db_session,
+        init_async_engine,
     )
+
     logger.debug("Import des fonctions de session réussi")
 except ImportError as e:
     logger.warning(f"Impossible d'importer les fonctions de session: {e}")
+
 
 # Fonction d'initialisation simplifiée
 def init_database():
@@ -79,6 +86,7 @@ def init_database():
         logger.error(f"❌ Erreur lors de l'initialisation: {e}")
         raise
 
+
 # Fonction de compatibilité Flask (temporaire)
 def init_app(app):
     """
@@ -88,12 +96,15 @@ def init_app(app):
     logger.info("⚠️  Fonction init_app appelée (compatibilité Flask) - aucune action")
     return None
 
+
 # Fonction init_engine compatible pour les tests
 def init_engine():
     """Initialise le moteur de base de données et synchronise les variables globales."""
     from .database import init_engine as _init_engine
+
     _init_engine()
     _sync_globals()
+
 
 # Alias pour la compatibilité
 init_db = init_database
@@ -101,27 +112,23 @@ init_db = init_database
 # Exports
 __all__ = [
     # Base de données
-    'Base',
-    'engine',
-    'SessionLocal',
-
+    "Base",
+    "engine",
+    "SessionLocal",
     # Synchrone (session_manager)
-    'get_db',
-    'get_db_session',
-
+    "get_db",
+    "get_db_session",
     # Asynchrone
-    'async_engine',
-    'AsyncSessionLocal',
-    'get_async_db',
-    'get_async_db_session',
-
+    "async_engine",
+    "AsyncSessionLocal",
+    "get_async_db",
+    "get_async_db_session",
     # Compatibilité Flask
-    'db',
-
+    "db",
     # Fonctions d'initialisation
-    'init_app',  # Compatibilité Flask
-    'init_database',
-    'init_db',
-    'init_engine',
-    'init_async_engine',
+    "init_app",  # Compatibilité Flask
+    "init_database",
+    "init_db",
+    "init_engine",
+    "init_async_engine",
 ]

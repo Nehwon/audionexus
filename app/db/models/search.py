@@ -1,10 +1,20 @@
 """
 Modèles SQLAlchemy pour la gestion des recherches et de leur historique.
 """
-from datetime import datetime
-from typing import Optional, Dict, Any
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Index
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -12,6 +22,7 @@ from app.db.database import Base
 
 class SearchHistory(Base):
     """Historique des recherches effectuées par les utilisateurs."""
+
     __tablename__ = "search_history"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -20,7 +31,9 @@ class SearchHistory(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Contenu de la recherche
-    query = Column(String(500), nullable=False, index=True)  # Terme de recherche principal
+    query = Column(
+        String(500), nullable=False, index=True
+    )  # Terme de recherche principal
     filters = Column(Text, nullable=True)  # Filtres JSON serialisés
 
     # Résultats et métriques
@@ -33,13 +46,15 @@ class SearchHistory(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    last_used_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_used_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     # Index pour les performances
     __table_args__ = (
-        Index('ix_search_history_user_query', 'user_id', 'query'),
-        Index('ix_search_history_created_at', 'created_at'),
-        Index('ix_search_history_last_used', 'last_used_at'),
+        Index("ix_search_history_user_query", "user_id", "query"),
+        Index("ix_search_history_created_at", "created_at"),
+        Index("ix_search_history_last_used", "last_used_at"),
     )
 
     def __repr__(self):
@@ -48,6 +63,7 @@ class SearchHistory(Base):
 
 class SearchSuggestion(Base):
     """Suggestions de recherche populaires."""
+
     __tablename__ = "search_suggestions"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -62,12 +78,14 @@ class SearchSuggestion(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     # Index pour les performances
     __table_args__ = (
-        Index('ix_search_suggestions_usage', 'usage_count', 'last_used_at'),
-        Index('ix_search_suggestions_category', 'category'),
+        Index("ix_search_suggestions_usage", "usage_count", "last_used_at"),
+        Index("ix_search_suggestions_category", "category"),
     )
 
     def __repr__(self):

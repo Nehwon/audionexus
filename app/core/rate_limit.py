@@ -1,13 +1,17 @@
 """
 Module de configuration du rate limiting avec Redis pour la protection anti-DoS.
 """
-import redis
+
 import logging
+
+import redis
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 def get_redis_connection():
     """
@@ -28,7 +32,7 @@ def get_redis_connection():
             socket_keepalive_options=settings.redis.socket_keepalive_options,
             decode_responses=True,
             retry_on_timeout=True,
-            max_connections=20
+            max_connections=20,
         )
         # Test de la connexion
         conn.ping()
@@ -41,6 +45,7 @@ def get_redis_connection():
     except Exception as e:
         logger.error(f"Erreur inattendue Redis: {str(e)}", exc_info=True)
         return None
+
 
 # Fonction de stockage adaptative pour Redis avec fallback
 def get_storage_uri():
@@ -55,17 +60,18 @@ def get_storage_uri():
             logger.info("Rate limiting: utilisation de Redis pour le stockage")
             return uri
         else:
-            logger.warning("Rate limiting: Redis indisponible, utilisation de la mémoire locale")
+            logger.warning(
+                "Rate limiting: Redis indisponible, utilisation de la mémoire locale"
+            )
             return "memory://"
     except Exception as e:
         logger.warning(f"Rate limiting: erreur Redis, fallback mémoire: {str(e)}")
         return "memory://"
 
+
 # Configuration du limiter SlowAPI avec Redis et fallback
 limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri=get_storage_uri(),
-    strategy="fixed-window"
+    key_func=get_remote_address, storage_uri=get_storage_uri(), strategy="fixed-window"
 )
 
 # Limites de taux par endpoint

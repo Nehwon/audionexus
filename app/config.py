@@ -2,27 +2,34 @@
 Configuration de l'application avec gestion unifiée des environnements.
 Résoud les conflits entre SQLite (tests/dev) et MySQL (production).
 """
-import os
+
 import logging
+import os
 from datetime import timedelta
 from enum import Enum
-from typing import Optional, Literal
 from functools import lru_cache
+from typing import Literal, Optional
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
+
 class Environment(Enum):
     """Types d'environnements supportés."""
+
     DEVELOPMENT = "development"
     TESTING = "testing"
     PRODUCTION = "production"
 
+
 class DatabaseType(Enum):
     """Types de bases de données supportés."""
+
     SQLITE = "sqlite"
     MYSQL = "mysql"
+
 
 class DatabaseSettings(BaseSettings):
     """Configuration de la base de données avec support SQLite/MySQL."""
@@ -40,10 +47,14 @@ class DatabaseSettings(BaseSettings):
     sqlite_path: str = Field(default="./audionexus.db")
 
     # Configuration de connexion
-    pool_size: int = Field(default=20)  # Augmenté pour éviter les pénuries de connexions
+    pool_size: int = Field(
+        default=20
+    )  # Augmenté pour éviter les pénuries de connexions
     max_overflow: int = Field(default=30)  # Augmenté pour gérer les pics de charge
     pool_timeout: int = Field(default=30)
-    pool_recycle: int = Field(default=1800)  # Réduit pour éviter les connexions stagnantes
+    pool_recycle: int = Field(
+        default=1800
+    )  # Réduit pour éviter les connexions stagnantes
     echo: bool = Field(default=False)
 
     class Config:
@@ -68,6 +79,7 @@ class DatabaseSettings(BaseSettings):
         else:
             raise ValueError(f"Type de base de données non supporté: {self.type}")
 
+
 class RedisSettings(BaseSettings):
     """Configuration Redis pour cache et rate limiting."""
 
@@ -83,6 +95,7 @@ class RedisSettings(BaseSettings):
     class Config:
         env_prefix = "REDIS_"
         env_nested_delimiter = "__"
+
 
 class Settings(BaseSettings):
     """Configuration unifiée de l'application."""
@@ -106,7 +119,9 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
 
     # URLs et CORS
-    backend_cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    backend_cors_origins: list[str] = Field(
+        default_factory=lambda: ["http://localhost:3000"]
+    )
     api_v1_str: str = Field(default="/api/v1")
 
     # Audiobookshelf
@@ -157,30 +172,36 @@ class Settings(BaseSettings):
     def should_use_sqlite(self) -> bool:
         """Détermine si SQLite doit être utilisé."""
         return (
-            self.testing or
-            self.database.type == DatabaseType.SQLITE or
-            self.environment == Environment.DEVELOPMENT
+            self.testing
+            or self.database.type == DatabaseType.SQLITE
+            or self.environment == Environment.DEVELOPMENT
         )
 
     def get_pool_config(self) -> dict:
         """Retourne la configuration de pool appropriée selon le type de DB."""
         base_config = {
-            'pool_pre_ping': True,
-            'pool_recycle': self.database.pool_recycle,
-            'pool_timeout': self.database.pool_timeout,
-            'echo': self.database.echo,
+            "pool_pre_ping": True,
+            "pool_recycle": self.database.pool_recycle,
+            "pool_timeout": self.database.pool_timeout,
+            "echo": self.database.echo,
         }
 
         if self.database.type == DatabaseType.SQLITE:
-            base_config.update({
-                'poolclass': None if ':memory:' in self.get_database_uri() else None,
-                'connect_args': {'check_same_thread': False},
-            })
+            base_config.update(
+                {
+                    "poolclass": (
+                        None if ":memory:" in self.get_database_uri() else None
+                    ),
+                    "connect_args": {"check_same_thread": False},
+                }
+            )
         elif self.database.type == DatabaseType.MYSQL:
-            base_config.update({
-                'pool_size': self.database.pool_size,
-                'max_overflow': self.database.max_overflow,
-            })
+            base_config.update(
+                {
+                    "pool_size": self.database.pool_size,
+                    "max_overflow": self.database.max_overflow,
+                }
+            )
 
         return base_config
         return base_config
@@ -245,6 +266,7 @@ class Settings(BaseSettings):
         """Propriété de compatibilité pour les anciennes références en majuscules."""
         return self.jwt_algorithm
 
+
 @lru_cache()
 def get_settings() -> Settings:
     """Fonction factory pour obtenir l'instance des paramètres."""
@@ -278,6 +300,7 @@ def get_settings() -> Settings:
             database=DatabaseSettings(type=DatabaseType.SQLITE),
         )
 
+
 # Instance globale des paramètres
 settings = get_settings()
 
@@ -305,10 +328,24 @@ class Config:
     SQLALCHEMY_ECHO = settings.database.echo
 
     # Pool configuration
-    SQLALCHEMY_POOL_SIZE = settings.database.pool_size if hasattr(settings.database, 'pool_size') else None
-    SQLALCHEMY_MAX_OVERFLOW = settings.database.max_overflow if hasattr(settings.database, 'max_overflow') else None
-    SQLALCHEMY_POOL_TIMEOUT = settings.database.pool_timeout if hasattr(settings.database, 'pool_timeout') else None
-    SQLALCHEMY_POOL_RECYCLE = settings.database.pool_recycle if hasattr(settings.database, 'pool_recycle') else None
+    SQLALCHEMY_POOL_SIZE = (
+        settings.database.pool_size if hasattr(settings.database, "pool_size") else None
+    )
+    SQLALCHEMY_MAX_OVERFLOW = (
+        settings.database.max_overflow
+        if hasattr(settings.database, "max_overflow")
+        else None
+    )
+    SQLALCHEMY_POOL_TIMEOUT = (
+        settings.database.pool_timeout
+        if hasattr(settings.database, "pool_timeout")
+        else None
+    )
+    SQLALCHEMY_POOL_RECYCLE = (
+        settings.database.pool_recycle
+        if hasattr(settings.database, "pool_recycle")
+        else None
+    )
     SQLALCHEMY_POOL_PRE_PING = True
 
     # CORS

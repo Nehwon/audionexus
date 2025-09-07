@@ -3,34 +3,36 @@
 Point d'entrée principal de l'application de gestion d'audiobooks.
 """
 import os
-from fastapi import FastAPI, Depends, HTTPException, status, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
-from app.db import init_database, db, SessionLocal, init_app
 from app.core.api import api_router
 from app.core.rate_limit import limiter
+from app.db import SessionLocal, db, init_app, init_database
+
 
 # Configuration du cycle de vie de l'application
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Démarrage de l'application
     print("Démarrage de l'application...")
-    
+
     # Initialisation de la base de données (sauf en environnement de test)
     if not os.getenv("TESTING"):
         print("Initialisation de la base de données...")
-        
+
         # Initialisation de la base de données
         init_database()
-        
+
         # Vérification de la connexion
         try:
             db = SessionLocal()
@@ -42,14 +44,15 @@ async def lifespan(app: FastAPI):
             raise
     else:
         print("Mode test - Initialisation de la base de données différée")
-    
+
     yield
-    
+
     # Nettoyage à l'arrêt
     if not os.getenv("TESTING"):
         print("Arrêt de l'application...")
-        if 'db' in locals():
+        if "db" in locals():
             db.close()
+
 
 # Création de l'application FastAPI
 app = FastAPI(
@@ -59,8 +62,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
+
 
 # Middleware pour les headers de sécurité
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -76,7 +80,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
             "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
@@ -84,30 +90,40 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
+
 # Middleware pour le logging des requêtes
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         import logging
+
         logger = logging.getLogger(__name__)
 
         # Log de la requête entrante
-        logger.info(f"Requête reçue: {request.method} {request.url} - Client: {request.client.host if request.client else 'unknown'}")
+        logger.info(
+            f"Requête reçue: {request.method} {request.url} - Client: {request.client.host if request.client else 'unknown'}"
+        )
 
         try:
             import time
+
             start_time = time.time()
             response = await call_next(request)
             elapsed = time.time() - start_time
 
             # Log détaillé de la réponse
-            logger.info(f"Réponse envoyée: {response.status_code} - Durée: {elapsed:.2f}s")
+            logger.info(
+                f"Réponse envoyée: {response.status_code} - Durée: {elapsed:.2f}s"
+            )
             return response
         except Exception as e:
-            logger.error(f"Erreur lors du traitement de la requête {request.method} {request.url}: {str(e)}", exc_info=True)
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Erreur interne du serveur"}
+            logger.error(
+                f"Erreur lors du traitement de la requête {request.method} {request.url}: {str(e)}",
+                exc_info=True,
             )
+            return JSONResponse(
+                status_code=500, content={"detail": "Erreur interne du serveur"}
+            )
+
 
 # Configuration CORS
 app.add_middleware(
@@ -128,17 +144,14 @@ app.state.limiter = limiter
 app.add_middleware(LoggingMiddleware)
 
 # Montage des dossiers statiques
-app.mount(
-    "/static",
-    StaticFiles(directory=settings.STATIC_FOLDER),
-    name="static"
-)
+app.mount("/static", StaticFiles(directory=settings.STATIC_FOLDER), name="static")
 
 # Import du schéma d'authentification depuis core.deps
 from app.core.deps import oauth2_scheme
 
 # Inclusion des routeurs API
 app.include_router(api_router, prefix="/api/v1")
+
 
 # Route racine
 @app.get("/", tags=["Root"])
@@ -151,8 +164,9 @@ async def root():
         "message": f"Bienvenue sur {settings.PROJECT_NAME}",
         "version": "0.2.0",
         "docs": "/docs",
-        "api_version": settings.API_V1_STR
+        "api_version": settings.API_V1_STR,
     }
+
 
 # Route de santé
 @app.get("/health", tags=["Health"])
@@ -162,46 +176,39 @@ async def health_check():
     Vérifie également la connexion à la base de données.
     """
     from app.database import SessionLocal
-    
+
     db = SessionLocal()
     try:
         # Vérification de la connexion à la base de données
         db.execute(text("SELECT 1"))
-        return {
-            "status": "ok",
-            "database": "connected"
-        }
+        return {"status": "ok", "database": "connected"}
     except Exception as e:
-        return {
-            "status": "error",
-            "database": "disconnected",
-            "error": str(e)
-        }, 500
+        return {"status": "error", "database": "disconnected", "error": str(e)}, 500
     finally:
         db.close()
+
 
 # Gestion des erreurs
 @app.exception_handler(404)
 async def not_found_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": "Ressource non trouvée"}
-    )
+    return JSONResponse(status_code=404, content={"detail": "Ressource non trouvée"})
+
 
 @app.exception_handler(500)
 async def server_error_exception_handler(request, exc):
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Erreur interne du serveur"}
+        status_code=500, content={"detail": "Erreur interne du serveur"}
     )
+
 
 # Point d'entrée pour l'exécution en production
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "app.main:app",
         host=os.getenv("HOST", "0.0.0.0"),
         port=int(os.getenv("PORT", 8000)),
         reload=settings.DEBUG,
-        log_level="debug" if settings.DEBUG else "info"
+        log_level="debug" if settings.DEBUG else "info",
     )

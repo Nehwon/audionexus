@@ -1,8 +1,9 @@
 """
 Operations CRUD pour les instances Audiobookshelf.
 """
-from typing import List, Optional, Dict, Any
+
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -42,11 +43,7 @@ class CRUDAudiobookshelfInstance:
 
     @staticmethod
     def get_multi(
-        db: Session,
-        *,
-        skip: int = 0,
-        limit: int = 100,
-        only_active: bool = False
+        db: Session, *, skip: int = 0, limit: int = 100, only_active: bool = False
     ) -> List[AudiobookshelfInstance]:
         """
         Récupère une liste d'instances avec pagination.
@@ -63,7 +60,9 @@ class CRUDAudiobookshelfInstance:
         query = db.query(AudiobookshelfInstance)
         if only_active:
             query = query.filter_by(is_active=True)
-        return query.order_by(AudiobookshelfInstance.name).offset(skip).limit(limit).all()
+        return (
+            query.order_by(AudiobookshelfInstance.name).offset(skip).limit(limit).all()
+        )
 
     @staticmethod
     def get_active_instances(db: Session) -> List[AudiobookshelfInstance]:
@@ -76,7 +75,12 @@ class CRUDAudiobookshelfInstance:
         Returns:
             Liste des instances actives
         """
-        return db.query(AudiobookshelfInstance).filter_by(is_active=True).order_by(AudiobookshelfInstance.name).all()
+        return (
+            db.query(AudiobookshelfInstance)
+            .filter_by(is_active=True)
+            .order_by(AudiobookshelfInstance.name)
+            .all()
+        )
 
     @staticmethod
     def get_instances_with_errors(db: Session) -> List[AudiobookshelfInstance]:
@@ -89,9 +93,12 @@ class CRUDAudiobookshelfInstance:
         Returns:
             Liste des instances avec erreurs
         """
-        return db.query(AudiobookshelfInstance).filter(
-            AudiobookshelfInstance.status.in_(["error", "critical_error"])
-        ).order_by(AudiobookshelfInstance.last_error_at.desc()).all()
+        return (
+            db.query(AudiobookshelfInstance)
+            .filter(AudiobookshelfInstance.status.in_(["error", "critical_error"]))
+            .order_by(AudiobookshelfInstance.last_error_at.desc())
+            .all()
+        )
 
     @staticmethod
     def create(db: Session, *, obj_in: Dict[str, Any]) -> AudiobookshelfInstance:
@@ -113,10 +120,7 @@ class CRUDAudiobookshelfInstance:
 
     @staticmethod
     def update(
-        db: Session,
-        *,
-        db_obj: AudiobookshelfInstance,
-        obj_in: Dict[str, Any]
+        db: Session, *, db_obj: AudiobookshelfInstance, obj_in: Dict[str, Any]
     ) -> AudiobookshelfInstance:
         """
         Met à jour une instance existante.
@@ -162,7 +166,7 @@ class CRUDAudiobookshelfInstance:
         instance_id: int,
         status: str,
         version: Optional[str] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> bool:
         """
         Met à jour le statut de connexion d'une instance.
@@ -214,15 +218,17 @@ class CRUDAudiobookshelfInstance:
         """
         total = db.query(AudiobookshelfInstance).count()
         active = db.query(AudiobookshelfInstance).filter_by(is_active=True).count()
-        with_errors = db.query(AudiobookshelfInstance).filter(
-            AudiobookshelfInstance.status.in_(["error", "critical_error"])
-        ).count()
+        with_errors = (
+            db.query(AudiobookshelfInstance)
+            .filter(AudiobookshelfInstance.status.in_(["error", "critical_error"]))
+            .count()
+        )
 
         return {
             "total": total,
             "active": active,
             "inactive": total - active,
-            "with_errors": with_errors
+            "with_errors": with_errors,
         }
 
 
