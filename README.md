@@ -32,6 +32,8 @@
 - ✅ **Performance optimisée** : APIs REST complètes, cache Redis, async
 - ✅ **Scalabilité** : Docker zero-downtime, load balancing avancé
 - ✅ **Observabilité** : Métriques temps réel, monitoring santé
+- ✅ **Containers stabilisés** : Build optimisé (~26s → ~3min), démarrage automatique
+- ✅ **Health checks** : Redis (1.4s), MySQL (7s), Backend (6s), Frontend (7s)
 
 #### 🎯 **Routes Fonctionnelles** `/api/v1`
 - ✅ `/auth/*` - Authentification VoidAuth complète
@@ -82,28 +84,72 @@
 - MySQL 8.0+ (base de données principale)
 - Redis (pour les sessions et le cache)
 
-### Avec Docker (recommandé)
+### Avec Docker (recommandé) - Setup complet
+
+#### Démarrage rapide avec le script automatique
 
 ```bash
 # Cloner le dépôt
 git clone https://github.com/votre-utilisateur/audionexus.git
 cd audionexus
 
-# Copier le fichier d'environnement d'exemple
+# Copier le fichier d'environnement d'exemple (optionnel)
 cp .env.example .env
 
-# Modifier le fichier .env si nécessaire (voir la section Configuration)
+# Démarrage en mode développement (recommandé pour les développeurs)
+./start.sh dev
 
-# Démarrer les services
-docker compose up -d
-
-# Initialiser la base de données (exécuter après le premier démarrage)
-docker compose exec backend flask db upgrade
+# OU Démarrage en mode production
+./start.sh prod
 ```
 
-### Développement local
+#### Démarrage manuel avec Docker Compose
 
-#### Backend
+```bash
+# Pour le développement avec rechargement automatique
+docker compose -f docker-compose.dev.yml up -d
+
+# Pour la production optimisée
+docker compose up -d
+
+# Suivre les logs de démarrage
+./start.sh logs
+```
+
+#### Services disponibles après le démarrage
+
+Une fois le setup lancé, les services suivants sont accessibles :
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Frontend** | http://localhost:3000 | Interface utilisateur React/TypeScript |
+| **Backend API** | http://localhost:8000 | API REST FastAPI |
+| **Docs API** | http://localhost:8000/docs | Documentation interactive Swagger |
+| **Adminer DB** | http://localhost:8080 | Interface de gestion MySQL |
+| **Backend direct** | http://localhost:8000 | Backend pour les appels API |
+| **Redis** | localhost:6379 | Cache et sessions |
+| **MySQL** | localhost:3306 | Base de données principale |
+
+#### Commandes de gestion pratiques
+
+```bash
+# État des services
+./start.sh status
+
+# Logs de tous les services
+./start.sh logs
+
+# Logs d'un service spécifique
+./start.sh logs backend
+
+# Arrêter tous les services
+./start.sh stop
+
+# Redémarrer les services
+./start.sh restart
+```
+
+### Développement local (optionnel, si vous préférez sans Docker)
 
 ```bash
 # Se placer dans le dossier du backend
@@ -167,12 +213,12 @@ npm run dev
 - ✅ **Interface responsive** - Thème sombre/clair automatique
 
 ### 📚 Gestion des Documents Audio
-- ✅ **Téléversement drag&drop** - Interface intuitive ZIP/RAR/7Z
-- ✅ **Conversion FFmpeg** - Format M4B optimisé automatiquement
-- ✅ **Extraction métadonnées** - ID3 tags extraits et corrigés
-- ✅ **Validation fichiers** - Qualité audio et formats multiple
-- ✅ **Barre progression** - États détaillés pendant traitement
-- ✅ **Gestion erreurs** - Reprise upload et notifications
+- ✅ **Téléversement sécurisé** [`frontend/src/components/AudiobookUploader.tsx`](frontend/src/components/AudiobookUploader.tsx:l1) - Interface drag&drop haute qualité accessibilité WCAG 2.1
+- ✅ **Sécurité enterprise** - Validation rigorous extensions dangereuses, double extensions, caractères spéciaux
+- ✅ **Conversion FFmpeg** - Format M4B optimisé automatiquement avec métadonnées enrichies
+- ✅ **Performance optimisée** - Gestion automatisee nettoyages fuites mémoire et polling
+- ✅ **Accessibilité complète** - Labels ARIA, navigation clavier, régions live, mode sombre
+- ✅ **Gestion erreurs robuste** - Boundary composants avec notifications toast et reprises intelligentes
 
 ### 🔗 Intégration Audiobookshelf Avancée
 - ✅ **Multi-instances complet** - Gestion simultanée plusieurs Audiobookshelf
@@ -193,7 +239,7 @@ npm run dev
 - Tâches asynchrones avec Celery
 
 ### Frontend (React/TypeScript)
-- ✅ Interface utilisateur avec Chakra UI
+- ✅ Interface utilisateur avec Tailwind CSS
 - ✅ Gestion d'état avec React Query
 - ✅ Navigation avec React Router
 - ✅ Appels API avec Axios
@@ -276,7 +322,7 @@ Lien du projet : [https://github.com/votre-utilisateur/audionexus](https://githu
 
 ### Frontend (En développement)
 - React.js avec TypeScript
-- **Chakra UI** comme bibliothèque UI principale
+- **Tailwind CSS** comme bibliothèque UI principale
   - Thèmes personnalisables
   - Composants accessibles
   - Mode sombre/clair
