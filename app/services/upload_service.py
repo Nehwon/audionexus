@@ -503,7 +503,7 @@ class UploadService:
         return consolidated
 
     async def _convert_to_m4b(
-        self, audio_files: List[Path], output_dir: Path, task_id: str
+        self, audio_files: List[Path], output_dir: Path, task_id: str, retry_count: int = 0
     ) -> List[Path]:
         """
         Convertit les fichiers audio vers le format M4B.

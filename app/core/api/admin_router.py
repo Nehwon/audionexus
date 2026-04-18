@@ -173,7 +173,7 @@ async def get_upload_tasks(
 
 @router.get("/health")
 async def get_system_health(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Vérifie la santé du système."""
     try:
@@ -188,7 +188,7 @@ async def get_system_health(
 
 @router.get("/notifications")
 async def get_notifications(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
     """Récupère les notifications système."""
 

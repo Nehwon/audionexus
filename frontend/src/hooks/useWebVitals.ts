@@ -3,7 +3,7 @@ import { monitoringService } from '@/services/sentry'
 
 type WebVitalsMetric = {
   name: string
-  value: number
+  value: number | string
   id: string
 }
 
@@ -88,11 +88,56 @@ export const useWebVitals = () => {
       }).observe({ entryTypes: ['first-input'] })
     }
 
+    // Mesurer TTFB (Time to First Byte)
+    const measureTTFB = () => {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          reportWebVitals({
+            name: 'TTFB',
+            value: (entry as any).responseStart - (entry as any).requestStart,
+            id: 'ttfb'
+          })
+        }
+      }).observe({ entryTypes: ['navigation'] })
+    }
+
+    // Informations de réseau et device mobile
+    const measureMobileInfo = () => {
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection
+        if (connection) {
+          reportWebVitals({
+            name: 'Network_Type',
+            value: connection.effectiveType,
+            id: 'network-type'
+          })
+          reportWebVitals({
+            name: 'Network_Speed',
+            value: connection.downlink,
+            id: 'network-speed'
+          })
+        }
+      }
+
+      // Battery API si disponible
+      if ('getBattery' in navigator) {
+        (navigator as any).getBattery().then((battery: any) => {
+          reportWebVitals({
+            name: 'Battery_Level',
+            value: Math.round(battery.level * 100),
+            id: 'battery-level'
+          })
+        })
+      }
+    }
+
     // Démarrer toutes les mesures
     measureFCP()
     measureLCP()
     measureCLS()
     measureFID()
+    measureTTFB()
+    measureMobileInfo()
 
     // Cleanup
     return () => {

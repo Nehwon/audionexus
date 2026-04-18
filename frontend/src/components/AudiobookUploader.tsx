@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, FileAudio, AlertCircle, CheckCircle, X, Play, Pause } from 'lucide-react'
+import { Upload, AlertCircle, CheckCircle, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface UploadTask {
@@ -33,7 +33,34 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
 }) => {
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [pollingTasks, setPollingTasks] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const pollingRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Cleanup des polling actifs au démontage du composant
+  useEffect(() => {
+    return () => {
+      pollingRefs.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId)
+      })
+      pollingRefs.current.clear()
+    }
+  }, [])
+
+  // Gestionnaire d'erreur pour le composant
+  const [componentError, setComponentError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (componentError) {
+      console.error('Erreur composant AudiobookUploader:', componentError)
+      toast.error('Une erreur est survenue dans l\'upload')
+    }
+  }, [componentError])
+
+  // Reset d'erreur
+  const resetError = useCallback(() => {
+    setComponentError(null)
+  }, [])
 
   // Formats acceptés
   const acceptedFormats = {
@@ -64,11 +91,13 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
 
     // Vérification du type MIME
     const allowedMimes = Object.keys(acceptedFormats)
-    if (!allowedMimes.includes(file.type) && file.type !== '') {
-      // Vérifier aussi l'extension si le type MIME n'est pas reconnu
-      const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+    const isValidMimeType = file.type === '' || allowedMimes.includes(file.type)
+
+    // Si le type MIME n'est pas valide, vérifier l'extension
+    if (!isValidMimeType) {
       const isValidExtension = Object.values(acceptedFormats)
-        .some(extensions => extensions.includes(extension))
+        .flat()
+        .includes(fileExtension)
 
       if (!isValidExtension) {
         return 'Format non supporté. Utilisez ZIP, RAR, 7Z ou TAR'
@@ -90,7 +119,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
   }
 
   // Gestionnaire d'upload
-  const handleUpload = async (files: File[]) => {
+  const handleUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return
 
     const file = files[0] // Un seul fichier à la fois
@@ -113,7 +142,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ detail: 'Erreur réseau' }))
         throw new Error(errorData.detail || 'Erreur lors de l\'upload')
       }
 
@@ -136,14 +165,21 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
 
     } catch (error) {
       console.error('Erreur upload:', error)
-      toast.error(error instanceof Error ? error.message : 'Erreur lors de l\'upload')
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'upload'
+      toast.error(errorMessage)
     } finally {
       setIsUploading(false)
     }
-  }
+  }, [maxFileSize])
 
-  // Monitoring du statut d'upload
-  const monitorUploadStatus = async (taskId: string) => {
+  // Monitoring du statut d'upload avec gestion des fuites mémoire
+  const monitorUploadStatus = useCallback((taskId: string) => {
+    if (pollingRefs.current.has(taskId)) {
+      return // Déjà en cours de monitoring
+    }
+
+    setPollingTasks(prev => new Set(prev).add(taskId))
+
     const pollStatus = async () => {
       try {
         const response = await fetch(`/api/v1/upload/upload/status/${taskId}`, {
@@ -164,29 +200,60 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
 
         // Continuer le monitoring si en cours
         if (statusData.status === 'processing') {
-          setTimeout(pollStatus, 2000) // Poll toutes les 2 secondes
-        } else if (statusData.status === 'completed') {
-          toast.success('Upload terminé avec succès !')
-          if (onUploadComplete) {
-            onUploadComplete(statusData)
+          const timeoutId = setTimeout(pollStatus, 2000)
+          pollingRefs.current.set(taskId, timeoutId)
+        } else {
+          // Nettoyer le monitoring terminé
+          setPollingTasks(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(taskId)
+            return newSet
+          })
+          pollingRefs.current.delete(taskId)
+
+          if (statusData.status === 'completed') {
+            toast.success('Upload terminé avec succès !')
+            if (onUploadComplete) {
+              onUploadComplete(statusData)
+            }
+          } else if (statusData.status === 'failed') {
+            toast.error(`Upload échoué: ${statusData.error_message || 'Erreur inconnue'}`)
           }
-        } else if (statusData.status === 'failed') {
-          toast.error(`Upload échoué: ${statusData.error_message || 'Erreur inconnue'}`)
         }
 
       } catch (error) {
         console.error('Erreur monitoring:', error)
         toast.error('Erreur lors de la surveillance de l\'upload')
+
+        // Nettoyer en cas d'erreur
+        setPollingTasks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(taskId)
+          return newSet
+        })
+        pollingRefs.current.delete(taskId)
       }
     }
 
     // Démarrer le monitoring
     pollStatus()
-  }
+  }, [onUploadComplete])
 
   // Gestionnaire d'annulation
-  const handleCancelUpload = async (taskId: string) => {
+  const handleCancelUpload = useCallback(async (taskId: string) => {
     try {
+      // Annuler le polling actif
+      const timeoutId = pollingRefs.current.get(taskId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        pollingRefs.current.delete(taskId)
+        setPollingTasks(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(taskId)
+          return newSet
+        })
+      }
+
       const response = await fetch(`/api/v1/upload/upload/${taskId}`, {
         method: 'DELETE',
         credentials: 'include'
@@ -196,16 +263,25 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
         setUploadTasks(prev => prev.filter(task => task.task_id !== taskId))
         toast.success('Upload annulé')
       } else {
-        throw new Error('Erreur lors de l\'annulation')
+        const errorData = await response.json().catch(() => ({ detail: 'Erreur serveur' }))
+        throw new Error(errorData.detail || 'Erreur lors de l\'annulation')
       }
     } catch (error) {
+      console.error('Erreur annulation:', error)
       toast.error('Impossible d\'annuler l\'upload')
     }
-  }
+  }, [])
 
   // Gestionnaire de retry
-  const handleRetryUpload = async (taskId: string) => {
+  const handleRetryUpload = useCallback(async (taskId: string) => {
     try {
+      // Annuler le polling actif si présent
+      const timeoutId = pollingRefs.current.get(taskId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        pollingRefs.current.delete(taskId)
+      }
+
       const response = await fetch(`/api/v1/upload/upload/${taskId}/retry`, {
         method: 'POST',
         credentials: 'include'
@@ -221,23 +297,33 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
         toast.success('Relance démarrée')
         monitorUploadStatus(taskId)
       } else {
-        throw new Error('Erreur lors de la relance')
+        const errorData = await response.json().catch(() => ({ detail: 'Erreur serveur' }))
+        throw new Error(errorData.detail || 'Erreur lors de la relance')
       }
     } catch (error) {
+      console.error('Erreur relance:', error)
       toast.error('Impossible de relancer l\'upload')
     }
-  }
+  }, [monitorUploadStatus])
 
   // Configuration react-dropzone
   const onDrop = useCallback((acceptedFiles: File[]) => {
     handleUpload(acceptedFiles)
-  }, [])
+  }, [handleUpload])
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
     accept: acceptedFormats,
     multiple: false,
-    disabled: isUploading
+    disabled: isUploading,
+    maxSize: maxFileSize * 1024 * 1024,
+    onDropRejected: (rejectedFiles) => {
+      const error = rejectedFiles[0]?.errors[0]?.message ||
+                    rejectedFiles[0]?.file?.name ?
+                    'Fichier rejeté par react-dropzone' :
+                    'Erreur de traitement de fichier'
+      toast.error(error)
+    }
   })
 
   // Formatage de la taille de fichier
@@ -262,7 +348,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
   }
 
   // Couleur du statut
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     switch (status) {
       case 'completed': return 'text-green-600'
       case 'failed': return 'text-red-600'
@@ -273,7 +359,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
   }
 
   // Icône du statut
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): React.ReactElement => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-600" />
       case 'failed': return <AlertCircle className="w-5 h-5 text-red-600" />
@@ -283,12 +369,34 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
     }
   }
 
+  // Gestionnaire d'erreur dans le composant
+  if (componentError) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-4 sm:p-6">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+          <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
+            Erreur de composant
+          </h3>
+          <p className="text-red-700 dark:text-red-300 mb-4">
+            Une erreur est survenue lors de l'upload
+          </p>
+          <button
+            onClick={resetError}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full max-w-2xl mx-auto p-4 sm:p-6">
       {/* Zone de dépôt */}
       <div
         {...getRootProps()}
-        className={`relative border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        className={`relative border-2 border-dashed rounded-lg p-6 sm:p-8 md:p-12 text-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[200px] flex items-center justify-center ${
           isDragActive
             ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20'
             : isDragReject
@@ -308,13 +416,13 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
       >
         <input {...getInputProps()} ref={fileInputRef} aria-hidden="true" />
 
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-            <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+        <div className="flex flex-col items-center space-y-4 sm:space-y-6">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+            <Upload className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-blue-600 dark:text-blue-400" aria-hidden="true" />
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2" id="dropzone-title">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-2" id="dropzone-title">
               {isDragActive
                 ? 'Déposez votre archive ici'
                 : 'Téléversez votre audiobook'
@@ -322,10 +430,10 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
             </h3>
 
             <div id="dropzone-description">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Glissez-déposez une archive ZIP ou RAR, ou cliquez pour sélectionner
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-2">
+                Glissez-déposez une archive ZIP ou RAR, ou appuyez pour sélectionner
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mb-4">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-500 mb-6">
                 Formats supportés: ZIP, RAR, 7Z, TAR • Taille max: {maxFileSize}MB
               </p>
 
@@ -341,7 +449,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 sm:px-8 sm:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base font-medium min-h-[48px] min-w-[160px]"
             aria-describedby="button-description"
           >
             Choisir un fichier
@@ -465,6 +573,9 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
             ))}
         </div>
       )}
+
+      {/* Empty div for better mobile spacing */}
+      <div className="pb-4"></div>
     </div>
   )
 }

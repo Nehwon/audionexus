@@ -104,6 +104,32 @@ services:
       timeout: 3s
       retries: 3
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: audionexus-frontend-dev
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    ports:
+      - "3000:5173"
+    depends_on:
+      - backend
+    networks:
+      - audionexus-network
+    env_file:
+      - .env.development
+    environment:
+      - VITE_API_URL=http://backend:8000  # Internal Docker network URL
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Service de monitoring optionnel pour le développement
   adminer:
     image: adminer:latest

@@ -21,9 +21,9 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app.db.models.user import User
+from app.db.models import User
 from app.db.session import get_db
-from app.services.auth import get_current_user
+from app.core.dependencies import get_current_user
 from app.services.upload_service import (
     ExtractionError,
     ProcessingError,

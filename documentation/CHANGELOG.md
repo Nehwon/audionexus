@@ -30,6 +30,38 @@ et le projet respecte [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - ✅ Interface responsive thème sombre/clair
 - ✅ Métriques avancées progression et états système
 
+### 🔧 **Améliorations Qualité AudiobookUploader**
+
+#### 🛡️ **Sécurité Renforcée**
+- ✅ Validation côté client étendue : extensions dangereuses, double extensions, caractères spéciaux
+- ✅ Protection contre les uploads malveillants avec détection de types MIME suspectes
+- ✅ Vérification anti-caractères invisibles et contrôles nulle
+
+#### ♿ **Accessibilité WCAG 2.1**
+- ✅ Labels ARIA complets pour zone drag&drop et éléments interactifs
+- ✅ Régions live pour mises à jour de statut temps réel
+- ✅ Navigation clavier complète (Entrée/Espace pour activation)
+- ✅ Contenu screen reader optimisé avec descriptions contextuelles
+
+#### ⚡ **Performances Optimisées**
+- ✅ Gestion automatique nettoyage polling references (prévention fuites mémoire)
+- ✅ Optimisation timeout avec clearTimeout automatique au démontage composant
+- ✅ Mise à jour intelligente des tâches d'upload sans ré-renders inutiles
+- ✅ Validation côté client pour réduction appels serveur
+
+#### 🐛 **Gestion d'Erreurs Robuste**
+- ✅ Error boundary composant avec bouton reset récupération
+- ✅ Messages d'erreur détaillés et user-friendly avec icônes visuelles
+- ✅ Mécanismes retry et cancel avec feedback utilisateur toast
+- ✅ Capture erreurs asynchrones avec gestion d'état
+
+#### 🎨 **UX/UI Améliorée**
+- ✅ Design responsive complet (mobile/tablette/desktop)
+- ✅ Animations états interactifs (chargement, drag active, erreurs)
+- ✅ Barre progression avec valeur minimum 5% pour visibilité
+- ✅ Métadonnées extraites affichées avec formatage durée lisible
+- ✅ Boutons actions contextuels (annuler/relancer) selon état tâche
+
 #### 🔗 **Synchronisation Multi-Instances Audiobookshelf**
 - ✅ Gestion configuration plusieurs instances concurrentes
 - ✅ Load balancing intelligent par priorité et santé
