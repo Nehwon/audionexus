@@ -110,8 +110,6 @@ jobs:
             org.opencontainers.image.version=${{ needs.setup-version.outputs.tag }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=AGPL-3.0
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -168,8 +166,6 @@ jobs:
             org.opencontainers.image.version=${{ needs.setup-version.outputs.tag }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=AGPL-3.0
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   create-release:
     needs: deploy-to-docker-hub
