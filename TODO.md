@@ -1,165 +1,128 @@
-# 📋 TODO AudioNexus - Tâches en Attente
+# 📋 TODO AudioNexus - Tâches Priorisées
 
-## 🎯 État Actuel : Architecture Docker Solide & Permissions Résolues ✅
+## 🔴 URGENT - À Faire Immédiatement
 
-Au 07/09/2025, AudioNexus v0.8.0 présente une infrastructure containerisée **production-ready** avec :
+### 1. Nettoyage de la Racine du Projet
+- Organiser la racine pour ne garder que les fichiers de documentation core
+- Déplacer les fichiers techniques dans des dossiers appropriés
+- Supprimer les fichiers temporaires et obsolètes
 
-### ✅ **INFRASCTRUCTURE DOCKER STABILISÉE** (RÉALISÉ COMPLETEMENT)
-- 🔧 **Script d'entrée Docker robuste** : Correction automatique des permissions à chaque démarrage
-- 🔒 **Permissions volumes résolues** : Solution su-exec + chown intelligent pour compatibilité multi-environnements
-- 📦 **Build optimisé** : Temps ~4.3min (par rapport aux ~26s initiaux → **amélioration massive**)
-- ⏰ **Démarrage stable** : Redis (1.4s), MySQL (7s), Backend (6.6s), Frontend (~25s avec corrections auto)
+### 2. Correction SQLAlchemy
+- Résoudre le conflit de définition de table `audit_logs` (doublon)
+- Fichier concerné: `app/db/models/audit.py`
 
----
+### 3. Configuration Redis Locale
+- Configurer Redis pour les tests locaux
+- Résoudre les problèmes de connexion refusée
 
-## 🔄 Fonctionnalités Frontend à Implémenter
+### 4. Tests d'Intégration
+- Corriger l'échec de collecte des tests d'intégration
+- Vérifier la configuration pytest
 
-### [`frontend/src/pages/Search.tsx:7`](frontend/src/pages/Search.tsx:7)
-**Navigation vers Page Détail Audiobook**
-- Implémenter la logique de navigation vers la page de détail des livres audio
-- Créer le composant `AudiobookDetail` avec:
-  - Affichage complet des métadonnées
-  - Lecteur audio intégré
-  - Gestion des marque-pages
-  - Téléchargement/lecture en streaming
+### 5. Migration PostgreSQL
+- Planifier et préparer la migration de MySQL vers PostgreSQL
+- Évaluer l'impact sur les performances et la scalabilité
 
-```typescript
-// TODO: Étape A - Créer la logique de navigation
-const handleResultSelect = (result: SearchResult) => {
-  // Navigation vers /audiobooks/{result.audiobook_id}
-  navigate(`/audiobooks/${result.audiobook_id}`);
-};
-```
+## 🟡 HAUTE PRIORITÉ - Fonctionnalités Core
 
-### [`frontend/src/components/SimpleSearchComponent.tsx:172`](frontend/src/components/SimpleSearchComponent.tsx:172)
-**Pagination Précédente**
-- Implémenter le fonctionnement du bouton "Précédent" dans la pagination
-- Gestion des états de page et rechargements des données
+### 6. Finalisation Pagination
+- Implémenter la pagination dans `SimpleSearchComponent.tsx`
+- Boutons Précédent/Suivant fonctionnels
+- Gestion des états de page
 
-### [`frontend/src/components/SimpleSearchComponent.tsx:184`](frontend/src/components/SimpleSearchComponent.tsx:184)
-**Pagination Suivante**
-- Implémenter le fonctionnement du bouton "Suivant" dans la pagination
-- Validation des limites de résultats disponibles
+### 7. Page Détail Audiobook
+- Créer le composant `AudiobookDetail`
+- Implémenter la navigation depuis les résultats de recherche
+- Affichage complet des métadonnées
+- Intégration du lecteur audio
 
-```typescript
-// TODO: Implémentation commune pour les deux boutons
-const handlePageChange = (newPage: number) => {
-  setLoading(true);
-  // Requête API avec page = newPage
-  // Mise à jour des résultats
-  // Gestion des erreurs
-};
-```
-
-### [`frontend/src/components/SearchComponent.tsx:616`](frontend/src/components/SearchComponent.tsx:616)
-**Gestion des Suggestions**
+### 8. Gestion des Suggestions
 - Implémenter la sélection des suggestions de recherche
-- Remplacement automatique de la requête en cours
+- Remplacement automatique de la requête
 - Maintien du contexte de recherche
 
-```typescript
-const handleSuggestionSelect = (suggestion: string) => {
-  // TODO: À implémenter
-  setQuery({ ...query, q: suggestion });
-  handleSearch({ ...query, q: suggestion });
-};
-```
-
-### [`frontend/src/components/SearchComponent.tsx:626`](frontend/src/components/SearchComponent.tsx:626)
-**Gestion des Corrections**
-- Implémenter la sélection des corrections orthographiques
-- Application automatique via API de corrections
+### 9. Corrections Orthographiques
+- Implémenter la sélection des corrections
+- Application automatique via API
 - Confirmation utilisateur pour les corrections majeures
 
-```typescript
-const handleCorrectionSelect = (correction: string) => {
-  // TODO: À implémenter
-  setQuery({ ...query, q: correction });
-  handleSearch({ ...query, q: correction });
-  // Fermeture de la liste de corrections
-};
-```
+## 🟢 PRIORITÉ MOYENNE - Améliorations
 
----
+### 10. Optimisation des Tests
+- Compléter les tests unitaires manquants
+- Vérifier et ajouter les dépendances manquantes dans requirements.txt
 
-## 📈 Priorisation des Tâches
+### 11. Documentation Technique
+- Compléter la documentation dans `documentation/`
+- Ajouter des guides pour le déploiement et le développement
 
-### **Semaine 1 (Priorité Haute)**
-1. Implémenter pagination ([`SimpleSearchComponent.tsx`](frontend/src/components/SimpleSearchComponent.tsx))
-2. Créer page détail audiobook ([`Search.tsx`](frontend/src/pages/Search.tsx))
+### 12. Amélioration des Performances
+- Optimiser les temps de réponse API
+- Réduire la taille des images Docker
+- Améliorer le temps de démarrage des services
 
-### **Semaine 2 (Priorité Moyenne)**
-3. Intégrer suggestions de recherche ([`SearchComponent.tsx`](frontend/src/components/SearchComponent.tsx))
-4. Ajouter corrections orthographiques
+## 🔵 BASSE PRIORITÉ - Nice to Have
 
-### **Semaine 3 (Priorité Basse)**
-5. Tests d'intégration complets
-6. Optimisations performance
-7. Documentation utilisateur
+### 13. Interface Utilisateur
+- Améliorer l'UX des composants existants
+- Ajouter des animations et transitions
+- Optimiser pour mobile
 
----
-
-## 🔧 État Technique
-
-### ✅ **Infrastructure Stabilisée**
-- Docker containers opérationnels
-- Services démarrés automatiquement
-- Timeouts et healthchecks configurés
-- Optimisation build images
-
-### 🔄 **Fonctionnalités Core Fonctionnelles**
-- ✅ Authentification VoidAuth opérationnelle
-- ✅ Dashboard administrateur fonctionnel
-- ✅ API REST complète et documentée
-- ✅ Recherche de base opérationnelle
-- ✅ Traitement FFmpeg intégré avec gestion robuste des threads
-- ✅ Tests complets pour la gestion des processus FFmpeg
-
-### 📋 **Prochaines Fonctionnalités**
-- Gestion complète du cycle de vie des audiobooks
-- Interfaces utilisateur enhancées
-- Synchronisation multi-instances
+### 14. Fonctionnalités Avancées
+- Synchronisation multi-instances améliorée
 - Gestion des collections
-
-### ✅ **Améliorations Récentes (19/04/2026)**
-- **Correction critique** : Isolation des processus FFmpeg avec `start_new_session=True`
-- **Gestion des timeouts** : 30 min pour conversions simples, 1 heure pour concaténations
-- **Terminaison propre** : Annulation et nettoyage explicites des processus
-- **Tests unitaires** : 11 tests couvrant tous les scénarios de gestion des threads
-- **Documentation** : Mise à jour des fichiers README, ROADMAP, TODO
-- **Corrections backend** : Ajout import UploadFile, correction UPLOAD_FOLDER, création répertoires
-- **Versionnement** : Système automatique vM.m.f implémenté (version actuelle: 0.1.0)
-
-### ⚠️ **Problèmes Identifiés (À Corriger)**
-- **SQLAlchemy** : Conflit de définition de table `audit_logs` (doublon)
-- **Redis** : Connexion refusée en local (nécessite Redis serveur)
-- **Tests d'intégration** : Échec de collecte des tests d'intégration
-- **Dépendances** : Certains packages manquent dans requirements.txt
-- **Version** : Réinitialisée à v0.1.0 pour refléter l'état réel (pré-production)
-- **Migration PostgreSQL** : Planifier migration de MySQL vers PostgreSQL pour meilleure scalabilité
-- **Nettoyage racine** : Organiser la racine du projet pour ne garder que les fichiers de documentation core
-
-### 🔧 **Corrections En Cours**
-- [ ] Corriger le doublon de table SQLAlchemy dans `app/db/models/audit.py`
-- [ ] Configurer Redis pour les tests locaux
-- [ ] Vérifier et compléter les dépendances manquantes
-- [ ] Corriger les tests d'intégration
-- [ ] Documenter le système de versionnement automatique
+- Synchronisation des marque-pages
 
 ---
 
-## 🎯 Métriques de Succès
+## ✅ TÂCHES RÉALISÉES (50 dernières)
 
-**Objectif Semaine 1 :**
-- Interface recherche 100% fonctionnelle
-- Navigation fluide vers les détails
-- Pagination performante (>50% de satisfaction utilisateur)
+### v0.12.20 (19/04/2026)
+- ✅ **4f8bbe8** - Ajout du CHANGELOG.md complet et mise à jour de VERSION
+- ✅ **4f8bbe8** - Mise à jour de la ROADMAP.md
+- ✅ **4f8bbe8** - Ajout de la tâche "Nettoyage racine" dans TODO.md
 
-**Objectif Semaine 2 :**
-- Suggestions contextuelles efficaces (>80% d'acceptation)
-- Corrections transparentes
-- UX améliorée significativement
+### v0.12.19 (19/04/2026)
+- ✅ **8d0ab3c** - Ajout de MEMORY.md et WORKFLOWS.md
+- ✅ **8d0ab3c** - Mise à jour du README.md
+- ✅ **8d0ab3c** - Synchronisation des branches debug et devel
 
-**Voir [`ROADMAP.md`](ROADMAP.md) pour l'évolution stratégique complète**
+### v0.12.18 (19/04/2026)
+- ✅ **bc08337** - Merge de devel vers debug
+- ✅ **bc08337** - Correction des warnings MySQL
+- ✅ **bc08337** - Ajout tâche migration PostgreSQL
 
-*Document mis à jour le 19/04/2026 après correction gestion threads FFmpeg et ajout tests complets*
+### v0.12.17 (19/04/2026)
+- ✅ **cf2d182** - Correction warnings MySQL (--host-cache-size=0)
+- ✅ **cf2d182** - Mise à jour docker-compose.yml
+
+### v0.12.16 (19/04/2026)
+- ✅ **b004aa4** - Suppression des tests du workflow CI/CD
+
+### v0.12.8 (19/04/2026)
+- ✅ **8fb4b47** - Version finale après analyse des commits
+- ✅ **8fb4b47** - Système de versionnement automatique
+
+### v0.8.0 (07/09/2025)
+- ✅ **dd51bc3** - AudioNexus PRODUCTION-READY
+- ✅ **dd51bc3** - Interface audiobooks complète
+- ✅ **dd51bc3** - Synchronisation multi-instances
+- ✅ **dd51bc3** - Dashboard admin avec métriques
+
+### v0.5.0 (04/09/2025)
+- ✅ **447486d** - Implémentation interface audiobooks
+- ✅ **447486d** - Corrections ROADMAP.md et TODO.md
+- ✅ **447486d** - Succès mission authentication
+
+### v0.3.3 (03/09/2025)
+- ✅ **731fb72** - Migration vers MySQL
+- ✅ **731fb72** - Corrections OAuth2
+
+### v0.1.0 (02/09/2025)
+- ✅ **2170545** - Version initiale après reset
+
+---
+
+*Dernière mise à jour: 19/04/2026*
+*Version actuelle: v0.12.20*
+*Pour la documentation détaillée, voir le dossier `documentation/`*
