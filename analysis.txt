@@ -1,0 +1,69 @@
+FIX:  Renommage du projet en AudioNexus et mise à jour de la documentation → v0.0.1
+FIX:  docs: mise à jour de la documentation du projet et configuration Nginx → v0.0.2
+FIX:  chore: update project dependencies and configuration → v0.0.3
+FEAT: docs: add DEVELOPMENT.md with setup and contribution guidelines → v0.1.0
+FEAT: feat: implémentation complète de l'authentification et du routage frontend → v0.2.0
+FIX:  docs: mise à jour complète de la documentation (v0.3.2-alpha) → v0.2.1
+FIX:  chore: mise à jour des fichiers .gitignore → v0.2.2
+FIX:  docs: mise à jour complète de la documentation du projet → v0.2.3
+FIX:  refactor: mise à jour majeure de la documentation et du workflow → v0.2.4
+FIX:  refactor: nettoyage du projet et documentation → v0.2.5
+FIX:  refactor: amélioration de l'initialisation de la base de données → v0.2.6
+FIX:  fix: corriger les chemins d'importation et les dépendances → v0.2.7
+FIX:  docs: mettre à jour la documentation du projet → v0.2.8
+FIX:  Refactor: Mise à jour des tests d'authentification et configuration → v0.2.9
+FIX:  Docs: Mise à jour du fichier TODO.md → v0.2.10
+FEAT: Chore: Ajout des fichiers de couverture de test au .gitignore → v0.3.0
+FIX:  docs: intégration des fichiers du modèle template.git → v0.3.1
+FIX:  Correction de la gestion de Base SQLAlchemy et des tests d'authentification → v0.3.2
+FIX:  Migration vers MySQL et corrections OAuth2 → v0.3.3
+FIX:  Mise à jour du fichier PROJET.md → v0.3.4
+FIX:  Corrections pour la documentation OpenAPI et initialisation de la base de données → v0.3.5
+FIX:  refactor: réorganisation complète de la documentation et corrections mineures → v0.3.6
+FIX:  fix(auth): résoudre l'erreur 500 sur l'endpoint /auth/register → v0.3.7
+FIX:  Nettoyage du code et mise à jour de la documentation → v0.3.8
+FIX:  Résolution des problèmes d'authentification et correction des tests → v0.3.9
+FIX:  Désactivation temporaire des fonctionnalités d'email et corrections de linting → v0.3.10
+FIX:  🎉 Fix: Auth endpoints + Architecture review → v0.3.11
+FEAT: docs(TÉLÉPHONE ROUGE): ajouter règle commits à chaque tâche terminée → v0.4.0
+FIX:  fix(TÉLÉPHONE ROUGE): session complète terminée - toutes tâches critiques finalisées → v0.4.1
+FEAT: Implémentation complète Phases 1-4 ROADMAP AudioNexus → v0.5.0
+FIX:  Correction frontend - Résolution erreurs TypeScript/ESLint → v0.5.1
+FIX:  Correction imports - Utilisation alias TypeScript @ → v0.5.2
+FIX:  Correction imports main.tsx - Alias TypeScript @ → v0.5.3
+FIX:  refactor(docs): réorganisation complète documentation et archivage → v0.5.4
+FIX:  refactor(cleanup): nettoyage complet dépôt AudioNexus → v0.5.5
+FIX:  Correction routes API authentification → v0.5.6
+FIX:  Mise à jour générale du projet AudioNexus → v0.5.7
+FIX:  fix(TÉLÉPHONE ROUGE): fusion terminée - résolution des conflits et intégration frontend → v0.5.8
+FIX:  docs(ROADMAP): créer ROADMAP.md complet et corriger README/TODO.md avec état réel → v0.5.9
+FEAT: Ajout configuration VoidAuth frontend et CORS backend pour résoudre problèmes de login et accès dashboard Phase 0 → v0.6.0
+FIX:  docs(ROADMAP): mise à jour documentations Phase 0 terminée - préparation Phase 1 → v0.6.1
+FIX:  docs(ROADMAP): mise à jour statut Phase 0/1 - réussite correction infrastructure → v0.6.2
+FIX:  Résoudre les échecs de connexion et connectivité intermittente → v0.6.3
+FIX:  Documentation complète mise à jour - succès mission authentication → v0.6.4
+FIX:  Corrections complètes ROADMAP.md et TODO.md - état réel post-authentification → v0.6.5
+FEAT: Implémentation interface de téléversement avec traitement automatique des audiobooks → v0.7.0
+FEAT: Martial Bot: Implémentation dashboard admin complet avec métriques temps réel → v0.8.0
+FEAT: Implémentation complète synchronisation multi-instances Audiobookshelf → v0.9.0
+FEAT: Implémentation massive AudioNexus - Phase 5 terminée ! → v0.10.0
+FIX:  Documentation finale v0.8.0 - AudioNexus PRODUCTION-READY → v0.10.1
+FEAT: feat: Implémentation interface audiobooks v0.5.0 - Phase A & C → v0.11.0
+FIX:  🔧 PHASE 1: Améliorations qualité du code → v0.11.1
+FIX:  🎵 PHASE 2: FFmpeg AVANCÉ - Processing Métadonnées + Sécurité → v0.11.2
+FIX:  🧪 PHASE 3: TESTS E2E COMPLETS - Suite Upload→Dashboard → v0.11.3
+FIX:  ⚡ PHASE 4: PERFORMANCES OPTIMISÉES - <2s interfaces + <10min traitements → v0.11.4
+FIX:  docs: mise à jour documentations après corrections containers → v0.11.5
+FIX:  Commit des modifications courantes → v0.11.6
+FIX:  Fix FFmpeg thread management and update TODO → v0.11.7
+FEAT: Add comprehensive tests for FFmpeg thread management fix → v0.12.0
+FIX:  Fix remaining FFmpeg service issues → v0.12.1
+FIX:  Update documentation with FFmpeg thread management fixes → v0.12.2
+FIX:  Replace AWS-based CI/CD with GitHub Container Registry workflow → v0.12.3
+FIX:  Trigger devel branch build → v0.12.4
+FIX:  Fix upload service initialization and imports → v0.12.5
+FIX:  Update TODO.md with recent fixes and identified issues → v0.12.6
+FIX:  Set version to v0.16.0 based on commit analysis → v0.12.7
+FIX:  Reset version to v0.1.0 and update TODO → v0.12.8
+
+=== VERSION FINALE: v0.12.8 ===

@@ -1,0 +1,67 @@
+48c18fe Renommage du projet en AudioNexus et mise à jour de la documentation
+0657ca0 docs: mise à jour de la documentation du projet et configuration Nginx
+451d270 chore: update project dependencies and configuration
+9126a2e docs: add DEVELOPMENT.md with setup and contribution guidelines
+8fd432c feat: implémentation complète de l'authentification et du routage frontend
+a5caf1f docs: mise à jour complète de la documentation (v0.3.2-alpha)
+780259f chore: mise à jour des fichiers .gitignore
+313e704 docs: mise à jour complète de la documentation du projet
+645b4d3 refactor: mise à jour majeure de la documentation et du workflow
+dfeb927 refactor: nettoyage du projet et documentation
+9e9a6f6 refactor: amélioration de l'initialisation de la base de données
+b1bd72f fix: corriger les chemins d'importation et les dépendances
+ddc3375 docs: mettre à jour la documentation du projet
+6acef4b Refactor: Mise à jour des tests d'authentification et configuration
+ecd2526 Docs: Mise à jour du fichier TODO.md
+37b7e3e Chore: Ajout des fichiers de couverture de test au .gitignore
+9340415 docs: intégration des fichiers du modèle template.git
+49a507a Correction de la gestion de Base SQLAlchemy et des tests d'authentification
+731fb72 Migration vers MySQL et corrections OAuth2
+9bf8f03 Mise à jour du fichier PROJET.md
+1bf67a8 Corrections pour la documentation OpenAPI et initialisation de la base de données
+bacd652 refactor: réorganisation complète de la documentation et corrections mineures
+aecf8ae fix(auth): résoudre l'erreur 500 sur l'endpoint /auth/register
+fdb9a20 Nettoyage du code et mise à jour de la documentation
+4968d9f Résolution des problèmes d'authentification et correction des tests
+83d12ba Désactivation temporaire des fonctionnalités d'email et corrections de linting
+42454ec 🎉 Fix: Auth endpoints + Architecture review
+9910f5f docs(TÉLÉPHONE ROUGE): ajouter règle commits à chaque tâche terminée
+c00a0d0 fix(TÉLÉPHONE ROUGE): session complète terminée - toutes tâches critiques finalisées
+0660ee0 Implémentation complète Phases 1-4 ROADMAP AudioNexus
+96b85e0 Correction frontend - Résolution erreurs TypeScript/ESLint
+0662f45 Correction imports - Utilisation alias TypeScript @
+9640151 Correction imports main.tsx - Alias TypeScript @
+e826ed4 refactor(docs): réorganisation complète documentation et archivage
+57ada39 refactor(cleanup): nettoyage complet dépôt AudioNexus
+ebd9162 Correction routes API authentification
+70d01dd Mise à jour générale du projet AudioNexus
+3c07a84 fix(TÉLÉPHONE ROUGE): fusion terminée - résolution des conflits et intégration frontend
+91e0bce docs(ROADMAP): créer ROADMAP.md complet et corriger README/TODO.md avec état réel
+8aa2762 Ajout configuration VoidAuth frontend et CORS backend pour résoudre problèmes de login et accès dashboard Phase 0
+3513bf4 docs(ROADMAP): mise à jour documentations Phase 0 terminée - préparation Phase 1
+64c581e docs(ROADMAP): mise à jour statut Phase 0/1 - réussite correction infrastructure
+98f2739 Résoudre les échecs de connexion et connectivité intermittente
+a96c3ed Documentation complète mise à jour - succès mission authentication
+2c54a49 Corrections complètes ROADMAP.md et TODO.md - état réel post-authentification
+4cb9f64 Implémentation interface de téléversement avec traitement automatique des audiobooks
+8a4b4b4 Martial Bot: Implémentation dashboard admin complet avec métriques temps réel
+da98225 Implémentation complète synchronisation multi-instances Audiobookshelf
+a9f5c64 Implémentation massive AudioNexus - Phase 5 terminée !
+dd51bc3 Documentation finale v0.8.0 - AudioNexus PRODUCTION-READY
+447486d feat: Implémentation interface audiobooks v0.5.0 - Phase A & C
+e828881 🔧 PHASE 1: Améliorations qualité du code
+410fb92 🎵 PHASE 2: FFmpeg AVANCÉ - Processing Métadonnées + Sécurité
+4a99247 🧪 PHASE 3: TESTS E2E COMPLETS - Suite Upload→Dashboard
+f96a8fb ⚡ PHASE 4: PERFORMANCES OPTIMISÉES - <2s interfaces + <10min traitements
+713fd3f docs: mise à jour documentations après corrections containers
+03314ee Commit des modifications courantes
+265fbb19 Fix FFmpeg thread management and update TODO
+b11e789 Add comprehensive tests for FFmpeg thread management fix
+89022cb Fix remaining FFmpeg service issues
+ec6e8c5 Update documentation with FFmpeg thread management fixes
+5f219d0 Replace AWS-based CI/CD with GitHub Container Registry workflow
+e6b8ee0 Trigger devel branch build
+9c4f6b7 Fix upload service initialization and imports
+782a646 Update TODO.md with recent fixes and identified issues
+6d3d7ec Set version to v0.16.0 based on commit analysis
+2170545 Reset version to v0.1.0 and update TODO
