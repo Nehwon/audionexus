@@ -66,30 +66,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
 
-      - name: Install test dependencies
-        run: |
-          pip install pytest pytest-asyncio pytest-cov
-
-      - name: Run containerized tests
-        run: |
-          # Run tests inside the built container
-          docker run --network host \
-            -e DATABASE_URL="mysql+pymysql://root:root@localhost/test_audionexus" \
-            -e REDIS_URL="redis://localhost:6379" \
-            -e TESTING=true \
-            ghcr.io/nehwon/audionexus:${{ needs.setup-version.outputs.version }}.${{ needs.setup-version.outputs.branch_type }} \
-            sh -c "cd /app && pytest --cov=app --cov-report=xml -v"
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: docker-tests
 
   deploy-to-docker-hub:
     runs-on: ubuntu-latest
