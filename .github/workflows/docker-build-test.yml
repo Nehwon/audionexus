@@ -82,7 +82,7 @@ jobs:
             -e DATABASE_URL="mysql+pymysql://root:root@localhost/test_audionexus" \
             -e REDIS_URL="redis://localhost:6379" \
             -e TESTING=true \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/nehwon/audionexus:latest \
             sh -c "cd /app && pytest --cov=app --cov-report=xml -v"
 
       - name: Upload coverage reports
