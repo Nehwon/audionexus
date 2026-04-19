@@ -140,7 +140,7 @@ jobs:
           release_name: Release v${{ github.run_number }}
           body: |
             ## Docker Images
-            - GitHub Container Registry: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+            - GitHub Container Registry: `ghcr.io/nehwon/audionexus:latest`
             - Docker Hub: `nehwon/audionexus:latest`
             
             ## Changes
