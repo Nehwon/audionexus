@@ -105,7 +105,7 @@ class UploadService:
     def __init__(self):
         """Initialise le service d'upload."""
         self.temp_dir = (
-            Path(settings.TEMP_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
+            Path(settings.UPLOAD_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
         )
         self.temp_dir.mkdir(exist_ok=True)
 
