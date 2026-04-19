@@ -102,9 +102,9 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.version }}.${{ needs.setup-version.outputs.branch_type }}
-            ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/audionexus:${{ needs.setup-version.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/audionexus:${{ needs.setup-version.outputs.version }}.${{ needs.setup-version.outputs.branch_type }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/audionexus:${{ github.sha }}
           labels: |
             org.opencontainers.image.title=${{ github.repository }}
             org.opencontainers.image.version=${{ needs.setup-version.outputs.tag }}
@@ -187,8 +187,8 @@ jobs:
             ## Docker Images
             
             ### GitHub Container Registry
-            - `${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }}`
-            - `${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}`
+            - `${{ env.REGISTRY }}/${{ github.repository_owner }}/audionexus:${{ needs.setup-version.outputs.tag }}`
+            - `${{ env.REGISTRY }}/${{ github.repository_owner }}/audionexus:${{ github.sha }}`
             
             ### Docker Hub
             - `nehwon/audionexus:${{ needs.setup-version.outputs.tag }}`
