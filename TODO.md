@@ -112,14 +112,21 @@ const handleCorrectionSelect = (correction: string) => {
 - ✅ Dashboard administrateur fonctionnel
 - ✅ API REST complète et documentée
 - ✅ Recherche de base opérationnelle
-- ✅ Traitement FFmpeg intégré (pas de conversion M4B requise)
+- ✅ Traitement FFmpeg intégré avec gestion robuste des threads
+- ✅ Tests complets pour la gestion des processus FFmpeg
 
 ### 📋 **Prochaines Fonctionnalités**
 - Gestion complète du cycle de vie des audiobooks
 - Interfaces utilisateur enhancées
 - Synchronisation multi-instances
 - Gestion des collections
-- Optimisation gestion threads FFmpeg
+
+### ✅ **Améliorations Récentes (19/04/2026)**
+- **Correction critique** : Isolation des processus FFmpeg avec `start_new_session=True`
+- **Gestion des timeouts** : 30 min pour conversions simples, 1 heure pour concaténations
+- **Terminaison propre** : Annulation et nettoyage explicites des processus
+- **Tests unitaires** : 11 tests couvrant tous les scénarios de gestion des threads
+- **Documentation** : Mise à jour des fichiers README, ROADMAP, TODO
 
 ---
 
@@ -137,4 +144,4 @@ const handleCorrectionSelect = (correction: string) => {
 
 **Voir [`ROADMAP.md`](ROADMAP.md) pour l'évolution stratégique complète**
 
-*Document mis à jour le 07/09/2025 après stabilisation containers Docker*
+*Document mis à jour le 19/04/2026 après correction gestion threads FFmpeg et ajout tests complets*
