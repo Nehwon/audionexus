@@ -863,4 +863,4 @@ mypy .
 <div align="center">
   <sub>Créé avec ❤️ par Fabrice Lamachère (Nehwon) | 2023-2025</sub>
 </div>
-# Initial commit for debug branch
+# Initial commit for devel branch

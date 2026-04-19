@@ -108,16 +108,42 @@ const handleCorrectionSelect = (correction: string) => {
 - Optimisation build images
 
 ### 🔄 **Fonctionnalités Core Fonctionnelles**
-- Authentification VoidAuth opérationnelle
-- Dashboard administrateur fonctionnel
-- API REST complète et documentée
-- Recherche de base opérationnelle
+- ✅ Authentification VoidAuth opérationnelle
+- ✅ Dashboard administrateur fonctionnel
+- ✅ API REST complète et documentée
+- ✅ Recherche de base opérationnelle
+- ✅ Traitement FFmpeg intégré avec gestion robuste des threads
+- ✅ Tests complets pour la gestion des processus FFmpeg
 
 ### 📋 **Prochaines Fonctionnalités**
 - Gestion complète du cycle de vie des audiobooks
 - Interfaces utilisateur enhancées
 - Synchronisation multi-instances
 - Gestion des collections
+
+### ✅ **Améliorations Récentes (19/04/2026)**
+- **Correction critique** : Isolation des processus FFmpeg avec `start_new_session=True`
+- **Gestion des timeouts** : 30 min pour conversions simples, 1 heure pour concaténations
+- **Terminaison propre** : Annulation et nettoyage explicites des processus
+- **Tests unitaires** : 11 tests couvrant tous les scénarios de gestion des threads
+- **Documentation** : Mise à jour des fichiers README, ROADMAP, TODO
+- **Corrections backend** : Ajout import UploadFile, correction UPLOAD_FOLDER, création répertoires
+- **Versionnement** : Système automatique vM.m.f implémenté (version actuelle: 0.1.0)
+
+### ⚠️ **Problèmes Identifiés (À Corriger)**
+- **SQLAlchemy** : Conflit de définition de table `audit_logs` (doublon)
+- **Redis** : Connexion refusée en local (nécessite Redis serveur)
+- **Tests d'intégration** : Échec de collecte des tests d'intégration
+- **Dépendances** : Certains packages manquent dans requirements.txt
+- **Version** : Réinitialisée à v0.1.0 pour refléter l'état réel (pré-production)
+- **Migration PostgreSQL** : Planifier migration de MySQL vers PostgreSQL pour meilleure scalabilité
+
+### 🔧 **Corrections En Cours**
+- [ ] Corriger le doublon de table SQLAlchemy dans `app/db/models/audit.py`
+- [ ] Configurer Redis pour les tests locaux
+- [ ] Vérifier et compléter les dépendances manquantes
+- [ ] Corriger les tests d'intégration
+- [ ] Documenter le système de versionnement automatique
 
 ---
 
@@ -135,4 +161,4 @@ const handleCorrectionSelect = (correction: string) => {
 
 **Voir [`ROADMAP.md`](ROADMAP.md) pour l'évolution stratégique complète**
 
-*Document mis à jour le 07/09/2025 après stabilisation containers Docker*
+*Document mis à jour le 19/04/2026 après correction gestion threads FFmpeg et ajout tests complets*

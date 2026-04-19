@@ -25,6 +25,7 @@ from mutagen.id3 import ID3, TALB, TCON, TDRC, TIT2, TPE1, TRCK
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from fastapi import UploadFile
 from app.config import settings
 from app.exceptions import ValidationError
 
@@ -103,9 +104,10 @@ class UploadService:
 
     def __init__(self):
         """Initialise le service d'upload."""
-        self.temp_dir = (
-            Path(settings.UPLOAD_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
-        )
+        upload_folder = Path(settings.UPLOAD_FOLDER or tempfile.gettempdir())
+        self.temp_dir = upload_folder / "audiobooks_uploads"
+        # Créer le répertoire parent si nécessaire
+        upload_folder.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(exist_ok=True)
 
         # Cache des tâches en mémoire (pour développement)
@@ -541,7 +543,7 @@ class UploadService:
             with open(concat_file, "w", encoding="utf-8") as f:
                 f.write("\n".join(file_list))
 
-            # Concaténer avec FFmpeg
+            # Concaténer avec FFmpeg - Gestion améliorée des processus
             cmd = [
                 self.ffmpeg_path,
                 "-f",
@@ -555,14 +557,34 @@ class UploadService:
                 str(output_file),
             ]
 
-            result = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            # Utiliser un processus avec gestion explicite
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                start_new_session=True  # Démarrer dans une nouvelle session
             )
-            await result.wait()
-
-            if result.returncode != 0:
-                stderr = await result.stderr.read()
-                raise ProcessingError(f"Erreur conversion FFmpeg: {stderr.decode()}")
+            
+            # Attendre la fin du processus avec timeout
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=3600  # Timeout de 1 heure pour les conversions longues
+                )
+                
+                if process.returncode != 0:
+                    error_msg = stderr.decode() if stderr else "Erreur inconnue"
+                    raise ProcessingError(f"Erreur conversion FFmpeg: {error_msg}")
+                    
+            except asyncio.TimeoutError:
+                # Annuler le processus si timeout
+                process.terminate()
+                try:
+                    await asyncio.wait_for(process.wait(), timeout=30)
+                except asyncio.TimeoutError:
+                    process.kill()
+                    await process.wait()
+                raise ProcessingError("Conversion FFmpeg timeout apres 1 heure")
 
             converted_files.append(output_file)
 
@@ -590,14 +612,34 @@ class UploadService:
             str(output_file),
         ]
 
-        result = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        # Utiliser un processus avec gestion explicite
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            start_new_session=True  # Démarrer dans une nouvelle session
         )
-        await result.wait()
-
-        if result.returncode != 0:
-            stderr = await result.stderr.read()
-            raise ProcessingError(f"Erreur conversion FFmpeg: {stderr.decode()}")
+        
+        # Attendre la fin du processus avec timeout
+        try:
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=1800  # Timeout de 30 minutes pour les conversions simples
+            )
+            
+            if process.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Erreur inconnue"
+                raise ProcessingError(f"Erreur conversion FFmpeg: {error_msg}")
+                
+        except asyncio.TimeoutError:
+            # Annuler le processus si timeout
+            process.terminate()
+            try:
+                await asyncio.wait_for(process.wait(), timeout=30)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+            raise ProcessingError("Conversion FFmpeg timeout apres 30 minutes")
 
     def _extract_id3_text(self, tags, *tag_keys):
         """
