@@ -104,9 +104,10 @@ class UploadService:
 
     def __init__(self):
         """Initialise le service d'upload."""
-        self.temp_dir = (
-            Path(settings.UPLOAD_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
-        )
+        upload_folder = Path(settings.UPLOAD_FOLDER or tempfile.gettempdir())
+        self.temp_dir = upload_folder / "audiobooks_uploads"
+        # Créer le répertoire parent si nécessaire
+        upload_folder.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(exist_ok=True)
 
         # Cache des tâches en mémoire (pour développement)
