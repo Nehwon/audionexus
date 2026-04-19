@@ -108,16 +108,18 @@ const handleCorrectionSelect = (correction: string) => {
 - Optimisation build images
 
 ### 🔄 **Fonctionnalités Core Fonctionnelles**
-- Authentification VoidAuth opérationnelle
-- Dashboard administrateur fonctionnel
-- API REST complète et documentée
-- Recherche de base opérationnelle
+- ✅ Authentification VoidAuth opérationnelle
+- ✅ Dashboard administrateur fonctionnel
+- ✅ API REST complète et documentée
+- ✅ Recherche de base opérationnelle
+- ✅ Traitement FFmpeg intégré (pas de conversion M4B requise)
 
 ### 📋 **Prochaines Fonctionnalités**
 - Gestion complète du cycle de vie des audiobooks
 - Interfaces utilisateur enhancées
 - Synchronisation multi-instances
 - Gestion des collections
+- Optimisation gestion threads FFmpeg
 
 ---
 
