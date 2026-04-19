@@ -136,6 +136,7 @@ const handleCorrectionSelect = (correction: string) => {
 - **Tests d'intégration** : Échec de collecte des tests d'intégration
 - **Dépendances** : Certains packages manquent dans requirements.txt
 - **Version** : Réinitialisée à v0.1.0 pour refléter l'état réel (pré-production)
+- **Migration PostgreSQL** : Planifier migration de MySQL vers PostgreSQL pour meilleure scalabilité
 
 ### 🔧 **Corrections En Cours**
 - [ ] Corriger le doublon de table SQLAlchemy dans `app/db/models/audit.py`
