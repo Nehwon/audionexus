@@ -126,7 +126,7 @@ jobs:
             -e DATABASE_URL="mysql+pymysql://root:root@localhost/test_audionexus" \
             -e REDIS_URL="redis://localhost:6379" \
             -e TESTING=true \
-            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }} \
+            ghcr.io/nehwon/audionexus:${{ needs.setup-version.outputs.tag }} \
             sh -c "cd /app && pytest --cov=app --cov-report=xml -v"
 
       - name: Upload coverage reports
