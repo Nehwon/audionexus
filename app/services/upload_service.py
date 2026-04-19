@@ -25,6 +25,7 @@ from mutagen.id3 import ID3, TALB, TCON, TDRC, TIT2, TPE1, TRCK
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from fastapi import UploadFile
 from app.config import settings
 from app.exceptions import ValidationError
 
