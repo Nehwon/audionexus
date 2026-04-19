@@ -128,18 +128,21 @@ const handleCorrectionSelect = (correction: string) => {
 - **Tests unitaires** : 11 tests couvrant tous les scénarios de gestion des threads
 - **Documentation** : Mise à jour des fichiers README, ROADMAP, TODO
 - **Corrections backend** : Ajout import UploadFile, correction UPLOAD_FOLDER, création répertoires
+- **Versionnement** : Système automatique vM.m.f implémenté (version actuelle: 0.1.0)
 
 ### ⚠️ **Problèmes Identifiés (À Corriger)**
 - **SQLAlchemy** : Conflit de définition de table `audit_logs` (doublon)
 - **Redis** : Connexion refusée en local (nécessite Redis serveur)
 - **Tests d'intégration** : Échec de collecte des tests d'intégration
 - **Dépendances** : Certains packages manquent dans requirements.txt
+- **Version** : Réinitialisée à v0.1.0 pour refléter l'état réel (pré-production)
 
 ### 🔧 **Corrections En Cours**
 - [ ] Corriger le doublon de table SQLAlchemy dans `app/db/models/audit.py`
 - [ ] Configurer Redis pour les tests locaux
 - [ ] Vérifier et compléter les dépendances manquantes
 - [ ] Corriger les tests d'intégration
+- [ ] Documenter le système de versionnement automatique
 
 ---
 
