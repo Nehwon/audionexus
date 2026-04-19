@@ -4,4 +4,4 @@
 # m = Minor version (new features)
 # f = Fix version (bug fixes)
 
-CURRENT_VERSION=0.12.13
+CURRENT_VERSION=0.12.14
