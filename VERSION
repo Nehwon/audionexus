@@ -1,0 +1,7 @@
+# Versioning Scheme: vM.m.f.type
+# M = Major version
+# m = Minor version  
+# f = Fix version
+# type = main|dev|bug|pprod
+
+CURRENT_VERSION=1.0.0

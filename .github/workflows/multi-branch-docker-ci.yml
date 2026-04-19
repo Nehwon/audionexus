@@ -1,0 +1,208 @@
+name: Multi-Branch Docker CI/CD
+
+on:
+  push:
+    branches: [ main, devel, debug, preprod ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+  pull_request:
+    branches: [ main, devel, debug, preprod ]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_HUB_REGISTRY: docker.io
+
+jobs:
+  setup-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      branch_type: ${{ steps.version.outputs.branch_type }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Get version information
+        id: version
+        run: |
+          # Get base version
+          BASE_VERSION=$(python scripts/version_manager.py get-version)
+          echo "Base version: $BASE_VERSION"
+          
+          # Determine branch type
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            BRANCH_TYPE="main"
+          elif [ "${{ github.ref_name }}" = "devel" ]; then
+            BRANCH_TYPE="dev"
+          elif [ "${{ github.ref_name }}" = "debug" ]; then
+            BRANCH_TYPE="bug"
+          elif [ "${{ github.ref_name }}" = "preprod" ]; then
+            BRANCH_TYPE="pprod"
+          else
+            BRANCH_TYPE="dev"
+          fi
+          echo "Branch type: $BRANCH_TYPE"
+          
+          # Generate full tag
+          FULL_TAG="v${BASE_VERSION}.${BRANCH_TYPE}"
+          echo "Full tag: $FULL_TAG"
+          
+          # Set outputs
+          echo "version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$FULL_TAG" >> $GITHUB_OUTPUT
+          echo "branch_type=$BRANCH_TYPE" >> $GITHUB_OUTPUT
+
+  build-and-test:
+    needs: setup-version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_audionexus
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.version }}.${{ needs.setup-version.outputs.branch_type }}
+            ${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.setup-version.outputs.tag }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run containerized tests
+        run: |
+          docker run --network host \
+            -e DATABASE_URL="mysql+pymysql://root:root@localhost/test_audionexus" \
+            -e REDIS_URL="redis://localhost:6379" \
+            -e TESTING=true \
+            ${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }} \
+            sh -c "cd /app && pytest --cov=app --cov-report=xml -v"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: docker-tests
+
+  deploy-to-docker-hub:
+    needs: [setup-version, build-and-test]
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main' || github.ref_name == 'devel' || github.ref_name == 'debug' || github.ref_name == 'preprod'
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            nehwon/audionexus:${{ needs.setup-version.outputs.tag }}
+            nehwon/audionexus:${{ needs.setup-version.outputs.version }}.${{ needs.setup-version.outputs.branch_type }}
+            ${{ needs.setup-version.outputs.branch_type == 'main' && 'nehwon/audionexus:latest' || '' }}
+          labels: |
+            org.opencontainers.image.title=${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.setup-version.outputs.tag }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    needs: deploy-to-docker-hub
+    runs-on: ubuntu-latest
+    if: github.ref_name == 'main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.setup-version.outputs.tag }}
+          release_name: Release ${{ needs.setup-version.outputs.tag }}
+          body: |
+            ## Docker Images
+            
+            ### GitHub Container Registry
+            - `${{ env.REGISTRY }}/${{ github.repository }}:${{ needs.setup-version.outputs.tag }}`
+            - `${{ env.REGISTRY }}/${{ github.repository }}:${{ github.sha }}`
+            
+            ### Docker Hub
+            - `nehwon/audionexus:${{ needs.setup-version.outputs.tag }}`
+            - `nehwon/audionexus:latest` (main only)
+            
+            ## Changes
+            Automatic build from commit ${{ github.sha }}
+            
+            Branch: ${{ github.ref_name }}
+            Version: ${{ needs.setup-version.outputs.version }}
+            Type: ${{ needs.setup-version.outputs.branch_type }}
+          draft: false
+          prerelease: ${{ needs.setup-version.outputs.branch_type != 'main' }}
