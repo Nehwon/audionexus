@@ -25,6 +25,7 @@ from mutagen.id3 import ID3, TALB, TCON, TDRC, TIT2, TPE1, TRCK
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from fastapi import UploadFile
 from app.config import settings
 from app.exceptions import ValidationError
 
@@ -104,7 +105,7 @@ class UploadService:
     def __init__(self):
         """Initialise le service d'upload."""
         self.temp_dir = (
-            Path(settings.TEMP_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
+            Path(settings.UPLOAD_FOLDER or tempfile.gettempdir()) / "audiobooks_uploads"
         )
         self.temp_dir.mkdir(exist_ok=True)
 
@@ -582,7 +583,7 @@ class UploadService:
                 except asyncio.TimeoutError:
                     process.kill()
                     await process.wait()
-                raise ProcessingError("Conversion FFmpeg timeout après 1 heure")
+                raise ProcessingError("Conversion FFmpeg timeout apres 1 heure")
 
             converted_files.append(output_file)
 
@@ -637,7 +638,7 @@ class UploadService:
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
-            raise ProcessingError("Conversion FFmpeg timeout après 30 minutes")
+            raise ProcessingError("Conversion FFmpeg timeout apres 30 minutes")
 
     def _extract_id3_text(self, tags, *tag_keys):
         """
