@@ -65,8 +65,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -123,8 +121,6 @@ jobs:
           push: true
           tags: nehwon/audionexus:latest,nehwon/audionexus:${{ github.sha }}
           labels: ${{ steps.meta-dockerhub.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   create-release:
     runs-on: ubuntu-latest
