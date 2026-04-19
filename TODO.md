@@ -2,73 +2,73 @@
 
 ## 🔴 URGENT - À Faire Immédiatement
 
-### 1. Nettoyage de la Racine du Projet
+### 1. Nettoyage de la Racine du Projet (sur toutes les branches)
 - Organiser la racine pour ne garder que les fichiers de documentation core
 - Déplacer les fichiers techniques dans des dossiers appropriés
 - Supprimer les fichiers temporaires et obsolètes
 
-### 2. Correction SQLAlchemy
+### 2. Correction SQLAlchemy (sur la branche debug)
 - Résoudre le conflit de définition de table `audit_logs` (doublon)
 - Fichier concerné: `app/db/models/audit.py`
 
-### 3. Configuration Redis Locale
+### 3. Configuration Redis Locale (sur la branche devel)
 - Configurer Redis pour les tests locaux
 - Résoudre les problèmes de connexion refusée
 
-### 4. Tests d'Intégration
+### 4. Tests d'Intégration (sur la branche devel)
 - Corriger l'échec de collecte des tests d'intégration
 - Vérifier la configuration pytest
 
-### 5. Migration PostgreSQL
+### 5. Migration PostgreSQL (sur la branche devel)
 - Planifier et préparer la migration de MySQL vers PostgreSQL
 - Évaluer l'impact sur les performances et la scalabilité
 
 ## 🟡 HAUTE PRIORITÉ - Fonctionnalités Core
 
-### 6. Finalisation Pagination
+### 6. Finalisation Pagination (sur la branche devel)
 - Implémenter la pagination dans `SimpleSearchComponent.tsx`
 - Boutons Précédent/Suivant fonctionnels
 - Gestion des états de page
 
-### 7. Page Détail Audiobook
+### 7. Page Détail Audiobook (sur la branche devel)
 - Créer le composant `AudiobookDetail`
 - Implémenter la navigation depuis les résultats de recherche
 - Affichage complet des métadonnées
 - Intégration du lecteur audio
 
-### 8. Gestion des Suggestions
+### 8. Gestion des Suggestions (sur la branche devel)
 - Implémenter la sélection des suggestions de recherche
 - Remplacement automatique de la requête
 - Maintien du contexte de recherche
 
-### 9. Corrections Orthographiques
+### 9. Corrections Orthographiques (sur la branche debug)
 - Implémenter la sélection des corrections
 - Application automatique via API
 - Confirmation utilisateur pour les corrections majeures
 
 ## 🟢 PRIORITÉ MOYENNE - Améliorations
 
-### 10. Optimisation des Tests
+### 10. Optimisation des Tests (sur la branche devel)
 - Compléter les tests unitaires manquants
 - Vérifier et ajouter les dépendances manquantes dans requirements.txt
 
-### 11. Documentation Technique
+### 11. Documentation Technique (sur la branche devel)
 - Compléter la documentation dans `documentation/`
 - Ajouter des guides pour le déploiement et le développement
 
-### 12. Amélioration des Performances
+### 12. Amélioration des Performances (sur la branche devel)
 - Optimiser les temps de réponse API
 - Réduire la taille des images Docker
 - Améliorer le temps de démarrage des services
 
 ## 🔵 BASSE PRIORITÉ - Nice to Have
 
-### 13. Interface Utilisateur
+### 13. Interface Utilisateur (sur la branche devel)
 - Améliorer l'UX des composants existants
 - Ajouter des animations et transitions
 - Optimiser pour mobile
 
-### 14. Fonctionnalités Avancées
+### 14. Fonctionnalités Avancées (sur la branche devel)
 - Synchronisation multi-instances améliorée
 - Gestion des collections
 - Synchronisation des marque-pages
@@ -104,7 +104,7 @@
 - ✅ **8fb4b47** - Système de versionnement automatique
 
 ### v0.8.0 (07/09/2025)
-- ✅ **dd51bc3** - AudioNexus PRODUCTION-READY
+- ✅ **dd51bc3** - ~AudioNexus PRODUCTION-READY~
 - ✅ **dd51bc3** - Interface audiobooks complète
 - ✅ **dd51bc3** - Synchronisation multi-instances
 - ✅ **dd51bc3** - Dashboard admin avec métriques
