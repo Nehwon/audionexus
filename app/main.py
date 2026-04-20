@@ -1,214 +1,63 @@
-#!/usr/bin/env python3
 """
-Point d'entrée principal de l'application de gestion d'audiobooks.
+Main FastAPI application for AudioNexus.
 """
-import os
-from contextlib import asynccontextmanager
-
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
-from sqlalchemy.orm import Session
-from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+import uvicorn
+import logging
 
-from app.config import settings
+# Import the API router and app factory
 from app.core.api import api_router
-from app.core.rate_limit import limiter
-from app.db import SessionLocal, db, init_app, init_database
+from app.config import Config
 
-
-# Configuration du cycle de vie de l'application
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Démarrage de l'application
-    print("Démarrage de l'application...")
-
-    # Initialisation de la base de données (sauf en environnement de test)
-    if not os.getenv("TESTING"):
-        print("Initialisation de la base de données...")
-
-        # Initialisation de la base de données
-        init_database()
-
-        # Vérification de la connexion
-        try:
-            db = SessionLocal()
-            db.execute(text("SELECT 1"))
-            db.close()
-            print("Connexion à la base de données établie avec succès")
-        except Exception as e:
-            print(f"Erreur lors de la connexion à la base de données: {e}")
-            raise
-    else:
-        print("Mode test - Initialisation de la base de données différée")
-
-    yield
-
-    # Nettoyage à l'arrêt
-    if not os.getenv("TESTING"):
-        print("Arrêt de l'application...")
-        if "db" in locals():
-            db.close()
-
-
-# Création de l'application FastAPI
+# Create FastAPI application
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="API pour la gestion de bibliothèques d'audiobooks",
-    version="0.2.0",
+    title="AudioNexus API",
+    description="API pour la gestion des livres audio",
+    version="0.4.0",
     docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan,
+    redoc_url="/redoc"
 )
-
-
-# Middleware pour les headers de sécurité
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-
-        # Headers de sécurité essentiels
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; "
-            "font-src 'self'; connect-src 'self'; frame-ancestors 'none';"
-        )
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=63072000; includeSubDomains; preload"
-        )
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-        )
-
-        return response
-
-
-# Middleware pour le logging des requêtes
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        import logging
-
-        logger = logging.getLogger(__name__)
-
-        # Log de la requête entrante
-        logger.info(
-            f"Requête reçue: {request.method} {request.url} - Client: {request.client.host if request.client else 'unknown'}"
-        )
-
-        try:
-            import time
-
-            start_time = time.time()
-            response = await call_next(request)
-            elapsed = time.time() - start_time
-
-            # Log détaillé de la réponse
-            logger.info(
-                f"Réponse envoyée: {response.status_code} - Durée: {elapsed:.2f}s"
-            )
-            return response
-        except Exception as e:
-            logger.error(
-                f"Erreur lors du traitement de la requête {request.method} {request.url}: {str(e)}",
-                exc_info=True,
-            )
-            return JSONResponse(
-                status_code=500, content={"detail": "Erreur interne du serveur"}
-            )
-
 
 # Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Ajout du middleware de sécurité
-app.add_middleware(SecurityHeadersMiddleware)
+# Middleware sécurité
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
-# Ajout du middleware de rate limiting
-app.state.limiter = limiter
+# Import des routes API
+app.include_router(api_router, prefix="/api")
 
-# Ajout du middleware de logging
-app.add_middleware(LoggingMiddleware)
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
 
-# Montage des dossiers statiques
-app.mount("/static", StaticFiles(directory=settings.STATIC_FOLDER), name="static")
+# Middleware de logging des requêtes
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logging.info(f"{request.method} {request.url}")
+    response = await call_next(request)
+    logging.info(f"HTTP {response.status_code}")
+    return response
 
-# Import du schéma d'authentification depuis core.deps
-from app.core.deps import oauth2_scheme
-
-# Inclusion des routeurs API
-app.include_router(api_router, prefix="/api/v1")
-
-
-# Route racine
-@app.get("/", tags=["Root"])
+@app.get("/")
 async def root():
-    """
-    Route racine de l'API.
-    Retourne un message de bienvenue et des informations sur l'API.
-    """
-    return {
-        "message": f"Bienvenue sur {settings.PROJECT_NAME}",
-        "version": "0.2.0",
-        "docs": "/docs",
-        "api_version": settings.API_V1_STR,
-    }
+    return {"message": "AudioNexus API", "version": "0.4.0"}
 
-
-# Route de santé
-@app.get("/health", tags=["Health"])
+@app.get("/health")
 async def health_check():
-    """
-    Vérifie l'état de santé de l'application.
-    Vérifie également la connexion à la base de données.
-    """
-    from app.database import SessionLocal
+    return {"status": "healthy"}
 
-    db = SessionLocal()
-    try:
-        # Vérification de la connexion à la base de données
-        db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        return {"status": "error", "database": "disconnected", "error": str(e)}, 500
-    finally:
-        db.close()
-
-
-# Gestion des erreurs
-@app.exception_handler(404)
-async def not_found_exception_handler(request, exc):
-    return JSONResponse(status_code=404, content={"detail": "Ressource non trouvée"})
-
-
-@app.exception_handler(500)
-async def server_error_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=500, content={"detail": "Erreur interne du serveur"}
-    )
-
-
-# Point d'entrée pour l'exécution en production
 if __name__ == "__main__":
-    import uvicorn
-
     uvicorn.run(
-        "app.main:app",
-        host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", 8000)),
-        reload=settings.DEBUG,
-        log_level="debug" if settings.DEBUG else "info",
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
     )

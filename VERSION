@@ -15,4 +15,4 @@
 # v0.3.3  - 03/09/2025 - Migration MySQL et corrections OAuth2
 # v0.1.0  - 02/09/2025 - Version initiale après reset
 
-CURRENT_VERSION=0.13.3
+CURRENT_VERSION=0.13.4
