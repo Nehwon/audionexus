@@ -1,9 +1,6 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: nehwonlm/audionexus-backend:devel
     container_name: audionexus-backend
     restart: unless-stopped
     env_file: .env
@@ -73,10 +70,7 @@ services:
       - audionexus-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production
+    image: nehwonlm/audionexus-frontend:devel
     container_name: audionexus-frontend
     restart: unless-stopped
     depends_on:
