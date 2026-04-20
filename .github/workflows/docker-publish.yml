@@ -44,3 +44,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/audionexus-frontend:devel
             ${{ secrets.DOCKER_HUB_USERNAME }}/audionexus-frontend:${{ steps.get_version.outputs.version }}
+          cache-from: type=gha,scope=frontend-production
+          cache-to: type=gha,mode=max,scope=frontend-production
