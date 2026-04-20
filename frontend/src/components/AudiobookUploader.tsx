@@ -571,6 +571,7 @@ const AudiobookUploader: React.FC<AudiobookUploaderProps> = ({
                 )}
               </div>
             ))}
+          </div>
         </div>
       )}
 
