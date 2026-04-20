@@ -2,13 +2,13 @@ name: Docker Build and Test
 
 on:
   push:
-    branches: [ main, devel ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - 'README.md'
       - '.github/**'
   pull_request:
-    branches: [ main, devel ]
+    branches: [ main ]
     paths-ignore:
       - 'docs/**'
       - 'README.md'
