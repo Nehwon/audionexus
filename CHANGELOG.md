@@ -6,6 +6,14 @@ Ce document recense toutes les versions d'AudioNexus avec leurs changements sign
 
 ## 📦 Versions Actuelles
 
+### v0.14.0 (20/04/2026)
+**Commit**: 2563632
+- **Réorganisation majeure du projet** : Structure complète refactorée
+- **Nouveaux dossiers** : config/, docker/, archives/, scripts/, Pull_Request/
+- **40+ fichiers déplacés** : Meilleure organisation et séparation des préoccupations
+- **Templates ajoutés** : PULL_REQUEST_TEMPLATE.md et PR_REORGANISATION_DESCRIPTION.md
+- **Documentation mise à jour** : Tous les fichiers .md mis à jour
+
 ### v0.12.19 (19/04/2026)
 **Commit**: 8d0ab3c
 - Ajout de la documentation MEMORY.md et WORKFLOWS.md

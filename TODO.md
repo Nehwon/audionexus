@@ -2,10 +2,12 @@
 
 ## 🔴 URGENT - À Faire Immédiatement
 
-### 1. Nettoyage de la Racine du Projet (sur toutes les branches)
-- Organiser la racine pour ne garder que les fichiers de documentation core
-- Déplacer les fichiers techniques dans des dossiers appropriés
-- Supprimer les fichiers temporaires et obsolètes
+### 1. ✅ Nettoyage de la Racine du Projet (sur toutes les branches)
+- ✅ Organiser la racine pour ne garder que les fichiers de documentation core
+- ✅ Déplacer les fichiers techniques dans des dossiers appropriés
+- ✅ Supprimer les fichiers temporaires et obsolètes
+- ✅ Créer dossier Pull_Request/ avec templates
+- ✅ Mettre à jour la documentation
 
 ### 2. Correction SQLAlchemy (sur la branche debug)
 - Résoudre le conflit de définition de table `audit_logs` (doublon)
@@ -77,6 +79,13 @@
 
 ## ✅ TÂCHES RÉALISÉES (50 dernières)
 
+### v0.14.0 (20/04/2026)
+- ✅ **2563632** - Réorganisation complète de la structure du projet
+- ✅ **2563632** - Création des dossiers config/, docker/, archives/, scripts/, Pull_Request/
+- ✅ **2563632** - Déplacement de 40+ fichiers techniques
+- ✅ **2563632** - Ajout de templates pour les Pull Requests
+- ✅ **2563632** - Mise à jour de la documentation
+
 ### v0.12.20 (19/04/2026)
 - ✅ **4f8bbe8** - Ajout du CHANGELOG.md complet et mise à jour de VERSION
 - ✅ **4f8bbe8** - Mise à jour de la ROADMAP.md
@@ -123,6 +132,6 @@
 
 ---
 
-*Dernière mise à jour: 19/04/2026*
-*Version actuelle: v0.12.20*
+*Dernière mise à jour: 20/04/2026*
+*Version actuelle: v0.14.0*
 *Pour la documentation détaillée, voir le dossier `documentation/`*

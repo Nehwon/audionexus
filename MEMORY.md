@@ -4,6 +4,46 @@ Ce document centralise les informations critiques à conserver en mémoire pour 
 
 ---
 
+## 📋 Historique des Réorganisations Majeures
+
+### Réorganisation v0.14.0 (20/04/2026)
+**Objectif**: Nettoyer la racine du projet et améliorer la maintenabilité
+
+**Changements:**
+- Création de 5 nouveaux dossiers: `config/`, `docker/`, `archives/`, `scripts/`, `Pull_Request/`
+- Déplacement de 40+ fichiers techniques depuis la racine
+- Conservation des fichiers de documentation core à la racine
+- Ajout de templates pour les Pull Requests
+
+**Structure avant:**
+```
+.
+├── 40+ fichiers techniques
+├── fichiers de documentation
+└── code source
+```
+
+**Structure après:**
+```
+.
+├── app/                  # Code source
+├── config/               # Configuration
+├── docker/               # Docker
+├── archives/             # Temporaires
+├── scripts/              # Scripts
+├── Pull_Request/         # Templates
+├── documentation core    # À la racine
+└── AudioNexus.code-workspace
+```
+
+**Bénéfices:**
+- Meilleure séparation des préoccupations
+- Navigation plus intuitive
+- Conformité aux meilleures pratiques
+- Facilite l'onboarding des nouveaux développeurs
+
+---
+
 ## 🔑 Concepts Clés à Retenir
 
 ### 1. Architecture Globale
@@ -140,4 +180,4 @@ devel → debug (corrections) → devel (merge)
 
 ---
 
-*Dernière mise à jour: 19/04/2026*
+*Dernière mise à jour: 20/04/2026*

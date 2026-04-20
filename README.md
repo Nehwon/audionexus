@@ -94,6 +94,35 @@
 - Alias : Nehwon
 - Licence : [AGPL-3.0+](LICENSE)
 
+## 🗂️ Structure du Projet
+
+```
+.
+├── app/                  # Code source principal (FastAPI)
+├── config/               # Fichiers de configuration
+│   ├── .env*             # Variables d'environnement
+│   ├── docker-compose.*  # Configurations Docker
+│   └── scripts/          # Scripts utilitaires
+│
+├── docker/              # Fichiers Docker
+│   ├── Dockerfile        # Image principale
+│   └── docker-compose.yml # Configuration principale
+│
+├── archives/            # Fichiers temporaires et obsolètes
+├── Pull_Request/        # Templates pour les Pull Requests
+├── frontend/            # Application React/TypeScript
+│
+├── AudioNexus.code-workspace  # Workspace VSCode
+├── README.md            # Ce fichier
+├── TODO.md              # Liste des tâches
+├── ROADMAP.md           # Feuille de route
+├── MEMORY.md            # Mémoire du projet
+├── VERSION              # Version actuelle
+├── CHANGELOG.md         # Historique des versions
+├── WORKFLOWS.md          # Documentation des workflows
+└── LICENSE              # Licence AGPL-3.0
+```
+
 ## 🚀 Démarrage rapide
 
 ### Prérequis
@@ -114,26 +143,26 @@ git clone https://github.com/votre-utilisateur/audionexus.git
 cd audionexus
 
 # Copier le fichier d'environnement d'exemple (optionnel)
-cp .env.example .env
+cp config/.env.example config/.env
 
 # Démarrage en mode développement (recommandé pour les développeurs)
-./start.sh dev
+./config/start.sh dev
 
 # OU Démarrage en mode production
-./start.sh prod
+./config/start.sh prod
 ```
 
 #### Démarrage manuel avec Docker Compose
 
 ```bash
 # Pour le développement avec rechargement automatique
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.dev.yml up -d
 
 # Pour la production optimisée
-docker compose up -d
+docker compose -f docker/docker-compose.yml up -d
 
 # Suivre les logs de démarrage
-./start.sh logs
+./config/start.sh logs
 ```
 
 #### Services disponibles après le démarrage
@@ -154,19 +183,19 @@ Une fois le setup lancé, les services suivants sont accessibles :
 
 ```bash
 # État des services
-./start.sh status
+./config/start.sh status
 
 # Logs de tous les services
-./start.sh logs
+./config/start.sh logs
 
 # Logs d'un service spécifique
-./start.sh logs backend
+./config/start.sh logs backend
 
 # Arrêter tous les services
-./start.sh stop
+./config/start.sh stop
 
 # Redémarrer les services
-./start.sh restart
+./config/start.sh restart
 ```
 
 ### Développement local (optionnel, si vous préférez sans Docker)
@@ -269,7 +298,13 @@ npm run dev
 
 ### Variables d'environnement
 
-Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+Créez un fichier `config/.env` à partir du template :
+
+```bash
+cp config/.env.example config/.env
+```
+
+Puis éditez-le avec les variables suivantes :
 
 ```env
 # Backend
@@ -474,14 +509,14 @@ cd audiobooks-manager
 ### 2. Configuration initiale
 ```bash
 # Copier le fichier d'exemple
-cp .env.example .env
+cp config/.env.example config/.env
 
 # Éditer la configuration
-nano .env  # ou votre éditeur préféré
+nano config/.env  # ou votre éditeur préféré
 ```
 
 ### 3. Configuration requise
-Modifiez les variables essentielles dans `.env` :
+Modifiez les variables essentielles dans `config/.env` :
 
 ```env
 # Application
@@ -505,7 +540,7 @@ ABS_PASSWORD=votre-mot-de-passe-secure
 
 ### 4. Démarrer avec Docker
 ```bash
-docker compose up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 ### 5. Vérification
@@ -555,14 +590,14 @@ Voir le dossier `examples/` pour plus de cas d'utilisation :
    cd audiobooks-manager
    
    # Configuration
-   cp .env.example .env
-   nano .env  # Configurer les variables
+   cp config/.env.example config/.env
+   nano config/.env  # Configurer les variables
    ```
 
 2. **Démarrage**
    ```bash
    # Premier démarrage
-   docker compose up -d --build
+   docker compose -f docker/docker-compose.yml up -d --build
    
    # Arrêter les services
    docker compose down
@@ -645,7 +680,7 @@ alembic upgrade head
 2. **Installation des dépendances**
    ```bash
    # Installer les dépendances de développement
-   pip install -r requirements-dev.txt
+   pip install -r config/requirements-dev.txt
    
    # Installer en mode développement
    pip install -e .
@@ -653,7 +688,7 @@ alembic upgrade head
 3. **Configuration initiale**
    ```bash
    # Copier le fichier .env d'exemple
-   cp .env.example .env
+   cp config/.env.example config/.env
    
    # Modifier le fichier .env selon vos besoins
    # (assurez-vous que SQLite est configuré comme base de données par défaut)

@@ -10,14 +10,19 @@ AudioNexus évolue vers **une plateforme de gestion centralisée pour bibliothè
 
 ## 🎯 État Actuel : MISSION ACCOMPLIE ✅ Corrections et Optimisations
 
-### ✅ **Q2 2026 - v0.12.x DEBUG & OPTIMISATIONS** (RÉALISÉ)
-**Faits établis au 19/04/2026** :
+### ✅ **Q2 2026 - v0.14.x RÉORGANISATION & OPTIMISATIONS** (RÉALISÉ)
+**Faits établis au 20/04/2026** :
+- ✅ **Réorganisation complète** : Structure du projet complètement refactorée
+- ✅ **Nouvelle architecture** : Dossiers config/, docker/, archives/, scripts/, Pull_Request/
+- ✅ **40+ fichiers déplacés** : Meilleure séparation des préoccupations
+- ✅ **Templates PR** : PULL_REQUEST_TEMPLATE.md et PR_REORGANISATION_DESCRIPTION.md
+- ✅ **Documentation mise à jour** : Tous les fichiers .md synchronisés
 - ✅ **Gestion des threads FFmpeg** : Isolation complète avec `start_new_session=True`
 - ✅ **Timeouts optimisés** : 30min pour conversions, 1h pour concaténations
 - ✅ **Terminaison propre** : Annulation explicite des processus FFmpeg
 - ✅ **Tests unitaires** : 11 tests couvrant tous les scénarios de gestion des threads
 - ✅ **MySQL warnings** : Remplacement de `--skip-host-cache` par `--host-cache-size=0`
-- ✅ **Versionnement automatique** : Système vM.m.f implémenté (version actuelle: v0.12.19)
+- ✅ **Versionnement automatique** : Système vM.m.f implémenté (version actuelle: v0.14.0)
 - ✅ **CI/CD optimisé** : Workflow Docker build/test sans étapes de test lourdes
 - ✅ **Documentation complète** : MEMORY.md et WORKFLOWS.md ajoutés
 - ✅ **Migration PostgreSQL** : Planifiée dans la roadmap
