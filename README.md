@@ -74,6 +74,51 @@
 - Alias : Nehwon
 - Licence : [AGPL-3.0+](LICENSE)
 
+## 🌿 Branches et Workflow Git
+
+AudioNexus utilise un workflow Git multi-branches avec deux remotes principaux :
+- **origin** : [Gitea](https://gitea.lamachere.fr/fabrice/audionexus) (dépôt principal)
+- **github** : [GitHub](https://github.com/Nehwon/audionexus) (miroir public)
+
+### Branches Principales
+
+| Branche | Remote | Description | Utilisation |
+|---------|--------|-------------|-------------|
+| `main` | origin/github | Production stable | Code de production validé |
+| `devel` | origin/github | Développement principal | Intégration des nouvelles fonctionnalités |
+| `debug` | origin/github | Debug et corrections | Corrections urgentes et debugging |
+| `preprod` | origin/github | Pré-production | Tests finaux avant production |
+| `feat/*` | origin/github | Fonctionnalités | Branches de développement de features |
+
+### Workflow de Développement
+
+```
+feature/xxx → devel → preprod → main
+     ↑
+   debug (corrections rapides)
+```
+
+1. **Nouvelle fonctionnalité** : Créer une branche `feat/nom-feature` depuis `devel`
+2. **Corrections** : Utiliser la branche `debug` pour les correctifs urgents
+3. **Release** : Merge `devel` → `preprod` → `main` avec tag de version
+
+### Commandes de Synchronisation
+
+```bash
+# Synchroniser toutes les branches
+git fetch origin
+git fetch github
+
+# Pousser une branche sur les deux remotes
+git push origin <branche>
+git push github <branche>
+
+# Vérifier l'état des branches
+git branch -vv
+git log --oneline --left-right <branche>...origin/<branche>
+```
+
+
 ## 🚀 Démarrage rapide
 
 ### Prérequis
